@@ -51,18 +51,18 @@ jobs:
     - name: Zip Linux x64
       run: zip -qq -r /home/runner/work/entity-explorer/entity-explorer/bin/publish/observe-entity-explorer.linux.zip *
       working-directory: /home/runner/work/entity-explorer/entity-explorer/bin/publish/linux
-    - name: Install upload utility
+    - name: Upload build results
       uses: actions/upload-artifact@v3
       with:
         name: build-results
         path: /home/runner/work/entity-explorer/entity-explorer/bin/publish/observe-entity-explorer.*.zip    
-    - name: View Results
-      run: ls -l /home/runner/work/entity-explorer/entity-explorer/*
-    - name: View Results
-      run: ls -l /home/runner/work/entity-explorer/entity-explorer/*/*
-    - name: View Results
-      run: ls -l /home/runner/work/entity-explorer/entity-explorer/*/*/*
-    - name: View Results
-      run: ls -l /home/runner/work/entity-explorer/entity-explorer/*/*/*/*
+    # - name: View Results
+    #   run: ls -l /home/runner/work/entity-explorer/entity-explorer/*
+    # - name: View Results
+    #   run: ls -l /home/runner/work/entity-explorer/entity-explorer/*/*
+    # - name: View Results
+    #   run: ls -l /home/runner/work/entity-explorer/entity-explorer/*/*/*
+    # - name: View Results
+    #   run: ls -l /home/runner/work/entity-explorer/entity-explorer/*/*/*/*
     # - name: Test
     #   run: dotnet test --no-build --verbosity normal
