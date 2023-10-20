@@ -34,7 +34,7 @@ Files are in [Releases](../../releases/latest).
 
 ### Install on Windows
 
-1. Download [Releases](../releases/latest)\ `observe-entity-explorer.win.<version>.zip`
+1. Download [Releases](../../releases/latest)\ `observe-entity-explorer.win.<version>.zip`
 
 2. Extract the archive using File Explorer or:
     
@@ -46,7 +46,7 @@ Files are in [Releases](../../releases/latest).
 
 ### Install on Linux
 
-Download [Releases](../releases/latest)\ `observe-entity-explorer.linux.<version>.zip`, extract the archive and run `observe-entity-explorer`
+Download [Releases](../../releases/latest)\ `observe-entity-explorer.linux.<version>.zip`, extract the archive and run `observe-entity-explorer`
 
 1. Extract the archive:
 
