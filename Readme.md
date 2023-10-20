@@ -152,9 +152,9 @@ Updated | Who and when updates this object last
 
 ## Dataset Detail
 
-![Dataset List](/docs/screenshots/details/dataset/DatasetDetails.png?raw=true)
+![Dataset Detail](/docs/screenshots/details/dataset/DatasetDetails.png?raw=true)
 
-### Summary
+### Summary - Dataset
 
 Summary information about the Dataset.
 
@@ -209,7 +209,20 @@ Visual diagram showing relationship between inputs and stages of this dataset.
 
 ## Dashboard Detail
 
-TODO
+![Dataset Detail](/docs/screenshots/details/dashboard/DashboardDetails.png?raw=true)
+
+### Summary - Dashboard
+
+Summary information about the Dashboard.
+
+Section | Description
+-- | --
+Observe | Open object page in Observe
+Name | Object name and ID
+Source | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
+Components | Number of various components in dashboaard
+Created | Who and when created this object
+Updated | Who and when updates this object last
 
 ### Stages - Dashboard
 
