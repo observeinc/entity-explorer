@@ -6,11 +6,11 @@ Observe Entity Explorer allows discovery of dependencies between Observe objects
 
 Observe Entity Explorer can run on Windows, Mac or most Linux distributions. 
 
-Files are in [Releases](../../../releases/latest).
+Files are in [Releases](../../releases/latest).
 
 ### Install on OSX
 
-1. Download [Releases](../releases/latest)\ `observe-entity-explorer.osx.<version>.zip` but do not extract the archive yet.
+1. Download [Releases](../../releases/latest)\ `observe-entity-explorer.osx.<version>.zip` but do not extract the archive yet.
 
 2. Remove the quarantine attribute that will otherwise stop the application from running this command in your terminal:
 
