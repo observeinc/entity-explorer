@@ -35,7 +35,7 @@ jobs:
     - name: View Results
       run: ls /home/runner/work/entity-explorer/entity-explorer/bin/publish/win
     - name: View Results
-      run: ls /home/runner/work/entity-explorer/entity-explorer/bin/ublish/osx
+      run: ls /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx
     - name: View Results
       run: ls /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx-arm
     - name: View Results
