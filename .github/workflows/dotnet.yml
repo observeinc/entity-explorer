@@ -26,6 +26,7 @@ jobs:
       run: dotnet build --no-restore
     - name: Publish Win x64
       #run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj -p:PublishProfileFullPath=/home/runner/work/entity-explorer/entity-explorer/Properties/PublisProfiles/win-x64-self-contained.pubxml -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/win
+      # Using pubxml isn't working in Github runner, using manual overrides
       run: dotnet publish --self-contained --runtime win-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/win
     - name: Publish OSX x64
       run: dotnet publish --self-contained --runtime osx-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx
@@ -33,6 +34,13 @@ jobs:
       run: dotnet publish --self-contained --runtime osx-arm64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx-arm
     - name: Publish Linux x64
       run: dotnet publish --self-contained --runtime linux-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/linux
+    # - name: Change Dir
+    #  run: cd /home/runner/work/entity-explorer/entity-explorer/bin/publish/win
+    - name: Install zip
+      uses: montudor/action-zip@v1    
+    - name: Zip output
+      run: zip -qq -r /home/runner/work/entity-explorer/entity-explorer/bin/publish/win.zip *
+      working-directory: /home/runner/work/entity-explorer/entity-explorer/bin/publish/win
     - name: View Results
       run: ls -l /home/runner/work/entity-explorer/entity-explorer/*
     - name: View Results
@@ -41,6 +49,5 @@ jobs:
       run: ls -l /home/runner/work/entity-explorer/entity-explorer/*/*/*
     - name: View Results
       run: ls -l /home/runner/work/entity-explorer/entity-explorer/*/*/*/*
-
     # - name: Test
     #   run: dotnet test --no-build --verbosity normal
