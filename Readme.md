@@ -21,7 +21,7 @@ Files are in [Releases](../../releases/latest).
 3. Extract the archive:
 
     ```bash
-    unzip observe-entity-explorer.*.zip
+    unzip observe-entity-explorer.<version>.zip
     ```
 
 4. Mark the application as executable by running this command in your terminal:
