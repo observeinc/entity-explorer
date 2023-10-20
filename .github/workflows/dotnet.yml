@@ -26,9 +26,9 @@ jobs:
       run: dotnet build
     #  run: dotnet build --no-restore
     - name: Publish Win x64
-      run: dotnet publish -p:PublishProfile=win-x64-self-contained.pubxml
+      run: dotnet publish -p:PublishProfile=/home/runner/work/entity-explorer/entity-explorer/win-x64-self-contained.pubxml
     - name: Publish OSX x64
-      run: dotnet publish -p:PublishProfile=Properties/PublishProfiles/osx-x64-self-contained.pubxml
+      run: dotnet publish -p:PublishProfile=/home/runner/work/entity-explorer/entity-explorer/osx-x64-self-contained
     - name: Publish OSX ARM
       run: dotnet publish -p:PublishProfile=Properties/PublishProfiles/osx-arm64-self-contained
     - name: Publish Linux x64
