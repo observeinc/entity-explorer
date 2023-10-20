@@ -33,13 +33,7 @@ jobs:
     - name: Publish Linux x64
       run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj -p:PublishProfileFullPath=/home/runner/work/entity-explorer/entity-explorer/Properties/PublisProfiles/linux-x64-self-contained.pubxml -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/linux
     - name: View Results
-      run: ls /home/runner/work/entity-explorer/entity-explorer/bin/publish/win
-    - name: View Results
-      run: ls /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx
-    - name: View Results
-      run: ls /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx-arm
-    - name: View Results
-      run: ls /home/runner/work/entity-explorer/entity-explorer/bin/publish/linux
+      run: ls -l /home/runner/work/entity-explorer/entity-explorer/*
 
     # - name: Test
     #   run: dotnet test --no-build --verbosity normal
