@@ -1,0 +1,28 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  background-color:white;
+}
+
+td {
+  vertical-align: top;
+}
+
+span.spanError {
+  color: red;
+}
+
+table.AlternatingRowTable tr:nth-child(even) {
+  background: lightcyan
+}
+
+table.AlternatingRowTable tr:nth-child(odd) {
+  background: ghostwhite
+}
+
+/* table.AlternatingRowTable tr:nth-child(1) {
+  background: none;
+} */
+
+code.opalDisplay {
+  background-color: ghostwhite;
+}

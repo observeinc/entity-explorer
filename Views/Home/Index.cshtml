@@ -1,0 +1,124 @@
+﻿@using Observe.EntityExplorer.DataObjects;
+
+@model Observe.EntityExplorer.Models.BaseViewModel;
+
+@{
+    ViewData["Title"] = "Home";
+}
+
+<p>
+    <span class="spanError">@ViewData["ErrorMessage"]</span>
+</p>
+@if (ViewData["ErrorMessage"] != null)
+{
+    return;
+}
+
+<h1>Connect</h1>
+<p>
+    <a asp-area="" asp-controller="Connection" asp-action="Connect">🔑 Connect</a> with different credentials or log out
+<p>
+
+<h1>Explore</h1>
+
+@using (Html.BeginForm("Index", "Home", FormMethod.Post))
+{
+    <table>
+        <tr>
+            <td>Location</td>
+            <td>
+                <a href="@Model.ObserveEnvironment.CustomerEnvironmentUrl">@Model.ObserveEnvironment.CustomerEnvironmentUrl</a>
+                @Model.ObserveEnvironment.CustomerLabel (@Model.ObserveEnvironment.CustomerName) in @Model.ObserveEnvironment.Deployment
+            </td>
+        </tr>
+        <tr>
+            <td>Loaded On</td>
+            <td>
+                @Model.ObserveEnvironment.LoadedOn.ToString("u") <button type="submit" id="buttonRefresh" name="buttonRefresh" value="Refresh">Refresh</button>
+            </td>
+        </tr>
+        <tr>
+    </table>
+}
+
+<table>
+    <tr>
+        <th>Category</th>
+        <th>Statistics</th>
+        <th>Actions</th>
+    </tr>
+    <tr>
+        <td>Datasets</td>
+        <td>
+            <table>
+                <tr>
+                    <th>Category</th>
+                    <th>Number</th>
+                </tr>
+                <tr>
+                    <td>Total</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Dataset).Count</td>
+                </tr>
+                <tr>
+                    <td>Event</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.EventDataset).Count</td>
+                </tr>
+                <tr>
+                    <td>Interval</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.IntervalDataset).Count</td>
+                </tr>
+                <tr>
+                    <td>Resource</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.ResourceDataset).Count</td>
+                </tr>
+                <tr>
+                    <td>DatastreamDataset</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.DatastreamDataset).Count</td>
+                </tr>
+                <tr>
+                    <td>MetricSMADataset</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.MetricSMADataset).Count</td>
+                </tr>
+                <tr>
+                    <td>MonitorSupportDataset</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.MonitorSupportDataset).Count</td>
+                </tr>
+                <tr>
+                    <td>InterfaceMetricDataset</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.InterfaceMetricDataset).Count</td>
+                </tr>
+                <tr>
+                    <td>InterfaceLogDataset</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.InterfaceLogDataset).Count</td>
+                </tr>
+            </table>
+        </td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Dataset" asp-route-userid="@Model.CurrentUser.UniqueID">🎫 Explore Datasets</a> - Review the structure of various datasets</td>
+    </tr>
+    <tr>
+        <td>Dashboards</td>
+        <td>TODO 321 items</td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Dashboard" asp-route-userid="@Model.CurrentUser.UniqueID">📈 Explore Dashboards</a> - Review the structure of yours and app dashboards</td>
+    </tr>
+    <tr>
+        <td>Worksheets</td>
+        <td>TODO 100 dashboards by 5 users</td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Worksheet" asp-route-userid="@Model.CurrentUser.UniqueID">📝 Explore Worksheets</a> - Review the structure of ad-hoc worksheets</td>
+    </tr>
+    <tr>
+        <td>Monitors</td>
+        <td>TODO 50 items, 50 metric/20 thresholds/10 item whatever blah blah </td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Monitor" asp-route-userid="@Model.CurrentUser.UniqueID">📟 Explore Monitors</a> - Review the structure of monitor datasets</td>
+    </tr>
+    <tr>
+        <td>All Data</td>
+        <td>Export to Excel </td>
+        <td>
+@using (Html.BeginForm("Index", "Home", FormMethod.Post))
+{
+    <button type="submit" id="buttonExportToExcel" name="buttonExportToExcel" value="Export to Excel">Export All to Excel <img src="https://cdn-dynmedia-1.microsoft.com/is/image/microsoftcorp/Icon_Excel_2x_RE2Xztz?resMode=sharp2&op_usm=1.5,0.65,15,0&wid=64&hei=64&qlt=99&fit=constrain" /></button>
+}
+        </td>
+    </tr>
+</table>
+

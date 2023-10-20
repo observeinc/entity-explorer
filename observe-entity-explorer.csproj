@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Observe.EntityExplorer</RootNamespace>
+    <ApplicationIcon>AppIcon.ico</ApplicationIcon>
+
+    <Version>2023.10.19.0</Version>
+    <FileVersion>2023.10.19.0</FileVersion>
+    <AssemblyVersion>2023.10.19.0</AssemblyVersion>
+    <Authors>Daniel Odievich (daniel.odievich@observeinc.com)</Authors>
+    <Company>Observe Inc.</Company>
+    <Product>Observe Entity Explorer</Product>
+    <NeutralLanguage>en</NeutralLanguage>
+    <Description>Observe Entity Explorer provides relationship and diagnostic information about Observe entities such as Datasets, Dashboards and Monitors</Description>
+    <Copyright>Copyright © 2023</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="NLog" Version="5.2.2" />
+    <PackageReference Include="NLog.Web.AspNetCore" Version="5.3.2" />
+  </ItemGroup>
+
+</Project>

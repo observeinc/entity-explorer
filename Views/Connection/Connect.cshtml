@@ -1,0 +1,73 @@
+@using Observe.EntityExplorer.DataObjects;
+
+@model Observe.EntityExplorer.Models.ConnectionConnectViewModel;
+
+@{
+    ViewData["Title"] = "Connect";
+}
+
+<p>
+    <span class="spanError">@ViewData["ErrorMessage"]</span>
+</p>
+@if (ViewData["ErrorMessage"] != null)
+{
+    return;
+}
+
+<h1>Connect to New Environment</h1>
+<p>
+    @using (Html.BeginForm("Connect", "Connection", FormMethod.Post))
+    {
+    <table>
+        <tr id="tableRowEnvironment">
+            <td>🌐</td>
+            <td><label for="textBoxEnvironment">Account</label></td>
+            <td><input type="textbox" id="textBoxEnvironment" name="textBoxEnvironment" value="" size="40" /></td>
+        </tr>
+        <tr id="tableRowUsername">
+            <td>🦄</td>
+            <td><label for="textBoxUsername">Username</label></td>
+            <td><input type="textbox" id="textBoxUsername" name="textBoxUsername" value="" size="40" /></td>
+        </tr>
+        <tr id="tableRowPassword">
+            <td>🔑</td>
+            <td><label for="textBoxPassword">Password</label></td>
+            <td><input type="password" id="textBoxPassword" name="textBoxPassword" value="" size="40" /></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td><button type="submit" id="buttonConnect" name="buttonConnect" value="ConnectWithCredentials">Connect</button></td>
+        </tr>
+    </table>
+    }
+</p>
+
+<h1>Saved Connections</h1>
+<p>
+    @using (Html.BeginForm("Connect", "Connection", FormMethod.Post))
+    {
+    <table>
+        <tr>
+            <th>Environment</th>
+            <th>User</th>
+            <th>Authenticated On</th>
+            <th>Login</th>
+            <th>Remove</th>
+        </tr>
+        @foreach (AuthenticatedUser currentUser in Model.AllUsers)
+        {
+            <tr id="tableRowSavedUser_@currentUser.UniqueID">
+                <td><a href="@currentUser.CustomerEnvironmentUrl">@currentUser.CustomerName (@currentUser.CustomerLabel) in @currentUser.Deployment</a></td>
+                <td>@currentUser.UserName</td>
+                <td>@currentUser.AuthenticatedOn.ToString("o")</td>
+                <td>
+                    <a asp-area="" asp-controller="Home" asp-action="Index" asp-route-userid="@currentUser.UniqueID">Explore</a>
+                     @* <button type="submit" id="buttonConnect_@currentUser.UniqueID" name="buttonConnect" value="@currentUser.UniqueID">Connect</button> *@
+                     </td>
+                <td><button type="submit" id="buttonRemove_@currentUser.UniqueID" name="buttonRemove" value="@currentUser.UniqueID">Remove</button></td>
+            </tr>
+        }
+    </table>
+    }
+</p>

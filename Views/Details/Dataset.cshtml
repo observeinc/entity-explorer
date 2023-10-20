@@ -1,0 +1,586 @@
+﻿@using Observe.EntityExplorer.DataObjects;
+
+@model Observe.EntityExplorer.Models.DetailsDatasetViewModel;
+
+@{
+    if (@Model.CurrentDataset != null)
+    {
+        ViewData["Title"] = String.Format("{0} ({1}) Dataset Details", @Model.CurrentDataset.name, @Model.CurrentDataset.id);
+    }
+}
+
+<p>
+    <span class="spanError">@ViewData["ErrorMessage"]</span>
+</p>
+@if (ViewData["ErrorMessage"] != null)
+{
+    return;
+}
+
+<h1>🎫 Dataset Details - @Model.CurrentDataset.name (@Model.CurrentDataset.id)</h1>
+
+<p>
+    <a href="#RelatedDatasetsAncestors">⏫ Ancestors</a> 
+    <a href="#RelatedDatasetsDescendants">⏬ Descendants</a> 
+    <a href="#RelatedDatasetsGraph">🔀 Related Datasets Graph</a>
+    <a href="#Stages">🏛️ Stages</a>
+    <a href="#StagesGraph">⛲ Stages Graph</a>
+    <a href="#RelatedDashboards">📈 Related Dashboards</a>
+    <a href="#RelatedWorksheets">📝 Related Worksheets</a>
+    <a href="#RelatedMonitors">📟 Related Monitors</a>
+</p>
+
+<table>
+    <tr>
+        <td>Observe</td>
+        <td>
+            @{
+                <a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentDataset.kind switch {"Event" => @Model.CurrentDataset.kind.ToLower(), "Resource" => @Model.CurrentDataset.kind.ToLower(), "Interval" => "event", _ => "fallthroughdonttknow"}, @Model.CurrentDataset.id)">📄 Data</a>
+                <a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentDataset.id)">🛠️ Edit</a>
+            }
+        </td>
+    </tr>
+    <tr>
+        <td>Name</td>
+        <td>
+            @Model.CurrentDataset.name (@Model.CurrentDataset.id) in @Model.CurrentUser.CustomerLabel (@Model.CurrentUser.CustomerName)
+        </td>
+    </tr>
+    <tr>
+        <td>Description</td>
+        <td>@Model.CurrentDataset.description</td>
+    </tr>
+    <tr>
+        <td>Type</td>
+        <td>
+            @Html.Raw(@Model.CurrentDataset.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @Model.CurrentDataset.kind @Model.CurrentDataset.ObjectType
+        </td>
+    </tr>
+    <tr>
+        <td>Source</td>
+        <td>
+            @Html.Raw(@Model.CurrentDataset.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) @Model.CurrentDataset.OriginType (@Model.CurrentDataset.source)
+        </td>
+    </tr>
+    <tr>
+        <td>Icon</td>
+        <td>@Model.CurrentDataset.iconUrl</td>
+    </tr>
+    <tr>
+        <td>Created</td>
+        <td>@Model.CurrentDataset.createdDate.ToString("u")/@Model.CurrentDataset.createdBy.label</td>
+    </tr>
+    <tr>
+        <td>Updated</td>
+        <td>@Model.CurrentDataset.updatedDate.ToString("u")/@Model.CurrentDataset.updatedBy.label</td>
+    </tr>
+    <tr>
+        <td>Important Fields</td>
+        <td>
+            @if(@Model.CurrentDataset.validFromField.Length > 0) {@Html.Raw(String.Format("From: {0} ", @Model.CurrentDataset.validFromField))} 
+            @if(@Model.CurrentDataset.validToField.Length > 0) {@Html.Raw(String.Format("To: {0} ", @Model.CurrentDataset.validToField))} 
+            @if(@Model.CurrentDataset.validFromField.Length > 0) {@Html.Raw(String.Format("Label: {0} ", @Model.CurrentDataset.labelField))} 
+        </td>
+    </tr>    
+    <tr>
+        <td>Fields (@Model.CurrentDataset.Fields.Count)</td>
+        <td>
+            <table>
+                <tr>
+                    <th>Icon</th>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Nullable</th>
+                    <th>Enum</th>
+                    <th>Searchable</th>
+                    <th>Hidden</th>
+                    <th>Const</th>
+                    <th>Metric</th>
+                </tr>
+                @foreach (ObsFieldDefinition entity in Model.CurrentDataset.Fields)
+                {
+                    <tr>
+                        <td>@Html.Raw(@entity.type switch {"timestamp" => "🕘", "duration" => "⏰", "string" => "📝", "int64" => "⑽", "float64" => "⒑", "object" => "🎛", "variant" => "💫", "array" => "🔢", "bool" => "❓", _ => " "}) @if(@Model.CurrentDataset.PrimaryKeys.Count(k => k == entity) > 0) { @Html.Raw("🔑") }</td>
+                        <td>@entity.type</td>
+                        <td>@entity.name</td>
+                        <td>@entity.isNullable</td>
+                        <td>@entity.isEnum</td>
+                        <td>@entity.isSearchable</td>
+                        <td>@entity.isHidden</td>
+                        <td>@entity.isConst</td>
+                        <td>@entity.isMetric</td>
+                    </tr>
+                }
+            </table>
+        </td>
+    </tr>
+    @* <tr>
+        <td>Keys TODO figure out what this means. there is an array of arrays of the columns in here</td>
+        <td>
+            @foreach (FieldDefinition entity in Model.CurrentDataset.Keys)
+            {
+                @entity <br/>
+            }
+        </td>
+    </tr> *@  
+    @if (Model.CurrentDataset.RelatedKeys.Count > 0)
+    {
+        @foreach (ObsRelatedKey entity in Model.CurrentDataset.RelatedKeys)
+        {
+            <tr>
+                <td>🧲 Related Key</td>
+                <td>
+                    <table>
+                        <tr>
+                            <th>@entity.name</th>
+                            <th>To @entity.TargetDataset.name (@entity.TargetDataset.id)</th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <table>
+                                    @* <tr>
+                                        <th>Icon</th>
+                                        <th>Type</th>
+                                        <th>Name</th>
+                                    </tr> *@
+                                    @foreach (ObsFieldDefinition entity2 in entity.SourceKeys)
+                                    {
+                                        <tr>
+                                            <td>@Html.Raw(@entity2.type switch {"timestamp" => "🕘", "duration" => "⏰", "string" => "📝", "int64" => "⑽", "float64" => "⒑", "object" => "🎛", "variant" => "💫", "array" => "🔢", "bool" => "❓", _ => " "})</td>
+                                            <td>@entity2.type</td>
+                                            <td>@entity2.name</td>
+                                        </tr>
+                                    }
+                                </table>
+                            </td>
+                            <td>
+                                <table>
+                                    @* <tr>
+                                        <th>Icon</th>
+                                        <th>Type</th>
+                                        <th>Name</th>
+                                    </tr> *@
+                                    @foreach (ObsFieldDefinition entity3 in entity.TargetKeys)
+                                    {
+                                        <tr>
+                                            <td>@Html.Raw(@entity3.type switch {"timestamp" => "🕘", "duration" => "⏰", "string" => "📝", "int64" => "⑽", "float64" => "⒑", "object" => "🎛", "variant" => "💫", "array" => "🔢", "bool" => "❓", _ => " "})</td>
+                                            <td>@entity3.type</td>
+                                            <td>@entity3.name</td>
+                                        </tr>
+                                    }
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        }
+    }
+    @if (Model.CurrentDataset.ForeignKeys.Count > 0)
+    {
+        @foreach (ObsRelatedKey entity in Model.CurrentDataset.ForeignKeys)
+        {
+            <tr>
+                <td>🔐 Foreign Key</td>
+                <td>
+                    <table>
+                        <tr>
+                            <th>@entity.name</th>
+                            <th>To @entity.TargetDataset.name (@entity.TargetDataset.id)</th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <table>
+                                    @* <tr>
+                                        <th>Icon</th>
+                                        <th>Type</th>
+                                        <th>Name</th>
+                                    </tr> *@
+                                    @foreach (ObsFieldDefinition entity2 in entity.SourceKeys)
+                                    {
+                                        <tr>
+                                            <td>@Html.Raw(@entity2.type switch {"timestamp" => "🕘", "duration" => "⏰", "string" => "📝", "int64" => "⑽", "float64" => "⒑", "object" => "🎛", "variant" => "💫", "array" => "🔢", "bool" => "❓", _ => " "})</td>
+                                            <td>@entity2.type</td>
+                                            <td>@entity2.name</td>
+                                        </tr>
+                                    }
+                                </table>
+                            </td>
+                            <td>
+                                <table>
+                                    @* <tr>
+                                        <th>Icon</th>
+                                        <th>Type</th>
+                                        <th>Name</th>
+                                    </tr> *@
+                                    @foreach (ObsFieldDefinition entity3 in entity.TargetKeys)
+                                    {
+                                        <tr>
+                                            <td>@Html.Raw(@entity3.type switch {"timestamp" => "🕘", "duration" => "⏰", "string" => "📝", "int64" => "⑽", "float64" => "⒑", "object" => "🎛", "variant" => "💫", "array" => "🔢", "bool" => "❓", _ => " "})</td>
+                                            <td>@entity3.type</td>
+                                            <td>@entity3.name</td>
+                                        </tr>
+                                    }
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        }
+    }
+    @* <tr>
+        <td>Settings</td>
+        <td><pre><code class="language-json">@Model.CurrentDataset.Settings</code></pre></td>
+    </tr> *@
+    <tr>
+        <td>🚄 Acceleration</td>
+        <td><pre><code class="language-json">@Model.CurrentDataset.AccelerationInfo</code></pre></td>
+    </tr>    
+</table>
+
+@{
+    List<ObjectRelationship> ancestorRelationships = Model.ObserveEnvironment.GetAllAncestorRelationshipsOfThis(@Model.CurrentDataset);
+    if (ancestorRelationships.Count > 0)
+    {
+        <h2 id="RelatedDatasetsAncestors">⏫ Ancestors</h2>
+        <a href="#top">Back to Top</a>
+
+        <table class="AlternatingRowTable">
+            <tr>
+                <th>Details</th>
+                <th>View</th>
+                <th>Edit</th>
+                <th>Type</th>
+                <th>Origin</th>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Relationship</th>
+                <th>Details</th>
+                <th>View</th>
+                <th>Edit</th>
+                <th>Type</th>
+                <th>Origin</th>
+                <th>ID</th>
+                <th>Name</th>
+            </tr>
+            @foreach (ObjectRelationship objectRelationship in ancestorRelationships)
+            {
+                if (objectRelationship.ThisObject is ObsDataset)
+                {
+                    ObsDataset entityThis = (ObsDataset)objectRelationship.ThisObject;
+                    ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
+                    
+                    <tr>
+                        <td>@Html.ActionLink("🎫 Details", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.kind switch {"Event" => entityRelated.kind.ToLower(), "Resource" => entityRelated.kind.ToLower(), "Interval" => "event", _ => "fallthroughdonttknow"}, entityRelated.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
+                        <td>@Html.Raw(entityRelated.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @entityRelated.kind</td>
+                        <td>@Html.Raw(entityRelated.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@entityRelated.id</td>
+                        <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                        <td>@objectRelationship.RelationshipType</td>
+                        <td>@Html.ActionLink("🎫 Details", "Dataset", "Details", new { id= entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.kind switch {"Event" => entityThis.kind.ToLower(), "Resource" => entityThis.kind.ToLower(), "Interval" => "event", _ => "fallthroughdonttknow"}, entityThis.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
+                        <td>@Html.Raw(entityThis.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @entityThis.kind</td>
+                        <td>@Html.Raw(entityThis.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityThis.source">@entityThis.OriginType</span></td>
+                        <td>@entityThis.id</td>
+                        <td><span title="@entityThis.description">@entityThis.name</span></td>
+                    </tr>
+                }
+            }
+        </table>
+    }
+}
+
+@{
+    List<ObjectRelationship> descendantRelationships = Model.ObserveEnvironment.GetAllDescendantRelationshipsOfRelated(@Model.CurrentDataset);
+    if (descendantRelationships.Count > 0)
+    {
+        <h2 id="RelatedDatasetsDescendants">⏬ Descendants</h2>
+        <a href="#top">Back to Top</a>
+
+        <table class="AlternatingRowTable">
+            <tr>
+                <th>Details</th>
+                <th>View</th>
+                <th>Edit</th>
+                <th>Type</th>
+                <th>Origin</th>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Relationship</th>
+                <th>Details</th>
+                <th>View</th>
+                <th>Edit</th>
+                <th>Type</th>
+                <th>Origin</th>
+                <th>ID</th>
+                <th>Name</th>
+            </tr>
+            @foreach (ObjectRelationship objectRelationship in descendantRelationships)
+            {
+                if (objectRelationship.ThisObject is ObsDataset)
+                {
+                    ObsDataset entityThis = (ObsDataset)objectRelationship.ThisObject;
+                    ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
+                    
+                    <tr>
+                        <td>@Html.ActionLink("🎫 Details", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.kind switch {"Event" => entityRelated.kind.ToLower(), "Resource" => entityRelated.kind.ToLower(), "Interval" => "event", _ => "fallthroughdonttknow"}, entityRelated.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
+                        <td>@Html.Raw(entityRelated.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @entityRelated.kind</td>
+                        <td>@Html.Raw(entityRelated.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@entityRelated.id</td>
+                        <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                        <td>@objectRelationship.RelationshipType</td>
+                        <td>@Html.ActionLink("🎫 Details", "Dataset", "Details", new { id= entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.kind switch {"Event" => entityThis.kind.ToLower(), "Resource" => entityThis.kind.ToLower(), "Interval" => "event", _ => "fallthroughdonttknow"}, entityThis.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
+                        <td>@Html.Raw(entityThis.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @entityThis.kind</td>
+                        <td>@Html.Raw(entityThis.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityThis.source">@entityThis.OriginType</span></td>
+                        <td>@entityThis.id</td>
+                        <td><span title="@entityThis.description">@entityThis.name</span></td>
+                    </tr>
+                }
+            }
+        </table>
+    }
+}
+
+<h2 id="RelatedDatasetsGraph">🔀 Related Datasets Graph</h2>
+<a href="#top">Back to Top</a>
+
+@{
+    List<ObjectRelationship> allRelationships = new List<ObjectRelationship>(ancestorRelationships.Count + descendantRelationships.Count);
+    allRelationships.AddRange(ancestorRelationships);
+    allRelationships.AddRange(descendantRelationships);
+    allRelationships.AddRange(@Model.CurrentDataset.StageObjectRelationships);
+    allRelationships = allRelationships.OrderBy(r => r.ToString()).ToList();
+    <p>
+        <textarea id="textArea_RelatedDatasetsGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentDataset, allRelationships)</textarea>
+        <br/>
+        <button id="buttonVisualize_RelatedDatasetsGraph" onclick="goToGraphVizOnline('textArea_RelatedDatasetsGraph')">🔭 View</button>
+    </p>
+}
+
+<h2 id="Stages">🏛️ Stages</h2>
+<a href="#top">Back to Top</a>
+
+<p>
+    @foreach (ObsStage entity in Model.CurrentDataset.Stages)
+    {    
+        <a href="#@entity.id">@entity.name</a>
+    }
+    <a href="#top">Back to Top</a>
+</p>
+
+<table>
+    @foreach (ObsStage entity in Model.CurrentDataset.Stages)
+    {
+        <tr id="@entity.id">
+            <td>Name</td>
+            <td>@entity.name (@entity.id)
+                @if (@entity == Model.CurrentDataset.OutputStage)
+                {
+                    @Html.Raw("[OUTPUT]");
+                }
+                <a href="#Stages">Back to Stages</a>
+                <a href="#top">Back to Top</a>
+            </td>
+        </tr>
+        <tr>
+            <td>⏫ Inputs</td>
+            <td>
+                <table class="AlternatingRowTable">
+                    <tr>
+                        <th>Details</th>
+                        <th>View</th>
+                        <th>Edit</th>
+                        <th>Type</th>
+                        <th>Origin</th>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Relationship</th>
+                        <th>Ref Name</th>
+                    </tr>
+                    @foreach (ObjectRelationship objectRelationship in entity.ExternalObjectRelationships)
+                    {
+                        ObsStage entityThis = (ObsStage)objectRelationship.ThisObject;
+                        
+                        if (objectRelationship.RelatedObject is ObsDataset)
+                        {
+                            ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
+
+                            <tr>
+                                <td>@Html.ActionLink("🎫 Details", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                                <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.kind switch {"Event" => entityRelated.kind.ToLower(), "Resource" => entityRelated.kind.ToLower(), "Interval" => "event", _ => "fallthroughdonttknow"}, entityRelated.id)">📄 Data</a></td>
+                                <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
+                                <td>@Html.Raw(entityRelated.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @entityRelated.kind</td>
+                                <td>@Html.Raw(entityRelated.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                                <td>@entityRelated.id</td>
+                                <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                                <td>@objectRelationship.RelationshipType</td>
+                                <td>@objectRelationship.name</td>
+                            </tr>
+                        }
+                        else if (objectRelationship.RelatedObject is ObsStage)
+                        {
+                            ObsStage entityRelated = (ObsStage)objectRelationship.RelatedObject;
+                            
+                            <tr>
+                                <td><a href="@String.Format("#{0}", entityRelated.id)">🏛️ Details</a></td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                                <td>🏛️ Stage</td>
+                                <td>👋 User</td>
+                                <td>@entityRelated.id</td>
+                                <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                                <td>@objectRelationship.RelationshipType</td>
+                                <td>@objectRelationship.name</td>
+                            </tr>
+                        }
+                    }
+                </table>
+            </td>
+        </tr>
+        List<ObjectRelationship> relationshipsTarget = Model.CurrentDataset.GetRelationshipsOfRelated(entity);
+        if (relationshipsTarget.Count > 0)
+        {
+            <tr>
+                <td>⏬ Used By</td>
+                <td>
+                    <table class="AlternatingRowTable">
+                        <tr>
+                            <th>Details</th>
+                            <th>Type</th>
+                            <th>Origin</th>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Relationship</th>
+                            <th>Ref Name</th>
+                        </tr>                        
+                        @foreach (ObjectRelationship objectRelationship in relationshipsTarget)
+                        {
+                            ObsStage entityRelated= (ObsStage)objectRelationship.RelatedObject;
+                            
+                            if (objectRelationship.ThisObject is ObsDataset)
+                            {
+                                // This should not happen in Stages
+                                ObsDataset entityThis = (ObsDataset)objectRelationship.ThisObject;
+
+                                <tr>
+                                    <td>@entityThis</td>
+                                </tr>
+                            }
+                            else if (objectRelationship.ThisObject is ObsStage)
+                            {
+                                ObsStage entityThis = (ObsStage)objectRelationship.ThisObject;
+                                
+                                <tr>
+                                    <td><a href="@String.Format("#{0}", entityThis.id)">🏛️ Details</a></td>
+                                    <td>🏛️ Stage</td>
+                                    <td>👋 User</td>
+                                    <td>@entityRelated.id</td>
+                                    <td><span title="@entityThis.description">@entityThis.name</span></td>
+                                    <td>@objectRelationship.RelationshipType</td>
+                                    <td>@objectRelationship.name</td>
+                                </tr>                                
+                            }
+                        }
+                    </table>
+                </td>
+            </tr>
+        }
+        <tr>
+            <td colspan="2"><pre><code class="language-javascript">@entity.pipeline</code></pre></td>
+        </tr>
+    }
+</table>
+
+<h2 id="StagesGraph">⛲ Stages Graph</h2>
+<a href="#top">Back to Top</a>
+
+<p>
+    <textarea id="textArea_StagesGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentDataset, @Model.CurrentDataset.StageObjectRelationships)</textarea>
+    <br/>
+    <button id="buttonVisualize_textArea_StagesGraph" onclick="goToGraphVizOnline('textArea_StagesGraph')">🔭 View</button>
+</p>
+
+<h2 id="RelatedDashboards">📈 Related Dashboards</h1>
+<a href="#top">Back to Top</a>
+
+@{
+    List<ObjectRelationship> dataRelationshipsTarget = Model.ObserveEnvironment.GetRelationshipsOfRelated(@Model.CurrentDataset, ObsObjectRelationshipType.ProvidesData);
+    List<ObjectRelationship> linkRelationshipsTarget = Model.ObserveEnvironment.GetRelationshipsOfRelated(@Model.CurrentDataset, ObsObjectRelationshipType.Linked);
+    List<ObjectRelationship> dashboardRelationshipsData = dataRelationshipsTarget.Where(r => (((ObsCompositeObject)r.ThisObject).ObjectType & ObsCompositeObjectType.Dashboard) == ObsCompositeObjectType.Dashboard).ToList();
+    List<ObjectRelationship> dashboardRelationshipsLink = linkRelationshipsTarget.Where(r => (((ObsCompositeObject)r.ThisObject).ObjectType & ObsCompositeObjectType.Dashboard) == ObsCompositeObjectType.Dashboard).ToList();
+    List<ObjectRelationship> dashboardsRelationshipsAll = new List<ObjectRelationship>(dashboardRelationshipsData.Count + dashboardRelationshipsLink.Count);
+    dashboardsRelationshipsAll.AddRange(dashboardRelationshipsData);
+    dashboardsRelationshipsAll.AddRange(dashboardRelationshipsLink);
+
+    List<ObsObject> selectedDashboards = dashboardsRelationshipsAll.Select(d => d.ThisObject).ToList();
+}
+
+<table class="AlternatingRowTable">
+    <tr>
+        <th>Details</th>
+        <th>View</th>
+        <th>Edit</th>
+        <th>ID</th>
+        <th>Package</th>
+        <th>Name</th>
+        <th>Sections</th>
+        <th>Widgets</th>
+        <th>Stages</th>
+        <th>Parameters</th>
+        <th>Uses</th>
+        <th>Created</th>
+        <th>Updated</th>
+    </tr>
+    @foreach (ObsDashboard entity in selectedDashboards)
+    {
+        <tr id="tableRowDashboard_@entity.id">
+            <td>@Html.ActionLink("📈 Details", "Dashboard", "Details", new { id= entity.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+            <td><a href="@String.Format("{0}workspace/{1}/dashboard/{2}",           @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">📄 View</a></td>
+            <td><a href="@String.Format("{0}workspace/{1}/dashboard/{2}?edit=true", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">🛠️ Edit</a></td>
+            <td>@Html.Raw(entity.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"})@entity.OriginType</td>
+            <td>@entity.id</td>
+            <td>@entity.name</td>
+            <td>@entity.NumSections</td>
+            <td>@entity.NumWidgets</td>
+            <td>@entity.NumStages</td>
+            <td>@entity.NumParameters</td>
+            <td>
+                @{
+                    List<ObjectRelationship> dataRelationshipsSource = Model.ObserveEnvironment.GetRelationshipsOfThis(@entity, ObsObjectRelationshipType.ProvidesData);
+                    if (dataRelationshipsSource.Count > 0)
+                    {
+                        @Html.Raw(String.Format("📝Data>This: {0} <br/>", dataRelationshipsSource.Count));
+                    }
+
+                    List<ObjectRelationship> linkRelationshipsSource = Model.ObserveEnvironment.GetRelationshipsOfThis(@entity, ObsObjectRelationshipType.Linked);
+                    if (linkRelationshipsSource.Count > 0)
+                    {
+                        @Html.Raw(String.Format("🔗Link>This: {0} <br/>", linkRelationshipsSource.Count))
+                    }
+                }
+            </td>          
+            <td>@entity.createdDate.ToString("u")/@entity.createdBy.label</td>
+            <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label </td>
+        </tr>
+    }
+</table>
+
+<h2 id="RelatedWorksheets">📝 Related Worksheets</h2>
+<a href="#top">Back to Top</a>
+
+TODO
+
+<h2 id="RelatedMonitors">📟 Related Monitors</h2>
+<a href="#top">Back to Top</a>
+
+TODO
+
+<script src="~/js/DetailsCommon.js" asp-append-version="true"></script>
