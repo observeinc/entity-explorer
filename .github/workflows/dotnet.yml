@@ -15,7 +15,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
@@ -36,7 +37,7 @@ jobs:
       run: dotnet publish --self-contained --runtime linux-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/linux
     # - name: Change Dir
     #  run: cd /home/runner/work/entity-explorer/entity-explorer/bin/publish/win
-    - name: Install zip
+    - name: Install zip utility
       uses: montudor/action-zip@v1    
     - name: Zip Win x64
       run: zip -qq -r /home/runner/work/entity-explorer/entity-explorer/bin/publish/observe-entity-explorer.win.zip *
@@ -50,6 +51,11 @@ jobs:
     - name: Zip Linux x64
       run: zip -qq -r /home/runner/work/entity-explorer/entity-explorer/bin/publish/observe-entity-explorer.linux.zip *
       working-directory: /home/runner/work/entity-explorer/entity-explorer/bin/publish/linux
+    - name: Install upload utility
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-results
+        path: /home/runner/work/entity-explorer/entity-explorer/bin/publish/observe-entity-explorer.*.zip    
     - name: View Results
       run: ls -l /home/runner/work/entity-explorer/entity-explorer/*
     - name: View Results
