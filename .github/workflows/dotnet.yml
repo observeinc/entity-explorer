@@ -25,7 +25,7 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
     - name: Publish Win x64
-      run: dotnet publish .\observe-entity-explorer.csproj -c Debug -p:PublishProfile=win-x64-self-contained -o whatevs
+      run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj -c Debug -p:PublishProfile=win-x64-self-contained -o whatevs
     - name: Publish OSX x64
       run: dotnet publish -p:PublishProfile=/home/runner/work/entity-explorer/entity-explorer/osx-x64-self-contained
     - name: Publish OSX ARM
