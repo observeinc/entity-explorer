@@ -31,11 +31,11 @@ jobs:
       # Using pubxml isn't working in Github runner, using manual overrides
       run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj --self-contained --runtime win-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/win
     - name: Publish OSX x64
-      run: dotnet publish --self-contained --runtime osx-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx
+      run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj --self-contained --runtime osx-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx
     - name: Publish OSX ARM
-      run: dotnet publish --self-contained --runtime osx-arm64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx-arm
+      run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj --self-contained --runtime osx-arm64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx-arm
     - name: Publish Linux x64
-      run: dotnet publish --self-contained --runtime linux-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/linux
+      run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj --self-contained --runtime linux-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/linux
     # - name: Change Dir
     #  run: cd /home/runner/work/entity-explorer/entity-explorer/bin/publish/win
     - name: Install zip utility
