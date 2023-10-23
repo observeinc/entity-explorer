@@ -21,16 +21,10 @@ Files are in [Releases](../../releases/latest).
 3. Extract the archive:
 
     ```bash
-    unzip observe-entity-explorer.<version>.zip
+    unzip observe-entity-explorer.osx.*.zip
     ```
 
-4. Mark the application as executable by running this command in your terminal:
-
-    ```bash
-    chmod 755 observe-entity-explorer
-    ```
-
-5. Run `observe-entity-explorer`
+4. Run `observe-entity-explorer` from the extracted folder
 
 ### Install on Windows
 
@@ -39,10 +33,10 @@ Files are in [Releases](../../releases/latest).
 2. Extract the archive using File Explorer or:
     
     ```powershell
-    Expand-Archive observe-entity-explorer.win.<version>.zip
+    Expand-Archive observe-entity-explorer.win.*.zip
     ```
 
-3. Run `observe-entity-explorer.exe`
+3. Run `observe-entity-explorer.exe` from the extracted folder
 
 ### Install on Linux
 
@@ -51,16 +45,10 @@ Download [Releases](../../releases/latest)\ `observe-entity-explorer.linux.<vers
 1. Extract the archive:
 
     ```bash
-    unzip observe-entity-explorer.linux.<version>.zip
+    unzip observe-entity-explorer.linux.*.zip
     ```
 
-2. Mark the application as executable by running this command in your terminal:
-
-    ```bash
-    chmod 755 observe-entity-explorer
-    ```
-
-3. Run `observe-entity-explorer`
+2. Run `observe-entity-explorer` from the extracted folder
 
 ## Usage
 
@@ -73,8 +61,6 @@ When application starts, it opens a web interface at http://localhost:50110. Ope
 PS > .\observe-entity-explorer.exe
 info: Microsoft.Hosting.Lifetime[0]
       Now listening on: http://localhost:50110
-info: Microsoft.Hosting.Lifetime[0]
-      Now listening on: https://localhost:50111
 info: Microsoft.Hosting.Lifetime[0]
       Application started. Press Ctrl+C to shut down.
 info: Microsoft.Hosting.Lifetime[0]

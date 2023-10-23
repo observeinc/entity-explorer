@@ -21,7 +21,7 @@
 
 <h1>Explore</h1>
 
-@using (Html.BeginForm("Index", "Home", FormMethod.Post))
+@using (Html.BeginForm("Index", "Home", new {userid=Model.CurrentUser.UniqueID}, FormMethod.Post))
 {
     <table>
         <tr>
@@ -97,17 +97,17 @@
     </tr>
     <tr>
         <td>Dashboards</td>
-        <td>TODO 321 items</td>
+        <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Dashboard).Count</td>
         <td><a asp-area="" asp-controller="Select" asp-action="Dashboard" asp-route-userid="@Model.CurrentUser.UniqueID">📈 Explore Dashboards</a> - Review the structure of yours and app dashboards</td>
     </tr>
     <tr>
         <td>Worksheets</td>
-        <td>TODO 100 dashboards by 5 users</td>
+        <td>TODO</td>
         <td><a asp-area="" asp-controller="Select" asp-action="Worksheet" asp-route-userid="@Model.CurrentUser.UniqueID">📝 Explore Worksheets</a> - Review the structure of ad-hoc worksheets</td>
     </tr>
     <tr>
         <td>Monitors</td>
-        <td>TODO 50 items, 50 metric/20 thresholds/10 item whatever blah blah </td>
+        <td>TODO</td>
         <td><a asp-area="" asp-controller="Select" asp-action="Monitor" asp-route-userid="@Model.CurrentUser.UniqueID">📟 Explore Monitors</a> - Review the structure of monitor datasets</td>
     </tr>
     <tr>

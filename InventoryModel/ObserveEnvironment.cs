@@ -214,7 +214,7 @@ namespace Observe.EntityExplorer
                                         List<ObsDataset> allDatasetsInAppGroup = allAppDatasetsGroupedByPackageGroup.ToList();
 
                                         sb.AppendFormat("  subgraph cluster_ds_app_{0} {{", allAppDatasetsGroupedByPackageGroup.Key).AppendLine();
-                                        sb.AppendFormat("    label=\"📊 App Datasets {0} ({1})\" style=\"filled\" fillcolor=\"lightyellow\"", allAppDatasetsGroupedByPackageGroup.Key, allDatasetsInGroup.Count).AppendLine();
+                                        sb.AppendFormat("    label=\"📊 App Datasets [{0}] ({1})\" style=\"filled\" fillcolor=\"lightyellow\"", allAppDatasetsGroupedByPackageGroup.Key, allDatasetsInAppGroup.Count).AppendLine();
                                         foreach(ObsDataset dataset in allDatasetsInAppGroup)
                                         {
                                             if (dataset == interestingObject) continue;
@@ -343,7 +343,7 @@ namespace Observe.EntityExplorer
                                         List<ObsDashboard> allDatasetsInAppGroup = allAppDashboardsGroupedByPackageGroup.ToList();
 
                                         sb.AppendFormat("  subgraph cluster_da_app_{0} {{", allAppDashboardsGroupedByPackageGroup.Key).AppendLine();
-                                        sb.AppendFormat("    label=\"📊 App Dashboards {0} ({1})\" style=\"filled\" fillcolor=\"wheat\"", allAppDashboardsGroupedByPackageGroup.Key, allDatasetsInAppGroup.Count).AppendLine();
+                                        sb.AppendFormat("    label=\"📊 App Dashboards [{0}] ({1})\" style=\"filled\" fillcolor=\"wheat\"", allAppDashboardsGroupedByPackageGroup.Key, allDatasetsInAppGroup.Count).AppendLine();
                                         foreach(ObsDashboard dashboard in allDatasetsInAppGroup)
                                         {
                                             if (dashboard == interestingObject) continue;
