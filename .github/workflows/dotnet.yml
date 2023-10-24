@@ -31,9 +31,9 @@ jobs:
       # Using pubxml isn't working in Github runner, using manual overrides
       run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj --self-contained --runtime win-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/win-x64
     - name: Publish OSX x64
-      run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj --self-contained --runtime osx-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx-x64
+      run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj --self-contained --runtime osx-x64 -c Debug -p:PublishSingleFile=false -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx-x64
     - name: Publish OSX ARM
-      run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj --self-contained --runtime osx-arm64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx-arm64
+      run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj --self-contained --runtime osx-arm64 -c Debug -p:PublishSingleFile=false -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/osx-arm64
     - name: Publish Linux x64
       run: dotnet publish /home/runner/work/entity-explorer/entity-explorer/observe-entity-explorer.csproj --self-contained --runtime linux-x64 -c Debug -p:PublishSingleFile=true -o /home/runner/work/entity-explorer/entity-explorer/bin/publish/linux-x64
     # - name: Change Dir
