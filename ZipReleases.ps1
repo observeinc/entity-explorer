@@ -15,16 +15,16 @@ $projXML = [xml](Get-Content -Path .\observe-entity-explorer.csproj)
 $version = $projXML.SelectNodes("Project/PropertyGroup/Version")."#text"
 $version
 
-cd "bin/Publish/win"
-& $zip a "../../../../entity-explorer-releases/$version/observe-entity-explorer.win.$version.zip" '@../../../ReleaseIncludes/listfile.win.txt'
+cd "bin/Publish/win-x64"
+& $zip a "../../../../entity-explorer-releases/$version/observe-entity-explorer.win-x64.$version.zip" '@../../../ReleaseIncludes/listfile.win.txt'
 
-cd "../osx"
-& $zip a "../../../../entity-explorer-releases/$version/observe-entity-explorer.osx.$version.zip" '@../../../ReleaseIncludes/listfile.osx.txt'
+cd "../osx-x64"
+& $zip a "../../../../entity-explorer-releases/$version/observe-entity-explorer.osx-x64.$version.zip" '@../../../ReleaseIncludes/listfile.osx.txt'
 
-cd "../osx-arm"
-& $zip a "../../../../entity-explorer-releases/$version/observe-entity-explorer.osx-arm.$version.zip" '@../../../ReleaseIncludes/listfile.osx.txt'
+cd "../osx-arm64"
+& $zip a "../../../../entity-explorer-releases/$version/observe-entity-explorer.osx-arm64.$version.zip" '@../../../ReleaseIncludes/listfile.osx.txt'
 
-cd "../linux"
-& $zip a "../../../../entity-explorer-releases/$version/observe-entity-explorer.linux.$version.zip" '@../../../ReleaseIncludes/listfile.linux.txt'
+cd "../linux-x64"
+& $zip a "../../../../entity-explorer-releases/$version/observe-entity-explorer.linux-x64.$version.zip" '@../../../ReleaseIncludes/listfile.linux.txt'
 
 cd "../../.."

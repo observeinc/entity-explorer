@@ -10,33 +10,50 @@ Files are in [Releases](../../releases/latest).
 
 ### Install on OSX
 
-1. Download [Releases](../../releases/latest)\ `observe-entity-explorer.osx.<version>.zip` but do not extract the archive yet.
+1. Install .NET 7.0 SDK
 
-2. Remove the quarantine attribute that will otherwise stop the application from running this command in your terminal:
+    * [Microsoft Downloads web site](https://dotnet.microsoft.com/en-us/download/dotnet/7.0) with all instructions, or:
+        * [x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-7.0.402-macos-x64-installer) installer
+        * [arm64 (M1/M2)](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-7.0.402-macos-arm64-installer) installer
+    * Run through the installer 
+
+2. Download [Releases](../../releases/latest)\ `observe-entity-explorer.osx-x64.<version>.zip` for Intel or `observe-entity-explorer.osx-arm64.<version>.zip` for M1/M2 machines, but do not extract the archive yet.
+
+3. Remove the quarantine attribute that will otherwise stop the application from running this command in your terminal:
 
     ```bash
-    xattr -d com.apple.quarantine observe-entity-explorer.*.zip
+    xattr -d com.apple.quarantine observe-entity-explorer.osx*.zip
     ```
 
-3. Extract the archive:
+4. Extract the archive:
 
     ```bash
-    unzip observe-entity-explorer.osx.*.zip
+    unzip observe-entity-explorer.osx*.zip
     ```
 
-4. Run `observe-entity-explorer` from the extracted folder
+5. Run the application from the extracted folder:
+
+    ```bash
+    dotnet ./observe-entity-explorer.dll
+    ```
+
+<!-- 4. Run `observe-entity-explorer` from the extracted folder -->
 
 ### Install on Windows
 
-1. Download [Releases](../../releases/latest)\ `observe-entity-explorer.win.<version>.zip`
+1. Download [Releases](../../releases/latest)\ `observe-entity-explorer.win-x64.<version>.zip`
 
 2. Extract the archive using File Explorer or:
-    
+
     ```powershell
-    Expand-Archive observe-entity-explorer.win.*.zip
+    Expand-Archive observe-entity-explorer.win*.zip
     ```
 
-3. Run `observe-entity-explorer.exe` from the extracted folder
+3. Run the application from the extracted folder:
+
+    ```powershell
+    .\observe-entity-explorer.exe
+    ```
 
 ### Install on Linux
 
@@ -45,10 +62,14 @@ Download [Releases](../../releases/latest)\ `observe-entity-explorer.linux.<vers
 1. Extract the archive:
 
     ```bash
-    unzip observe-entity-explorer.linux.*.zip
+    unzip observe-entity-explorer.linux*.zip
     ```
 
-2. Run `observe-entity-explorer` from the extracted folder
+2. Run the application from the extracted folder:
+
+    ```bash
+    ./observe-entity-explorer
+    ```
 
 ## Usage
 
@@ -58,7 +79,8 @@ When application starts, it opens a web interface at http://localhost:50110. Ope
 
 ```bash
 
-PS > .\observe-entity-explorer.exe
+./observe-entity-explorer.exe
+
 info: Microsoft.Hosting.Lifetime[0]
       Now listening on: http://localhost:50110
 info: Microsoft.Hosting.Lifetime[0]
