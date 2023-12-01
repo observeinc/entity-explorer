@@ -1,5 +1,6 @@
 ﻿$(document).ready(function() {
     hljs.highlightAll();
+    hljs.initLineNumbersOnLoad();
 });
 
 function goToGraphVizOnline(textArea)

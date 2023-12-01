@@ -21,19 +21,19 @@ Files are in [Releases](../../releases/latest).
 
 3. Remove the quarantine attribute that will otherwise stop the application from running this command in your terminal:
 
-    ```bash
+    ```console
     xattr -d com.apple.quarantine observe-entity-explorer.osx*.zip
     ```
 
 4. Extract the archive:
 
-    ```bash
+    ```console
     unzip observe-entity-explorer.osx*.zip
     ```
 
 5. Run the application from the extracted folder:
 
-    ```bash
+    ```console
     dotnet ./observe-entity-explorer.dll
     ```
 
@@ -61,13 +61,13 @@ Download [Releases](../../releases/latest)\ `observe-entity-explorer.linux.<vers
 
 1. Extract the archive:
 
-    ```bash
+    ```console
     unzip observe-entity-explorer.linux*.zip
     ```
 
 2. Run the application from the extracted folder:
 
-    ```bash
+    ```console
     ./observe-entity-explorer
     ```
 
@@ -77,8 +77,7 @@ Download [Releases](../../releases/latest)\ `observe-entity-explorer.linux.<vers
 
 When application starts, it opens a web interface at http://localhost:50110. Open that web site in your web browser:
 
-```bash
-
+```console
 ./observe-entity-explorer.exe
 
 info: Microsoft.Hosting.Lifetime[0]
@@ -254,7 +253,7 @@ Logs are in `/logs` subfolder below where your application is installed with new
 ```text
 logs\Observe.EntityExplorer.Console.2023-10-18.log
 logs\Observe.EntityExplorer.Main.2023-10-18.log
-logs\Observe.Management.ObserveConnection.2023-10-18.log
+logs\Observe.EntityExplorer.ObserveConnection.2023-10-18.log
 ```
 
 ## Links

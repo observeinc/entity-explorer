@@ -146,11 +146,15 @@ namespace Observe.EntityExplorer.DataObjects
                             this.ObjectType = this.ObjectType | ObsCompositeObjectType.InterfaceLogDataset;
                             break;
                         
+                        case "action_notification":
+                        case "materialized_notification":
+                            // These are in the background autocreated monitor datasets
+                            // ObsCompositeObjectType.MonitorSupportDataset, already taken care of via package=monitor 
+                            break;
+
                         default:
                             break;
                     }
-                    // Assume only one interface. I don't think you can have logs and metrics all at once
-                    break;
                 }
             }
 
@@ -349,7 +353,7 @@ namespace Observe.EntityExplorer.DataObjects
                             // Link the stages to stages and datasets
                             foreach (ObsStage stage in this.Stages)
                             {
-                                stage.PopulateExternalDatasetAndInternalStageRelationships(allDatasetsDict, this.AllStagesDict);
+                                stage.PopulateExternalDatasetInternalStageRelationships(allDatasetsDict, this.AllStagesDict, null);
                                 this.StageObjectRelationships.AddRange(stage.ExternalObjectRelationships);
                             }
                         }

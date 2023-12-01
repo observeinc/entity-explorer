@@ -7,9 +7,7 @@ namespace Observe.EntityExplorer.DataObjects
         ProvidesData,
         // This stage/dataset links to the related dataset (set_link)
         Linked,
-        // This dataset/worksheet/dashboard has a parameter sourced from related dataset/stage
-        Provides_Parameter,
-        // This monitor depends on related dataset
-        Is_Dependent_On
+        // This parameter is used by Stage OPAL code, likely as filter
+        ProvidesParameter
     }
 }

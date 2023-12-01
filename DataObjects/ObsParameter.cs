@@ -4,146 +4,147 @@ namespace Observe.EntityExplorer.DataObjects
 {
     public class ObsParameter : ObsObject
     {
-        public string type { get; set; }
+        public string dataType { get; set; }
+        public string viewType { get; set; }
         public string defaultValue { get; set; }
-        // Dataset or a Stage
-        public ObsObject RelatedObject { get; set; }
+        public string sourceType { get; set; }
+        public bool allowEmpty { get; set; }
+        public ObsObject SourceObject { get; set; }
+        public string sourceColumn { get; set; }
+
+        public List<ObjectRelationship> ExternalObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
 
         public ObsCompositeObject Parent { get; set; }
 
         public override string ToString()
         {
             return String.Format(
-                "ObsParameter: {0} ({1}) in {2} [{3}]",
+                "ObsParameter: {0} ({1}) using {2}, datatype {3} in {4} [{5}]",
                 this.name,
-                this.type,
+                this.viewType,
+                this.sourceType,
+                this.dataType,
                 this.Parent.name,
                 this.Parent.id);
         }
 
         public ObsParameter () {}
 
-        public ObsParameter(JObject entityObject, AuthenticatedUser authenticatedUser, ObsCompositeObject parentObject)
+        public ObsParameter(JObject entityObject, ObsCompositeObject parentObject, Dictionary<string, ObsDataset> allDatasetsDict, Dictionary<string, ObsStage> allStagesDict)
         {
             this._raw = entityObject;
 
-            #region Examples            
-// [{
-//         "id": "cluster",
-//         "name": "Cluster",
-//         "defaultValue": {
-//             "link": null
-//         },
-//         "valueKind": {
-//             "type": "LINK",
-//             "arrayItemType": null,
-//             "keyForDatasetId": "41218445",
-//             "__typename": "ValueTypeSpec"
-//         },
-//         "__typename": "ParameterSpec"
-//     }, {
-//         "id": "container",
-//         "name": "Container",
-//         "defaultValue": {
-//             "string": "opentelemetry-collector"
-//         },
-//         "valueKind": {
-//             "type": "STRING",
-//             "arrayItemType": null,
-//             "keyForDatasetId": null,
-//             "__typename": "ValueTypeSpec"
-//         },
-//         "__typename": "ParameterSpec"
-//     }, {
-//         "id": "pod",
-//         "name": "Pod",
-//         "defaultValue": {
-//             "string": null
-//         },
-//         "valueKind": {
-//             "type": "STRING",
-//             "arrayItemType": null,
-//             "keyForDatasetId": null,
-//             "__typename": "ValueTypeSpec"
-//         },
-//         "__typename": "ParameterSpec"
-//     }, {
-//         "id": "input-parameter-bhusra4m",
-//         "name": "container",
-//         "defaultValue": {
-//             "datasetref": {
-//                 "datasetId": "41218461"
-//             }
-//         },
-//         "valueKind": {
-//             "type": "DATASETREF",
-//             "arrayItemType": null,
-//             "keyForDatasetId": null,
-//             "__typename": "ValueTypeSpec"
-//         },
-//         "__typename": "ParameterSpec"
-//     }, {
-//         "id": "company",
-//         "name": "Company",
-//         "defaultValue": {
-//             "link": null
-//         },
-//         "valueKind": {
-//             "type": "LINK",
-//             "arrayItemType": null,
-//             "keyForDatasetId": "41272874",
-//             "__typename": "ValueTypeSpec"
-//         },
-//         "__typename": "ParameterSpec"
-//     }, {
-//         "id": "duration",
-//         "name": "Duration (minutes) at least",
-//         "defaultValue": {
-//             "int64": "0"
-//         },
-//         "valueKind": {
-//             "type": "INT64",
-//             "arrayItemType": null,
-//             "keyForDatasetId": null,
-//             "__typename": "ValueTypeSpec"
-//         },
-//         "__typename": "ParameterSpec"
-//     }
-// ]
-            
-            #endregion
-
+            // ID is the name of the variable
             this.id = JSONHelper.getStringValueFromJToken(entityObject, "id");
             this.name = JSONHelper.getStringValueFromJToken(entityObject, "name");
+            this.viewType = JSONHelper.getStringValueFromJToken(entityObject, "viewType");
+            this.sourceType = JSONHelper.getStringValueFromJToken(entityObject, "source");
+            if (this.sourceType.Length == 0) sourceType = "UserInput";
+            this.allowEmpty = JSONHelper.getBoolValueFromJToken(entityObject, "allowEmpty");
             
-            this.defaultValue = JSONHelper.getStringValueOfObjectFromJToken(entityObject, "defaultValue");
-
             JObject valueKindObject = (JObject)JSONHelper.getJTokenValueFromJToken(entityObject, "valueKind");
-            if (valueKindObject != null)
+            JObject defaultValueObject = (JObject)JSONHelper.getJTokenValueFromJToken(entityObject, "defaultValue");
+            // Assume that this is just a string value
+            this.dataType = "STRING";
+            if (defaultValueObject != null)
             {
-                this.type = JSONHelper.getStringValueFromJToken(valueKindObject, "type");
+                this.dataType = JSONHelper.getStringValueFromJToken(valueKindObject, "type");
+            }
 
-                string referenceDatasetId = String.Empty;
+            switch (this.viewType)
+            {
+                // Resource instance menu (from Dataset mapped to column)
+                case "resource-input":
+                    this.defaultValue = JSONHelper.getStringValueOfObjectFromJToken(defaultValueObject, "link");
+                    this.sourceType = "Dataset";
+                    if (valueKindObject != null)
+                    {
+                        string datasetId_resource_input = JSONHelper.getStringValueFromJToken(valueKindObject, "keyForDatasetId");
+                        ObsDataset obsDataset_resource_input = null;
+                        if (allDatasetsDict.TryGetValue(datasetId_resource_input, out obsDataset_resource_input) == true)
+                        {
+                            this.SourceObject = obsDataset_resource_input;
+                            this.ExternalObjectRelationships.Add(new ObjectRelationship(obsDataset_resource_input.name, this, obsDataset_resource_input, ObsObjectRelationshipType.ProvidesData));
+                        }
+                        JObject linkObject = (JObject)JSONHelper.getJTokenValueFromJToken(defaultValueObject, "link");
+                        if (linkObject != null)
+                        {
+                            this.sourceColumn = JSONHelper.getStringValueOfObjectFromJToken(linkObject, "primaryKeyValue");
+                        }
+                    }
 
-                switch (this.type)
-                {
-                    case "DATASETREF":
-                        referenceDatasetId = JSONHelper.getStringValueOfObjectFromJToken(JSONHelper.getStringValueOfObjectFromJToken(JSONHelper.getStringValueOfObjectFromJToken(entityObject, "defaultValue"), "datasetref"), "datasetId");
-                        break;
+                    break;
 
-                    case "LINK":
-                        referenceDatasetId = JSONHelper.getStringValueFromJToken(valueKindObject, "keyForDatasetId");
-                        break;
+                // Filtered dataset parameters
+                case "input":
+                    this.defaultValue = JSONHelper.getStringValueOfObjectFromJToken(defaultValueObject, "datasetref");
+                    this.sourceType = "Dataset";
+                    string datasetId_input = JSONHelper.getStringValueFromJToken(entityObject, "datasetId");
+                    ObsDataset obsDataset_input = null;
+                    if (allDatasetsDict.TryGetValue(datasetId_input, out obsDataset_input) == true)
+                    {
+                        this.SourceObject = obsDataset_input;
+                        this.ExternalObjectRelationships.Add(new ObjectRelationship(obsDataset_input.name, this, obsDataset_input, ObsObjectRelationshipType.ProvidesData));
+                    }
 
-                    default:
-                        break;
-                }
+                    break;
 
-                //if (referenceDatasetId != String.Empty && allDatasetsDict != null)
-                //{
-                    //this.RelatedDataset = allDatasetsDict[referenceDatasetId];
-                //}
+                // Dropdown (from Dataset, Stage or custom values)
+                case "single-select":
+                    this.defaultValue = JSONHelper.getStringValueFromJToken(defaultValueObject, this.dataType.ToLower());
+                    
+                    switch (this.sourceType)
+                    {
+                        case "Dataset":
+                            string datasetId = JSONHelper.getStringValueFromJToken(entityObject, "sourceDatasetId");
+                            ObsDataset obsDataset = null;
+                            if (allDatasetsDict.TryGetValue(datasetId, out obsDataset) == true)
+                            {
+                                this.SourceObject = obsDataset;
+                                this.ExternalObjectRelationships.Add(new ObjectRelationship(obsDataset.name, this, obsDataset, ObsObjectRelationshipType.ProvidesData));
+                            }
+                            this.sourceColumn = JSONHelper.getStringValueFromJToken(entityObject, "sourceColumnId");
+                            
+                            break;
+                        
+                        case "Stage":
+                            // Getting data for dropdown from another stage
+                            string stageId = JSONHelper.getStringValueFromJToken(entityObject, "sourceStageId");
+                            ObsStage obsStage = null;
+                            if (allStagesDict.TryGetValue(stageId, out obsStage) == true)
+                            {
+                                this.SourceObject = obsStage;
+                                this.ExternalObjectRelationships.Add(new ObjectRelationship(obsStage.name, this, obsStage, ObsObjectRelationshipType.ProvidesData));
+                            }
+                            this.sourceColumn = JSONHelper.getStringValueFromJToken(entityObject, "sourceColumnId");
 
+                            break;
+
+                        case "CustomData":
+                            // User provided name/value pairs
+                            this.sourceColumn = JSONHelper.getStringValueOfObjectFromJToken(entityObject, "sourceCustomData");
+                            
+                            break;
+
+                        default:
+                            break;
+                    }
+
+
+                    break;
+
+                // Textbox with string
+                case "text":
+                    this.defaultValue = JSONHelper.getStringValueFromJToken(defaultValueObject, this.dataType.ToLower());
+                    break;
+
+                // Textbox with number
+                case "numeric":
+                    this.defaultValue = JSONHelper.getStringValueFromJToken(defaultValueObject, this.dataType.ToLower());
+                    break;
+
+                default:
+                    break;
             }
 
             this.Parent = parentObject;

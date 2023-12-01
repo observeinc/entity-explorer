@@ -81,13 +81,15 @@ namespace Observe.EntityExplorer.DataObjects
             }
         }
 
-        public void PopulateExternalDatasetAndInternalStageRelationships(Dictionary<string, ObsDataset> allDatasetsDict, Dictionary<string, ObsStage> allStagesDict)
+        public void PopulateExternalDatasetInternalStageRelationships(Dictionary<string, ObsDataset> allDatasetsDict, Dictionary<string, ObsStage> allStagesDict, List<ObsParameter> allParameters)
         {
             JObject entityObject = this._raw;
 
             JArray inputDatasetsOrStagesArray = (JArray)JSONHelper.getJTokenValueFromJToken(entityObject, "input");
             if (inputDatasetsOrStagesArray != null)
             {
+                #region Example data
+                // this stage uses another stage
                 // "input": [{
                 //         "inputName": "File Logs_-ix84",
                 //         "inputRole": "Data",
@@ -103,13 +105,15 @@ namespace Observe.EntityExplorer.DataObjects
                 //         "stageId": "stage-jfwv9t7l",
                 //         "__typename": "InputDefinition"
                 //     }, 
-                //     "inputName": "Telecom_41221900",
-                //     "inputRole": "Data",
-                //     "datasetId": "41221900",
-                //     "datasetPath": null,
-                //     "stageId": "",
-                //     "__typename": "InputDefinition"
-                // }                , {
+                // this stage uses datasets
+                //     {
+                //         "inputName": "Telecom_41221900",
+                //         "inputRole": "Data",
+                //         "datasetId": "41221900",
+                //         "datasetPath": null,
+                //         "stageId": "",
+                //          "__typename": "InputDefinition"
+                //     }, {
                 //         "inputName": "OpenTelemetry/Trace",
                 //         "inputRole": "Reference",
                 //         "datasetId": "41217828",
@@ -118,6 +122,35 @@ namespace Observe.EntityExplorer.DataObjects
                 //         "__typename": "InputDefinition"
                 //     }
                 // ]
+                // this stage uses filtered param
+                // "input": [{
+                //         "inputName": "cdn_events",
+                //         "inputRole": "Data",
+                //         "datasetId": null,
+                //         "datasetPath": null,
+                //         "stageId": "",
+                //         "__typename": "InputDefinition"
+                //     }
+                // ]
+                // "parameters": [{
+                //         "id": "input-parameter-3ozgd1uu",
+                //         "name": "cdn_events",
+                //         "defaultValue": {
+                //             "datasetref": {
+                //                 "datasetId": "41237841"
+                //             }
+                //         },
+                //         "valueKind": {
+                //             "type": "DATASETREF",
+                //             "arrayItemType": null,
+                //             "keyForDatasetId": null,
+                //             "__typename": "ValueTypeSpec"
+                //         },
+                //         "__typename": "ParameterSpec"
+                //     }
+                // ]
+                #endregion
+
                 foreach (JObject inputDatasetObject in inputDatasetsOrStagesArray)
                 {
                     string inputRole = JSONHelper.getStringValueFromJToken(inputDatasetObject, "inputRole");
@@ -138,6 +171,7 @@ namespace Observe.EntityExplorer.DataObjects
 
                     string inputName = JSONHelper.getStringValueFromJToken(inputDatasetObject, "inputName");
 
+                    // Assume dataset reference first
                     string datasetId = JSONHelper.getStringValueFromJToken(inputDatasetObject, "datasetId");
                     if (datasetId != null && datasetId.Length > 0)
                     {
@@ -146,8 +180,10 @@ namespace Observe.EntityExplorer.DataObjects
                         {
                             this.ExternalObjectRelationships.Add(new ObjectRelationship(inputName, this, relatedDataset, relationshipType));
                         }
+                        break;
                     }
 
+                    // Assume stage reference second
                     string stageId = JSONHelper.getStringValueFromJToken(inputDatasetObject, "stageId");
                     if (stageId != null && stageId.Length > 0)
                     {
@@ -156,7 +192,34 @@ namespace Observe.EntityExplorer.DataObjects
                         {
                             this.ExternalObjectRelationships.Add(new ObjectRelationship(inputName, this, relatedStage, relationshipType));
                         }
+                        break;
                     }
+
+                    // Assume filtered dataset parameter reference third
+                    string parameterName = inputName;
+                    if (parameterName != null && parameterName.Length > 0)
+                    {
+                        // Must find parameter by name, not by ID
+                        ObsParameter relatedParameter = allParameters.Where(p => p.name == parameterName).FirstOrDefault();
+                        if (relatedParameter != null)
+                        {
+                            //this.ExternalObjectRelationships.Add(new ObjectRelationship(inputName, this, relatedParameter.SourceObject, relationshipType));
+                            this.ExternalObjectRelationships.Add(new ObjectRelationship(relatedParameter.name, this, relatedParameter, ObsObjectRelationshipType.ProvidesParameter));
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        public void PopulateParametersRelationships(List<ObsParameter> allParameters)
+        {
+            // Scan the text of the pipeline for each of the parameters
+            foreach (ObsParameter parameter in allParameters)
+            {
+                if (this.pipeline.Contains(String.Format("${0}", parameter.id)) == true)
+                {
+                    this.ExternalObjectRelationships.Add(new ObjectRelationship(parameter.name, this, parameter, ObsObjectRelationshipType.ProvidesParameter));
                 }
             }
         }

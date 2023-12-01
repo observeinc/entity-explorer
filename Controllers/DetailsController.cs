@@ -68,6 +68,10 @@ public class DetailsController : Controller
                     break;
             }
 
+            Activity.Current.AddTag("currentUser", currentUser.ToString());
+            Activity.Current.AddTag("observeEnvironment", observeEnvironment.ToString());
+            Activity.Current.AddTag("currentDashboard", viewModel.CurrentDataset.ToString());
+
             return View(viewModel);
         }
         catch (Exception ex)
@@ -125,6 +129,10 @@ public class DetailsController : Controller
                 case "POST":
                     break;
             }
+
+            Activity.Current.AddTag("currentUser", currentUser.ToString());
+            Activity.Current.AddTag("observeEnvironment", observeEnvironment.ToString());
+            Activity.Current.AddTag("currentDashboard", viewModel.CurrentDashboard.ToString());
 
             return View(viewModel);
         }

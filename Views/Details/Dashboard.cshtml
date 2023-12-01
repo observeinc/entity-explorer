@@ -22,6 +22,7 @@
 <p>
     <a href="#RelatedDatasetsAncestors">⏫ Ancestors/Inputs</a> 
     <a href="#RelatedDatasetsGraph">🔀 Related Datasets Graph</a>
+    <a href="#Parameters">🔧 Parameters</a>
     <a href="#Stages">🏛️ Stages</a>
     <a href="#StagesGraph">⛲ Stages Graph</a>
 </p>
@@ -167,30 +168,144 @@
     </p>
 }
 
+<h2 id="Parameters">🔧 Parameters</h2>
+<a href="#top">Back to Top</a>
+
+<table class="AlternatingRowTable">
+    <tr>
+        <th>Name</th>
+        <th>ID</th>
+        <th>Type</th>
+        <th>Data Type</th>
+        <th>Source Type</th>
+        <th>Source Object</th>
+        <th>Source Column</th>
+        <th>Default Value</th>
+        <th>Allow Empty</th>
+    </tr>
+    @foreach (ObsParameter entity in Model.CurrentDashboard.Parameters)
+    {
+        <tr>
+            <td>@entity.name</td>
+            <td>$@entity.id</td>
+            <td>@Html.Raw(entity.viewType switch {"resource-input" => "🛆", "single-select" => "⛛", "text" => "🔤", "numeric" => "#️⃣", "input" => "🌫️", _ => "?"}) @entity.viewType</td>
+            <td>@entity.dataType</td>
+            <td>@entity.sourceType</td>
+            <td>
+                @if (entity.SourceObject != null)
+                {
+                    if (entity.SourceObject is ObsDataset)
+                    {
+                        @Html.ActionLink(String.Format("🎫 {0}", entity.SourceObject.name) , "Dataset", "Details", new { id= entity.SourceObject.id, userid=@Model.CurrentUser.UniqueID }, null)
+                    }
+                    else if (entity.SourceObject is ObsStage)
+                    {                        
+                        <a href="@String.Format("#{0}", entity.SourceObject.id)">🏛️ @entity.SourceObject.name</a>
+                    }
+                }
+            </td>
+            <td>@entity.sourceColumn</td>
+            <td>@entity.defaultValue</td>
+            <td>@entity.allowEmpty</td>
+        </tr>
+    }
+</table>
+
 <h2 id="Stages">🏛️ Stages</h2>
 <a href="#top">Back to Top</a>
 
-<p>
+<table class="AlternatingRowTable">
+    <tr>
+        <th>Details</th>
+        <th>Type</th>
+        <th>Name</th>
+        <th>ID</th>
+        <th>Uses</th>
+        <th>Used By</th>
+        <th>Params</th>
+    </tr>
     @foreach (ObsStage entity in Model.CurrentDashboard.Stages)
     {    
-        <a href="#@entity.id">@entity.name</a>
+        <tr>
+            <td><a href="@String.Format("#{0}", entity.id)">🏛️ Details</a></td>
+            <td>
+                @Html.Raw(entity.type switch {"table" => "📑", "timeseries" => "📉", "bar" => "📊", "circular" => "🥧", "stacked_area" => "🗻", "singlevalue" => "#️⃣", "list" => "📜", "valueovertime" => "⏳", "gantt" => "📐", _ => ""}) @entity.type
+            </td>
+            <td>@entity.name</td>
+            <td>@entity.id</td>
+            <td>
+                @{
+                    List<ObjectRelationship> entityRelationshipsSource = entity.ExternalObjectRelationships;
+
+                    List<ObjectRelationship> entityDatasetDataRelationshipsSource = entityRelationshipsSource.Where(r => r.RelatedObject is ObsDataset && r.RelationshipType == ObsObjectRelationshipType.ProvidesData).ToList();
+                    if (entityDatasetDataRelationshipsSource.Count > 0)
+                    {
+                        @Html.Raw(String.Format("📝Data>This: {0} <br/>", entityDatasetDataRelationshipsSource.Count));
+                    }
+                    List<ObjectRelationship> entityDatasetLinkRelationshipsSource = entityRelationshipsSource.Where(r => r.RelatedObject is ObsDataset && r.RelationshipType == ObsObjectRelationshipType.Linked).ToList();
+                    if (entityDatasetLinkRelationshipsSource.Count > 0)
+                    {
+                        @Html.Raw(String.Format("🔗Link>This {0} <br/>", entityDatasetLinkRelationshipsSource.Count))
+                    }
+                    List<ObjectRelationship> entityParamDataRelationshipsSource = entityRelationshipsSource.Where(r => r.RelatedObject is ObsParameter && r.RelationshipType == ObsObjectRelationshipType.ProvidesParameter).ToList();
+                    if (entityParamDataRelationshipsSource.Count > 0)
+                    {
+                        @Html.Raw(String.Format("🔧Param>This: {0} <br/>", entityParamDataRelationshipsSource.Count));
+                    }
+                    List<ObjectRelationship> entityStageDataRelationshipsSource = entityRelationshipsSource.Where(r => r.RelatedObject is ObsStage && r.RelationshipType == ObsObjectRelationshipType.ProvidesData).ToList();
+                    if (entityStageDataRelationshipsSource.Count > 0)
+                    {
+                        @Html.Raw(String.Format("📝Stage>Data>This: {0} <br/>", entityStageDataRelationshipsSource.Count));
+                    }
+                    List<ObjectRelationship> entityStageLinkRelationshipsSource = entityRelationshipsSource.Where(r => r.RelatedObject is ObsStage && r.RelationshipType == ObsObjectRelationshipType.Linked).ToList();
+                    if (entityStageLinkRelationshipsSource.Count > 0)
+                    {
+                        @Html.Raw(String.Format("🔗Stage>Link>This {0} ", entityStageLinkRelationshipsSource.Count))
+                    }
+                }
+            </td>
+            <td>
+                @{
+                    List<ObjectRelationship> entityRelationshipsTarget = Model.CurrentDashboard.GetRelationshipsOfRelated(entity);
+
+                    List<ObjectRelationship> entityDataRelationshipsTarget = entityRelationshipsTarget.Where(r => r.RelationshipType == ObsObjectRelationshipType.ProvidesData).ToList();
+                    if (entityDataRelationshipsTarget.Count > 0)
+                    {
+                        @Html.Raw(String.Format("📝This>Data: {0} <br/>", entityDataRelationshipsTarget.Count));
+                    }
+                    List<ObjectRelationship> entityDataRelationshipsParamTarget = entityRelationshipsTarget.Where(r => r.ThisObject is ObsParameter && r.RelationshipType == ObsObjectRelationshipType.ProvidesData).ToList();
+                    if (entityDataRelationshipsParamTarget.Count > 0)
+                    {
+                        @Html.Raw(String.Format("📝This>Param: {0} <br/>", entityDataRelationshipsParamTarget.Count));
+                    }
+                    List<ObjectRelationship> entityLinkRelationshipsTarget = entityRelationshipsTarget.Where(r => r.RelationshipType == ObsObjectRelationshipType.Linked).ToList();
+                    if (entityLinkRelationshipsTarget.Count > 0)
+                    {
+                        @Html.Raw(String.Format("🔗This>Link {0} ", entityLinkRelationshipsTarget.Count))
+                    }
+                }                
+            </td>
+            <td>
+                @if (entityParamDataRelationshipsSource.Count > 0)
+                {
+                    foreach(ObjectRelationship relationship in entityParamDataRelationshipsSource)
+                    {
+                        @Html.Raw(String.Format("{0} (${1}) <br/>", relationship.RelatedObject.name, relationship.RelatedObject.id));
+                    }
+                }
+            </td>
+        </tr>
     }
-    <a href="#top">Back to Top</a>
-</p>
+</table>
 
 <table>
     @foreach (ObsStage entity in Model.CurrentDashboard.Stages)
     {
         <tr id="@entity.id">
-            <td>Name</td>
-            <td>@entity.name (@entity.id)
-                <a href="#Stages">Back to Stages</a>
-                <a href="#top">Back to Top</a>
-            </td>
-        </tr>
-        <tr>
-            <td>Type</td>
-            <td>@entity.type is 
+            <td>Stage</td>
+            <td>
+                @entity.name (@entity.id)
+                @Html.Raw(entity.type switch {"table" => "📑", "timeseries" => "📉", "bar" => "📊", "circular" => "🥧", "stacked_area" => "🗻", "singlevalue" => "#️⃣", "list" => "📜", "valueovertime" => "⏳", "gantt" => "📐", _ => ""}) @entity.type
                 @if(@entity.visible)
                 {
                     @Html.Raw("👁️ visible")
@@ -199,12 +314,10 @@
                 {
                     @Html.Raw("🙈 hidden")
                 }
+                <a href="#Stages">Back to Stages</a>
+                <a href="#top">Back to Top</a>
             </td>
         </tr>
-        <tr>
-            <td>Preview</td>
-            <td><img src="@entity.thumbnail" /></td>
-        </tr>        
         <tr>
             <td>⏫ Inputs</td>
             <td>
@@ -255,6 +368,22 @@
                                 <td>@objectRelationship.RelationshipType</td>
                                 <td>@objectRelationship.name</td>
                             </tr>
+                        }
+                        else if (objectRelationship.RelatedObject is ObsParameter)
+                        {
+                            ObsParameter entityRelated = (ObsParameter)objectRelationship.RelatedObject;
+
+                            <tr>
+                                <td><a href="#Parameters">🔧 Details</a></td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                                <td>🔧 Parameter</td>
+                                <td>👋 User</td>
+                                <td>$@entityRelated.id</td>
+                                <td>@entityRelated.name</td>
+                                <td>@objectRelationship.RelationshipType</td>
+                                <td>@objectRelationship.name</td>
+                            </tr>                                
                         }
                     }
                 </table>
@@ -308,6 +437,10 @@
                 </td>
             </tr>
         }
+        <tr>
+            <td>Preview</td>
+            <td><img src="@entity.thumbnail" /></td>
+        </tr>        
         <tr>
             <td colspan="2"><pre><code class="language-javascript">@entity.pipeline</code></pre></td>
         </tr>

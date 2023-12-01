@@ -7,8 +7,11 @@ namespace Observe.EntityExplorer.DataObjects
         public string package { get; set; }
         public string iconUrl { get; set; }
 
-        public List<ObsStage> Stages { get; set; } = new List<ObsStage>(0);
+        public List<ObsStage> Stages { get; set; } = new List<ObsStage>(8);
         public Dictionary<string, ObsStage> AllStagesDict { get; set; }
+
+        public List<ObsParameter> Parameters { get; set; } = new List<ObsParameter>(0);
+        public Dictionary<string, ObsParameter> AllParametersDict { get; set; }
 
         public List<ObjectRelationship> ExternalObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
         public List<ObjectRelationship> StageObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
@@ -147,10 +150,13 @@ namespace Observe.EntityExplorer.DataObjects
             }
         }
 
-        public void AddStages(Dictionary<string, ObsDataset> allDatasetsDict)
+        public void AddStagesAndParameters(Dictionary<string, ObsDataset> allDatasetsDict)
         {
             JObject entityObject = this._raw;
 
+            JObject layoutObject = (JObject)JSONHelper.getJTokenValueFromJToken(this._raw, "layout");
+
+            // First do the stages
             JArray stagesArray = (JArray)JSONHelper.getJTokenValueFromJToken(entityObject, "stages");
             if (stagesArray != null)
             {
@@ -163,7 +169,6 @@ namespace Observe.EntityExplorer.DataObjects
                 
                 // Check the stage visibility
                 // layout.sections[].items[].card.stageId are all visible
-                JObject layoutObject = (JObject)JSONHelper.getJTokenValueFromJToken(this._raw, "layout");
                 if (layoutObject != null)
                 {
                     JObject gridLayoutObject = (JObject)JSONHelper.getJTokenValueFromJToken(layoutObject, "gridLayout");
@@ -199,13 +204,42 @@ namespace Observe.EntityExplorer.DataObjects
                         }
                     }
                 }
+            }
 
-                // Link the stages to stages and datasets
-                foreach (ObsStage stage in this.Stages)
+            // Let's do the parameters. There is a list in dashboard.parameters, but the one in dashboard.layout.stageListLayout.parameters is better
+            if (layoutObject != null)
+            {
+                JObject stageListLayoutObject = (JObject)JSONHelper.getJTokenValueFromJToken(layoutObject, "stageListLayout");
+                if (stageListLayoutObject != null)
                 {
-                    stage.PopulateExternalDatasetAndInternalStageRelationships(allDatasetsDict, this.AllStagesDict);
-                    this.StageObjectRelationships.AddRange(stage.ExternalObjectRelationships);
+                    JArray parametersArray = (JArray)JSONHelper.getJTokenValueFromJToken(stageListLayoutObject, "parameters");
+                    if (parametersArray != null)
+                    {
+                        // Populate the parameters
+                        foreach (JObject parameterObject in parametersArray)
+                        {
+                            this.Parameters.Add(new ObsParameter(parameterObject, this, allDatasetsDict, this.AllStagesDict));
+                        }
+                        this.AllParametersDict = this.Parameters.ToDictionary(p => p.id, p => p);
+                    }
                 }
+            }
+
+            // Link the stages to stages, parent datasets and parameters they may use
+            foreach (ObsStage stage in this.Stages)
+            {
+                // Stage to stage
+                // Stage to dataset
+                stage.PopulateExternalDatasetInternalStageRelationships(allDatasetsDict, this.AllStagesDict, this.Parameters);
+                // Which stages use this parameter
+                stage.PopulateParametersRelationships(this.Parameters);
+                this.StageObjectRelationships.AddRange(stage.ExternalObjectRelationships);
+            }
+
+            // Link the parameters to stages and parent datasets
+            foreach (ObsParameter parameter in this.Parameters)
+            {
+                this.StageObjectRelationships.AddRange(parameter.ExternalObjectRelationships);
             }
         }
 

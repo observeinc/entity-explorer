@@ -63,6 +63,8 @@ public class ConnectionController : Controller
                         //this.CommonControllerMethods.SaveCurrentUser(currentUser);
                         viewModel.CurrentUser = currentUser;
 
+                        Activity.Current.AddTag("currentUser", currentUser.ToString());
+
                         return RedirectToAction("Index", "Home", new {userid = currentUser.UniqueID});
 
                     }

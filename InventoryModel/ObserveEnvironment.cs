@@ -31,7 +31,17 @@ namespace Observe.EntityExplorer
         public Dictionary<string, ObsDashboard> AllDashboardsDict { get; set; }
         public Dictionary<string, ObsWorksheet> AllWorksheetsDict { get; set; }
         public Dictionary<string, ObsMonitor> allMonitorsDict { get; set; }
-        
+
+        public override string ToString()
+        {
+            return String.Format(
+                "{0} ({1}) in {2} is at {3} loaded on {4:u}",
+                this.CustomerLabel,
+                this.CustomerName,
+                this.Deployment,
+                this.CustomerEnvironmentUrl,
+                this.LoadedOn);
+        }         
         public ObserveEnvironment () {}
 
         public ObserveEnvironment(AuthenticatedUser currentUser)
@@ -63,9 +73,7 @@ namespace Observe.EntityExplorer
             // Enrich their parameters and relationships
             foreach (ObsDashboard dashboard in allDashboards)
             {
-                dashboard.AddStages(this.AllDatasetsDict);
-                // dashboard.AddRelatedKeys(this.AllDatasetsDict);
-                // dashboard.AddForeignKeys(this.AllDatasetsDict);
+                dashboard.AddStagesAndParameters(this.AllDatasetsDict);
                 dashboard.PopulateExternalDatasetRelationships(this.AllDatasetsDict);
                 this.ObjectRelationships.AddRange(dashboard.ExternalObjectRelationships);
             }
@@ -286,45 +294,66 @@ namespace Observe.EntityExplorer
                         var stagesGroupedByParentDatasetOrDashboard = allStages.GroupBy(d => d.Parent);
                         foreach (var stagesGroupedByParentDatasetOrDashboardGroup in stagesGroupedByParentDatasetOrDashboard)
                         {
-                            ObsCompositeObject parentDatasetOrDashboardOrWorksheetOfThisGroup = stagesGroupedByParentDatasetOrDashboardGroup.Key;
-                            if (parentDatasetOrDashboardOrWorksheetOfThisGroup is ObsDataset)
+                            ObsCompositeObject parentObjectOfThisGroup = stagesGroupedByParentDatasetOrDashboardGroup.Key;
+                            if (parentObjectOfThisGroup is ObsDataset)
                             {
-                                ObsDataset parentDatasetOfThisGroup = (ObsDataset)parentDatasetOrDashboardOrWorksheetOfThisGroup;
-                                List<ObsStage> allStagesInGroup = stagesGroupedByParentDatasetOrDashboardGroup.ToList();
+                                ObsDataset parentDataset = (ObsDataset)parentObjectOfThisGroup;
 
-                                sb.AppendFormat("  subgraph cluster_dataset_{0} {{", getGraphVizNodeName(parentDatasetOfThisGroup, false)).AppendLine();
-                                sb.AppendFormat("    label=\"🎈🎫 Dataset {0}\" style=\"filled\" fillcolor=\"lavender\"", WebUtility.HtmlEncode(parentDatasetOfThisGroup.name)).AppendLine();
-                                sb.AppendFormat("    {0}", getGraphVizNodeDefinition(parentDatasetOfThisGroup)).AppendLine();
-                                foreach(ObsStage stage in allStagesInGroup)
+                                sb.AppendFormat("  subgraph cluster_dataset_{0} {{", getGraphVizNodeName(parentDataset, false)).AppendLine();
+                                sb.AppendFormat("    label=\"🎈🎫 Dataset {0}\" style=\"filled\" fillcolor=\"lavender\"", WebUtility.HtmlEncode(parentDataset.name)).AppendLine();
+                                sb.AppendFormat("    {0}", getGraphVizNodeDefinition(parentDataset)).AppendLine();
+                                sb.AppendFormat("    // Stages").AppendLine();
+                                foreach(ObsStage stage in parentDataset.Stages)
                                 {
                                     sb.AppendFormat("    {0}", getGraphVizNodeDefinition(stage)).AppendLine();
                                 }
                                 sb.AppendLine("  }");
                             }
-                            else if (parentDatasetOrDashboardOrWorksheetOfThisGroup is ObsDashboard)
+                            else if (parentObjectOfThisGroup is ObsDashboard)
                             {
-                                ObsDashboard parentDashboardOfThisGroup = (ObsDashboard)parentDatasetOrDashboardOrWorksheetOfThisGroup;
-                                List<ObsStage> allStagesInGroup = stagesGroupedByParentDatasetOrDashboardGroup.ToList();
+                                ObsDashboard parentDashboard = (ObsDashboard)parentObjectOfThisGroup;
 
-                                sb.AppendFormat("  subgraph cluster_dashboard_{0} {{", getGraphVizNodeName(parentDashboardOfThisGroup, false)).AppendLine();
-                                sb.AppendFormat("    label=\"🎈📈 Dashboard {0}\" style=\"filled\" fillcolor=\"lavender\"", WebUtility.HtmlEncode(parentDashboardOfThisGroup.name)).AppendLine();
-                                sb.AppendFormat("    {0}", getGraphVizNodeDefinition(parentDashboardOfThisGroup)).AppendLine();
-                                foreach(ObsStage stage in allStagesInGroup)
+                                sb.AppendFormat("  subgraph cluster_dashboard_{0} {{", getGraphVizNodeName(parentDashboard, false)).AppendLine();
+                                sb.AppendFormat("    label=\"🎈📈 Dashboard {0}\" style=\"filled\" fillcolor=\"lavender\"", WebUtility.HtmlEncode(parentDashboard.name)).AppendLine();
+                                sb.AppendFormat("    {0}", getGraphVizNodeDefinition(parentDashboard)).AppendLine();
+
+                                if (parentDashboard.Parameters.Count > 0)
+                                {
+                                    sb.AppendFormat("    // Parameters").AppendLine();
+                                    sb.AppendFormat("    subgraph cluster_dashboard_{0}_parameters {{", getGraphVizNodeName(parentDashboard, false)).AppendLine();
+                                    sb.AppendFormat("    label=\"Parameters ({0})\"", parentDashboard.Parameters.Count).AppendLine();
+                                    foreach(ObsParameter parameter in parentDashboard.Parameters)
+                                    {
+                                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(parameter)).AppendLine();
+                                    }
+                                    sb.AppendLine("    }");
+                                }
+
+                                sb.AppendFormat("    // Stages").AppendLine();
+                                foreach(ObsStage stage in parentDashboard.Stages)
                                 {
                                     sb.AppendFormat("    {0}", getGraphVizNodeDefinition(stage)).AppendLine();
                                 }
+
                                 sb.AppendLine("  }");
                             }
-                            else if (parentDatasetOrDashboardOrWorksheetOfThisGroup is ObsWorksheet)
+                            else if (parentObjectOfThisGroup is ObsWorksheet)
                             {
+                                ObsWorksheet parentWorksheet = (ObsWorksheet)parentObjectOfThisGroup;
+                                
                                 throw new NotImplementedException("ObsWorksheet grouping not implemented yet");
                             }
                             else
                             {
-                                // Something else?
+                                // What else can it be?
+                                throw new NotImplementedException(String.Format("{0} is not a container object type that is supported", parentObjectOfThisGroup.GetType()));
                             }
                         }
 
+                        break;
+
+                    case "ObsParameter":
+                        // fall through. Parameters handled via Stages right above
                         break;
 
                     case "ObsDashboard":
@@ -519,7 +548,7 @@ namespace Observe.EntityExplorer
                     break;
 
                  case "gantt":
-                    // Until we expose this in product I am not displaying an icon
+                    nodeIcon = "📐";
                     break;
 
                 default:
@@ -533,7 +562,6 @@ namespace Observe.EntityExplorer
                 nodeIcon = String.Format("{0}🙈", nodeIcon);
             }
 
-
             if (stage.Parent is ObsDataset)
             {
                 if (stage == ((ObsDataset)stage.Parent).OutputStage)
@@ -544,19 +572,75 @@ namespace Observe.EntityExplorer
 
             string nodeShape = "parallelogram";
 
-            // Put 1KB of OPAL into the tooltip
-            string toolTip = stage.pipeline;
-            int truncateTo = 1024 - 8;
-            if (toolTip.Length > truncateTo)
+            // Put ~1KB of OPAL into the tooltip, and add length and number of lines
+            StringBuilder toolTip = new StringBuilder(1024-32);
+            int truncateTo = 1024 - 32;
+            if (stage.pipeline.Length > truncateTo)
             {
-                toolTip = String.Format("{0}...{1}", toolTip.Substring(0, truncateTo), toolTip.Length);
+                toolTip.Append(stage.pipeline.Substring(0, truncateTo));
+                toolTip.Append("...");
             }
-
+            else
+            {
+                toolTip.Append(stage.pipeline);
+            }
+            toolTip.AppendLine();
+            toolTip.AppendFormat("Len:{0} ", stage.pipeline.Length);
+            toolTip.AppendFormat("Lines:{0}", stage.pipeline.Split("\n").Length);
+            
             return String.Format("{0} [label=\"{1}{2} [{3}]\" shape=\"{4}\" color=\"{5}\" tooltip=\"{6}\"]", 
                 getGraphVizNodeName(stage), 
                 nodeIcon, 
                 WebUtility.HtmlEncode(wordWrap(stage.name, 16, new char[] { ' '})), 
                 stage.type,
+                nodeShape, 
+                nodeColor, 
+                WebUtility.HtmlEncode(toolTip.ToString()));
+        }
+
+        private string getGraphVizNodeDefinition(ObsParameter parameter)
+        {
+            string nodeIcon = "❓";
+
+            switch (parameter.viewType)
+            {
+                case "resource-input":
+                    nodeIcon = "🛆";
+                    break;
+
+                case "single-select":
+                    nodeIcon = "⛛";
+                    break;
+
+                case "text":
+                    nodeIcon = "🔤";
+                    break;
+
+                case "numeric":
+                    nodeIcon = "#️⃣";
+                    break;
+
+                case "input":
+                    nodeIcon = "🌫️";
+                    break;
+
+                default:
+                    break;
+            }
+
+            // TODO maybe change color based on the source of the parameter (Dataset, Stage, UserInput)
+            string nodeColor = "black";
+
+            string nodeShape = "ellipse";
+
+            string toolTip = String.Format("Source Column: {0}, Default Value: {1}", parameter.sourceColumn, parameter.defaultValue);
+
+            return String.Format("{0} [label=\"{1}{2} (${3}) [{4}]\" shape=\"{5}\" color=\"{6}\" tooltip=\"{7}\"]", 
+                getGraphVizNodeName(parameter), 
+                nodeIcon, 
+                WebUtility.HtmlEncode(wordWrap(parameter.name, 16, new char[] { ' '})),
+                WebUtility.HtmlEncode(parameter.id),
+                parameter.dataType,
                 nodeShape, 
                 nodeColor, 
                 WebUtility.HtmlEncode(toolTip));
@@ -581,6 +665,7 @@ namespace Observe.EntityExplorer
                 return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\"]", getGraphVizNodeName(dashboard), nodeIcon, WebUtility.HtmlEncode(dashboard.name.Replace("/", "/\n")), nodeShape, nodeColor);
             }
         }
+
         private string getGraphVizEdgeDefinition(ObjectRelationship relationship)
         {
             string edgeColor = "black";
@@ -592,6 +677,10 @@ namespace Observe.EntityExplorer
 
                 case ObsObjectRelationshipType.Linked:
                     edgeColor = "blue";
+                    break;
+
+                case ObsObjectRelationshipType.ProvidesParameter:
+                    edgeColor = "burlywood";
                     break;
 
                 default:
@@ -625,15 +714,19 @@ namespace Observe.EntityExplorer
             }
             else if (interestingObject is ObsMonitor)
             {
-                return String.Format("{0}MO_{1}{0}", quoteCharacter, interestingObject.id);
+                return String.Format("{0}MON_{1}{0}", quoteCharacter, interestingObject.id);
             }
             else if (interestingObject is ObsWorksheet)
             {
-                return String.Format("{0}WS_{1}{0}", quoteCharacter, interestingObject.id);
+                return String.Format("{0}WKS_{1}{0}", quoteCharacter, interestingObject.id);
             }
             else if (interestingObject is ObsStage)
             {
-                return String.Format("{0}ST_{1}_{2}{0}", quoteCharacter, ((ObsStage)interestingObject).Parent.id, interestingObject.id);
+                return String.Format("{0}STG_{1}_{2}{0}", quoteCharacter, ((ObsStage)interestingObject).Parent.id, interestingObject.id);
+            }
+            else if (interestingObject is ObsParameter)
+            {
+                return String.Format("{0}PRM_{1}_{2}{0}", quoteCharacter, ((ObsParameter)interestingObject).Parent.id, interestingObject.id);
             }
 
             return String.Empty;

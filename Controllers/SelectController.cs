@@ -48,6 +48,9 @@ public class SelectController : Controller
                 ViewData["ErrorMessage"] = "Unable to retrieve the Observe Environment from cache or server";
             }
 
+            Activity.Current.AddTag("currentUser", currentUser.ToString());
+            Activity.Current.AddTag("observeEnvironment", observeEnvironment.ToString());
+
             return View(new BaseViewModel(currentUser, observeEnvironment));
         }
         catch (Exception ex)
@@ -132,6 +135,9 @@ public class SelectController : Controller
             {
                 ViewData["ErrorMessage"] = "Unable to retrieve the Observe Environment from cache or server";
             }
+
+            Activity.Current.AddTag("currentUser", currentUser.ToString());
+            Activity.Current.AddTag("observeEnvironment", observeEnvironment.ToString());
 
             return View(new BaseViewModel(currentUser, observeEnvironment));
         }
