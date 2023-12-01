@@ -49,7 +49,7 @@ namespace Observe.EntityExplorer
                         .AddService(serviceName, null, serviceVersion )
                         .AddAttributes(getOTELResourceAttributes())
                         .AddEnvironmentVariableDetector())
-                        .AddConsoleExporter()
+                        //.AddConsoleExporter()
                         .AddOtlpExporter(opt =>
                         {
                             if (observeEndpoint != null && observeToken != null)
@@ -66,7 +66,7 @@ namespace Observe.EntityExplorer
                     .WithTracing(tracing => tracing
                         .AddAspNetCoreInstrumentation()
                         .AddHttpClientInstrumentation()
-                        .AddConsoleExporter()
+                        //.AddConsoleExporter()
                         .AddOtlpExporter(opt =>
                         {
                             if (observeEndpoint != null && observeToken != null)
