@@ -2,20 +2,21 @@
 
 Observe Entity Explorer allows discovery of dependencies between Observe objects (datasets, worksheets, dashboards, monitors, stages, parameters).
 
+![Dataset Graph](/docs/screenshots/details/dataset/DatasetDependencies.png?raw=true)
+
 ## Install Application
 
-Observe Entity Explorer can run on Windows, Mac or most Linux distributions. 
-
-Files are in [Releases](../../releases/latest).
+Observe Entity Explorer can run on Windows, Mac or Linux. Compiled are in [Releases](../../releases/latest).
 
 ### Install on OSX
 
-1. Install .NET 7.0 SDK
+1. Install .NET 8.0 SDK
 
-    * [Microsoft Downloads web site](https://dotnet.microsoft.com/en-us/download/dotnet/7.0) with all instructions, or:
-        * [x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-7.0.402-macos-x64-installer) installer
-        * [arm64 (M1/M2)](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-7.0.402-macos-arm64-installer) installer
-    * Run through the installer 
+    * Download [Microsoft Downloads web site](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) with all instructions, or:
+        * Direct [x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-8.0.100-macos-x64-installer) installer
+        * Direct [arm64 (M1/M2)](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-8.0.100-macos-arm64-installer) installer
+    * OR
+    * Homebrew [brew install dotnet](https://formulae.brew.sh/cask/dotnet)
 
 2. Download [Releases](../../releases/latest)\ `observe-entity-explorer.osx-x64.<version>.zip` for Intel or `observe-entity-explorer.osx-arm64.<version>.zip` for M1/M2 machines, but do not extract the archive yet.
 
@@ -57,19 +58,44 @@ Files are in [Releases](../../releases/latest).
 
 ### Install on Linux
 
-Download [Releases](../../releases/latest)\ `observe-entity-explorer.linux.<version>.zip`, extract the archive and run `observe-entity-explorer`
+1. Download [Releases](../../releases/latest)\ `observe-entity-explorer.linux-x64.<version>.zip`
 
-1. Extract the archive:
+2. Extract the archive:
 
     ```console
     unzip observe-entity-explorer.linux*.zip
     ```
 
-2. Run the application from the extracted folder:
+3. Run the application from the extracted folder:
 
     ```console
     ./observe-entity-explorer
     ```
+
+## Run from Source
+
+You can also run it from source.
+
+First, install .NET 8.0 SDK from [Microsoft Downloads web site](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
+
+Then clone, build and run:
+
+```bash
+# Clone repo to local folder
+git clone https://github.com/observeinc/entity-explorer entity-explorer
+
+# Change to local folder
+cd entity-explorer
+
+# For Win and Linux, build the project into single self-contained binary. Choose the right runtime
+dotnet publish observe-entity-explorer.csproj --self-contained --runtime <linux-x64|win-x64> -p:PublishSingleFile=true -o bin/publish/entity-explorer
+
+# For OSX, build the project into multiple files to be ran by dotnet command later. Choose the right runtime
+dotnet publish observe-entity-explorer.csproj --self-contained --runtime <osx-x64|osx-arm64> -p:PublishSingleFile=false -o bin/publish/entity-explorer
+
+# Run the application from where it was published to
+bin/publish/entity-explorer/observe-entity-explorer & 
+```
 
 ## Usage
 
@@ -78,7 +104,7 @@ Download [Releases](../../releases/latest)\ `observe-entity-explorer.linux.<vers
 When application starts, it opens a web interface at http://localhost:50110. Open that web site in your web browser:
 
 ```console
-./observe-entity-explorer.exe
+./observe-entity-explorer
 
 info: Microsoft.Hosting.Lifetime[0]
       Now listening on: http://localhost:50110
@@ -92,17 +118,25 @@ info: Microsoft.Hosting.Lifetime[0]
 
 ## Connect
 
-Authenticate with:
+Authenticate options:
 
-* Full URL of the environment `https://#####.observeinc.com`
-* Just customer ID of the environment `#####`. Production URL `observeinc.com` is assumed
-* Host name `#####.observeinc.com`
+* Account
+  * Full URL of the environment `https://#####.observeinc.com`
+  * Just customer ID of the environment `#####`. Production URL `observeinc.com` is assumed
+  * Host name `#####.observeinc.com`
+* Username
+  * Typically it is your email
+* Password
+  * Specify your password
+* Token
+  * Specify your API token if you have one
+  * Specify token taken from the GraphQL Bearer authentication in your browser devtools
 
 ![Connect](/docs/screenshots/authetication/ConnectNew.png?raw=true)
 
 ## Multiple Accounts
 
-Your connections are saved. You can switch between them any time. 
+Your connections are saved. You can switch between them any time.
 
 You can open new tab with different connection ID.
 
@@ -112,6 +146,8 @@ You can open new tab with different connection ID.
 
 Summary screen shows basic statistics about types of entities in your Observe environment and links to the [Dataset List](#dataset-list) [Dashboard List](#dashboard-list) for getting more details.
 
+You can also see the entire tree of relationships of all objects in All Relationships button.
+
 ![Environment Summary](/docs/screenshots/summary/EnvironmentSummary.png?raw=true)
 
 ## Dataset List
@@ -120,14 +156,15 @@ Select Dataset screen shows all datasets grouped by type (DataStream, Event, Res
 
 Column | Description
 -- | --
-Details | Open the [Dataset Details](#dataset-detail) page
+Details | Open the [Dataset Detail](#dataset-detail) page
 View | Open object page in Observe
 Edit | Open object page in Observe in edit mode
 Type | Type of object (`Event`, `Resource`, `Interval`)
 Origin | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
 ID | Object ID
 Name | Object Name
-Component | Fields, primary and foregn keys, related keys
+Desc | Description label, if present
+Components | Fields, primary and foregn keys, related keys
 Uses | What this object uses as data inputs and data links
 Used By | What uses this object (`Data`, `Dashboard`, `Monitor`)
 Created | Who and when created this object
@@ -141,7 +178,7 @@ Select Dashboard screen shows all dashboards.
 
 Column | Description
 -- | --
-Details | Links to the [Dashboard Details](#dashboard-detail) page
+Details | Links to the [Dashboard Detail](#dashboard-detail) page
 View | Open object page in Observe
 Edit | Open object page in Observe in edit mode
 Origin | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
@@ -157,13 +194,34 @@ Updated | Who and when updates this object last
 
 ![Dashboard List](/docs/screenshots/list/dashboard/SelectDashboard.png?raw=true)
 
-## Dataset Detail
+## Monitor List
 
-![Dataset Detail](/docs/screenshots/details/dataset/DatasetDetails.png?raw=true)
+Select Monitor screen shows all monitors.
+
+Column | Description
+-- | --
+Details | Links to the [Monitor Detail](#monitor-detail) page
+Notif | Open notification list page in Observe
+Edit | Open object page in Observe in edit mode
+Type | Type of the monitor (`Count`, `Promote`, `Threshold`, `Facet`, `Log`)
+Origin | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
+ID | Object ID
+Name | Object Name
+Comm. | Comment if it exists
+Enabled | Is the monitor enabled
+Actions | Number of actions in monitor
+Stages | Number of stages in monitor
+Uses | What this object uses as data inputs and data links
+Created | Who and when created this object
+Updated | Who and when updates this object last
+
+![Monitor List](/docs/screenshots/list/monitor/SelectMonitor.png?raw=true)
+
+## Dataset Detail
 
 ### Summary - Dataset
 
-Summary information about the Dataset.
+Summary information about the dataset.
 
 Section | Description
 -- | --
@@ -181,15 +239,21 @@ Related Key | List of related keys
 Foreign Key | List of foreign keys
 Acceleration | Dataset acceleration settings
 
-### Ancestors
+![Dataset Details](/docs/screenshots/details/dataset/DatasetDetails.png?raw=true)
+
+### Ancestors - Dataset
 
 List of all datasets feeding data into this dataset.
 
-### Descendants
+![Dataset Ancestors](/docs/screenshots/details/dataset/DatasetAncestors.png?raw=true)
+
+### Descendants - Dataset
 
 List of all datasets using data from this dataset.
 
-### Related Datasets Graph
+![Dataset Descendants](/docs/screenshots/details/dataset/DatasetDescendants.png?raw=true)
+
+### Related Datasets Graph - Dataset
 
 Visual diagram showing relationship between datasets and dashboards related to this dataset.
 
@@ -197,14 +261,29 @@ Visual diagram showing relationship between datasets and dashboards related to t
 
 ### Stages - Dataset
 
-Information about each Stage in the Dataset.
+Information about each stage in the dataset.
+
+Section | Description
+-- | --
+Details | Link to the Stage in the subsequent List
+Type | Type of the stage (`table`, `graph` etc)
+Name | Name of the stage
+ID | ID of the stage
+Uses | Objects providing data and links to this stage
+Used By | Objects this stage is providing data and links to
+
+![Dataset Stages List](/docs/screenshots/details/dataset/DatasetStagesList.png?raw=true)
+
+This table is followed by the repeated sections for each stage, containing:
 
 Section | Description
 -- | --
 Name | Object name and ID
 Inputs | Objects providing data and links to this stage
-Inputs | Objects this stage is providing data and links
+Used By | Objects this stage is providing data and links to
 OPAL | The OPAL pipeline for this stage
+
+![Dataset Stage Detail](/docs/screenshots/details/dataset/DatasetStageDetail.png?raw=true)
 
 ### Stages Graph - Dataset
 
@@ -214,37 +293,139 @@ Visual diagram showing relationship between inputs and stages of this dataset.
 
 ### Related Dashboards
 
-## Dashboard Detail
+List of all dashboards using this dataset.
 
-![Dataset Detail](/docs/screenshots/details/dashboard/DashboardDetails.png?raw=true)
+![Dataset Related Dashboards](/docs/screenshots/details/dataset/DatasetRelatedDashboards.png?raw=true)
+
+### Related Monitors
+
+List of all monitors using this dataset.
+
+![Dataset Related Dashboards](/docs/screenshots/details/dataset/DatasetRelatedMonitors.png?raw=true)
+
+## Dashboard Detail
 
 ### Summary - Dashboard
 
-Summary information about the Dashboard.
+Summary information about the dashboard.
 
 Section | Description
 -- | --
 Observe | Open object page in Observe
 Name | Object name and ID
 Source | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
-Components | Number of various components in dashboaard
+Components | Number of various components in dashboard
 Created | Who and when created this object
 Updated | Who and when updates this object last
 
+![Dashboard Details](/docs/screenshots/details/dashboard/DashboardDetails.png?raw=true)
+
+### Ancestors/Inputs - Dashboard
+
+List of all datasets feeding data into this dashboard.
+
+### Related Datasets - Dashboard
+
+Visual diagram showing relationship between datasets related to this dashboard.
+
+![Dataset Graph](/docs/screenshots/details/Dashboard/DashboardDependencies.png?raw=true)
+
+### Parameters - Dashboard
+
+Information about each parameter in the dashboard.
+
+Section | Description
+-- | --
+Name | Display name of parameter
+ID | ID of parameter
+Type | Type of parameter (`resource-input`, `single-select`, `text`, `numeric`, `input`)
+Data Type | Data Type of parameter ()
+Source Type | What kind of object is providing data to this parameter (`Dataset`, `Stage` or empty for text entry)
+Source Object | Link to the object that is used as input
+Source Column | The name of the column in the dataset or stage that is being used as value in the drop-down
+Default Value | Default value, if specified
+Allow Empty | Is empty value allowed
+
+![Dashboard Parameters](/docs/screenshots/details/dashboard/DashboardParameters.png?raw=true)
+
 ### Stages - Dashboard
 
-Information about each Stage in the Dashboard.
+Information about each stage in the dashboard.
+
+Section | Description
+-- | --
+Details | Link to the stage in the subsequent list
+Type | Type of the stage (`table`, `graph` etc)
+Name | Name of the stage
+ID | ID of the stage
+Uses | Objects providing data and links to this stage
+Used By | Objects this stage is providing data and links to
+Params | Which parameters are being used by the stage
+
+![Dashboard Stages](/docs/screenshots/details/dashboard/DashboardStages.png?raw=true)
+
+This table is followed by the repeated sections for each stage, containing:
 
 Section | Description
 -- | --
 Name | Object name and ID
 Inputs | Objects providing data and links to this stage
-Inputs | Objects this stage is providing data and links
+Used By | Objects this stage is providing data and links to
 OPAL | The OPAL pipeline for this stage
+
+![Dashboard Stage Detail](/docs/screenshots/details/dashboard/DashboardStageDetail.png?raw=true)
 
 ### Stages Graph - Dashboard
 
 Visual diagram showing relationship between inputs and stages of this dashboard.
+
+![Dashboard Stages Graph](/docs/screenshots/details/dashboard/DashboardStageDependencies.png?raw=true)
+
+## Monitor Detail
+
+### Summary - Monitor
+
+Summary information about the monitor.
+
+Section | Description
+-- | --
+Observe | Open object page in Observe
+Name | Object name and ID
+Comment | Comment if present
+Type | Type of the monitor
+Source | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
+Components | Number of various components in dashboard
+Enabled | Is this monitor enabled
+Template | Is this monitor template
+Created | Who and when created this object
+Updated | Who and when updates this object last
+Settings | Monitor settings
+Notifications | Monitor notification settings
+Info | Monitor detail information
+
+![Monitor Details](/docs/screenshots/details/monitor/MonitorDetails.png?raw=true)
+
+### Ancestors - Monitor
+
+List of all datasets providing data to this monitor.
+
+![Monitor Ancestors](/docs/screenshots/details/monitor/MonitorAncestors.png?raw=true)
+
+### Supporting - Monitor
+
+List of all datasets supporting this monitor.
+
+![Monitor Ancestors](/docs/screenshots/details/monitor/MonitorSupporting.png?raw=true)
+
+### Related Datasets Graph - Monitor
+
+Visual diagram showing relationship between datasets related to this monitor.
+
+![Dataset Graph](/docs/screenshots/details/monitor/MonitorDependencies.png?raw=true)
+
+### Stages - Monitor
+
+Information about each stage in the monitor.
 
 ## Logging
 

@@ -14,14 +14,16 @@
     return;
 }
 
-<h1>📈 Select Dashboard and Action</h1>
+<p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
 
+<h1>📈 Select Dashboard and Action</h1>
+@* 
 <p>
     @using (Html.BeginForm("Dashboard", "Select", FormMethod.Post))
     {
         <button type="submit" id="buttonExportToExcel" name="buttonExportToExcel" value="Export to Excel">Export to Excel <img src="https://cdn-dynmedia-1.microsoft.com/is/image/microsoftcorp/Icon_Excel_2x_RE2Xztz?resMode=sharp2&op_usm=1.5,0.65,15,0&wid=64&hei=64&qlt=99&fit=constrain" /></button>
     }
-</p>
+</p> *@
 
 @{
     List<ObsCompositeObject> selectedDashboards = Model.ObserveEnvironment.ObserveObjects.Where(o => (o.ObjectType & ObsCompositeObjectType.Dashboard) == ObsCompositeObjectType.Dashboard).ToList();
@@ -35,6 +37,7 @@
         <th>Origin</th>
         <th>ID</th>
         <th>Name</th>
+        <th>Desc.</th>
         <th>Sections</th>
         <th>Widgets</th>
         <th>Stages</th>
@@ -52,6 +55,12 @@
             <td>@Html.Raw(entity.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"})@entity.OriginType</td>
             <td>@entity.id</td>
             <td>@entity.name</td>
+            <td>
+                @if (entity.description.Length > 0)
+                {
+                    <span title="@entity.description">📝</span> 
+                }
+            </td>
             <td>@entity.NumSections</td>
             <td>@entity.NumWidgets</td>
             <td>@entity.NumStages</td>

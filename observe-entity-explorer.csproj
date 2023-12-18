@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Observe.EntityExplorer</RootNamespace>
     <ApplicationIcon>AppIcon.ico</ApplicationIcon>
 
-    <Version>2023.12.1.0</Version>
-    <FileVersion>2023.12.1.0</FileVersion>
-    <AssemblyVersion>2023.12.1.0</AssemblyVersion>
+    <Version>2023.12.18.0</Version>
+    <FileVersion>2023.12.18.0</FileVersion>
+    <AssemblyVersion>2023.12.18.0</AssemblyVersion>
     <Authors>Daniel Odievich (daniel.odievich@observeinc.com)</Authors>
     <Company>Observe Inc.</Company>
     <Product>Observe Entity Explorer</Product>

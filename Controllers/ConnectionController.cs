@@ -52,8 +52,12 @@ public class ConnectionController : Controller
                     {
                         // Authenticate user from credentials
                         AuthenticatedUser currentUser = null;
-                        currentUser = authenticateUser(HttpContext.Request.Form["textBoxEnvironment"], HttpContext.Request.Form["textBoxUsername"], HttpContext.Request.Form["textBoxPassword"]);
-                                                                
+                        currentUser = authenticateUser(
+                            HttpContext.Request.Form["textBoxEnvironment"], 
+                            HttpContext.Request.Form["textBoxUsername"], 
+                            HttpContext.Request.Form["textBoxPassword"],
+                            HttpContext.Request.Form["textBoxToken"]);
+
                         // Cache this user in all environments list
                         viewModel.AllUsers.Add(currentUser);
                         viewModel.AllUsers = viewModel.AllUsers.DistinctBy(u => u.UniqueID).ToList();
@@ -63,7 +67,7 @@ public class ConnectionController : Controller
                         //this.CommonControllerMethods.SaveCurrentUser(currentUser);
                         viewModel.CurrentUser = currentUser;
 
-                        Activity.Current.AddTag("currentUser", currentUser.ToString());
+                        CommonControllerMethods.enrichTrace(currentUser);
 
                         return RedirectToAction("Index", "Home", new {userid = currentUser.UniqueID});
 
@@ -115,7 +119,7 @@ public class ConnectionController : Controller
         }
     }
 
-    private AuthenticatedUser authenticateUser(string environment, string userName, string userPassword)
+    private AuthenticatedUser authenticateUser(string environment, string userName, string userPassword, string authToken)
     {
         AuthenticatedUser currentUser = new AuthenticatedUser();
 
@@ -202,64 +206,73 @@ public class ConnectionController : Controller
         // SSO or not?
         if (true)
         {
-            loggerConsole.Info("Authenticating {0} via password for customer {1} in {2} environment is accessible at {3}", currentUser.UserName, currentUser.CustomerName, currentUser.Deployment, currentUser.CustomerEnvironmentUrl);
-
-            #region Example results
-            // {
-            //     "code": 200,
-            //     "status": "ok",
-            //     "message": "OK",
-            //     "data": {
-            //         "ok": true,
-            //         "authToken": "a;sldjas;djaslkdjaslkdjaslasdja",
-            //         "userInfo": {
-            //             "userId": "17590",
-            //             "userName": "Daniel Odievich",
-            //             "userTimezone": "",
-            //             "userStatus": "2",
-            //             "userRole": "admin"
-            //         }
-            //     }
-            // }                    
-            // 
-            // {
-            //     "code": 401,
-            //     "status": "error",
-            //     "message": "No such email and password combination exists for the given customer.",
-            //     "data": {
-            //         "ok": false,
-            //         "message": "No such email and password combination exists for the given customer."
-            //     }
-            // }
-            #endregion
-            string authenticationResults = ObserveConnection.Authenticate_Username_Password(currentUser.CustomerEnvironmentUrl, currentUser.UserName, userPassword);
-            if (authenticationResults.Length == 0)
+            if (userPassword.Length > 0)
             {
-                throw new InvalidOperationException(String.Format("Invalid response on authenticate user {0}", currentUser.UserName));
-            }
+                loggerConsole.Info("Authenticating {0} via password for customer {1} in {2} environment accessible at {3}", currentUser.UserName, currentUser.CustomerName, currentUser.Deployment, currentUser.CustomerEnvironmentUrl);
 
-            // Were the credentials good?
-            JObject authenticationResultsObject = JObject.Parse(authenticationResults);
-            if (JSONHelper.getBoolValueFromJToken(authenticationResultsObject, "ok") == false)
-            {                    
+                #region Example results
                 // {
-                //     "ok": false,
-                //     "message": "No such email and password combination exists for the given customer."
+                //     "code": 200,
+                //     "status": "ok",
+                //     "message": "OK",
+                //     "data": {
+                //         "ok": true,
+                //         "authToken": "a;sldjas;djaslkdjaslkdjaslasdja",
+                //         "userInfo": {
+                //             "userId": "17590",
+                //             "userName": "Daniel Odievich",
+                //             "userTimezone": "",
+                //             "userStatus": "2",
+                //             "userRole": "admin"
+                //         }
+                //     }
+                // }                    
+                // 
+                // {
+                //     "code": 401,
+                //     "status": "error",
+                //     "message": "No such email and password combination exists for the given customer.",
+                //     "data": {
+                //         "ok": false,
+                //         "message": "No such email and password combination exists for the given customer."
+                //     }
                 // }
-                throw new InvalidCredentialException(String.Format("Unable to authenticate user {0} because of {1}", currentUser.UserName, JSONHelper.getStringValueFromJToken(authenticationResultsObject, "message")));
-            }
+                #endregion
+                string authenticationResults = ObserveConnection.Authenticate_Username_Password(currentUser.CustomerEnvironmentUrl, currentUser.UserName, userPassword);
+                if (authenticationResults.Length == 0)
+                {
+                    throw new InvalidOperationException(String.Format("Invalid response on authenticate user {0}", currentUser.UserName));
+                }
 
-            // If we got here, we have good credentials and first step is good
-            // {
-            //     "ok": true,
-            //     "access_key": "qDogme6EYnDvycbi-XXXXXXXXXXW"
-            // }
-            currentUser.AuthToken = JSONHelper.getStringValueFromJToken(authenticationResultsObject, "access_key");
-            if (currentUser.AuthToken.Length == 0)
-            {
-                throw new InvalidDataException(String.Format("No authentication token available for user {0}", currentUser.UserName));
+                // Were the credentials good?
+                JObject authenticationResultsObject = JObject.Parse(authenticationResults);
+                if (JSONHelper.getBoolValueFromJToken(authenticationResultsObject, "ok") == false)
+                {                    
+                    // {
+                    //     "ok": false,
+                    //     "message": "No such email and password combination exists for the given customer."
+                    // }
+                    throw new InvalidCredentialException(String.Format("Unable to authenticate user {0} because of {1}", currentUser.UserName, JSONHelper.getStringValueFromJToken(authenticationResultsObject, "message")));
+                }
+
+                // If we got here, we have good credentials and first step is good
+                // {
+                //     "ok": true,
+                //     "access_key": "qDogme6EYnDvycbi-XXXXXXXXXXW"
+                // }
+                currentUser.AuthToken = JSONHelper.getStringValueFromJToken(authenticationResultsObject, "access_key");
+                if (currentUser.AuthToken.Length == 0)
+                {
+                    throw new InvalidDataException(String.Format("No authentication token available for user {0}", currentUser.UserName));
+                }
+                logger.Info("currentUser.AuthToken={0}", currentUser.AuthToken);
             }
-            logger.Info("currentUser.AuthToken={0}", currentUser.AuthToken);
+            else if (authToken.Length > 0)
+            {
+                loggerConsole.Info("Authenticating {0} via token for customer {1} in {2} environment accessible at {3}", currentUser.UserName, currentUser.CustomerName, currentUser.Deployment, currentUser.CustomerEnvironmentUrl);
+
+                currentUser.AuthToken = authToken;
+            }
 
             currentUser.AuthenticatedOn = DateTime.UtcNow;
             logger.Info("currentUser.AuthenticatedOn={0}", currentUser.AuthenticatedOn);

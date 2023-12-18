@@ -180,7 +180,7 @@ namespace Observe.EntityExplorer.DataObjects
                         {
                             this.ExternalObjectRelationships.Add(new ObjectRelationship(inputName, this, relatedDataset, relationshipType));
                         }
-                        break;
+                        continue;
                     }
 
                     // Assume stage reference second
@@ -192,7 +192,7 @@ namespace Observe.EntityExplorer.DataObjects
                         {
                             this.ExternalObjectRelationships.Add(new ObjectRelationship(inputName, this, relatedStage, relationshipType));
                         }
-                        break;
+                        continue;
                     }
 
                     // Assume filtered dataset parameter reference third
@@ -206,7 +206,7 @@ namespace Observe.EntityExplorer.DataObjects
                             //this.ExternalObjectRelationships.Add(new ObjectRelationship(inputName, this, relatedParameter.SourceObject, relationshipType));
                             this.ExternalObjectRelationships.Add(new ObjectRelationship(relatedParameter.name, this, relatedParameter, ObsObjectRelationshipType.ProvidesParameter));
                         }
-                        break;
+                        continue;
                     }
                 }
             }

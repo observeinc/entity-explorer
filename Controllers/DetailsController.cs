@@ -68,9 +68,9 @@ public class DetailsController : Controller
                     break;
             }
 
-            Activity.Current.AddTag("currentUser", currentUser.ToString());
-            Activity.Current.AddTag("observeEnvironment", observeEnvironment.ToString());
-            Activity.Current.AddTag("currentDashboard", viewModel.CurrentDataset.ToString());
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+            CommonControllerMethods.enrichTrace(viewModel.CurrentDataset);
 
             return View(viewModel);
         }
@@ -121,7 +121,6 @@ public class DetailsController : Controller
                     {
                         throw new KeyNotFoundException(String.Format("Unable to retrieve the Observe Dashboard {0} from Observe Environment", id));
                     }
-                    //observeEnvironment.PopulateDashboardStages(currentUser, thisDashboard);
                     viewModel.CurrentDashboard = thisDashboard;
                      
                     break;
@@ -130,9 +129,70 @@ public class DetailsController : Controller
                     break;
             }
 
-            Activity.Current.AddTag("currentUser", currentUser.ToString());
-            Activity.Current.AddTag("observeEnvironment", observeEnvironment.ToString());
-            Activity.Current.AddTag("currentDashboard", viewModel.CurrentDashboard.ToString());
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+            CommonControllerMethods.enrichTrace(viewModel.CurrentDashboard);
+
+            return View(viewModel);
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, ex.Message);
+            loggerConsole.Error(ex, ex.Message);
+
+            ViewData["ErrorMessage"] = ex.Message;
+
+            return View(new DetailsDashboardViewModel(null, null));
+        }
+        finally
+        {
+            stopWatch.Stop();
+
+            logger.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+            loggerConsole.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+        }
+    }
+
+    public IActionResult Monitor(
+        string userid,
+        string id)
+    {
+        Stopwatch stopWatch = new Stopwatch();
+        stopWatch.Start();
+
+        try
+        {
+            AuthenticatedUser currentUser = this.CommonControllerMethods.GetUser(userid);
+            if (currentUser == null)
+            {
+                return RedirectToAction("Connect", "Connection");
+            }
+            ObserveEnvironment observeEnvironment = this.CommonControllerMethods.GetObserveEnvironment(currentUser);
+            if (observeEnvironment == null)
+            {
+                throw new Exception("Unable to retrieve the Observe Environment from cache or server");
+            }
+            DetailsMonitorViewModel viewModel = new DetailsMonitorViewModel(currentUser, observeEnvironment);
+
+            switch (HttpContext.Request.Method)
+            {
+                case "GET":
+                    ObsMonitor thisMonitor = null;
+                    if (observeEnvironment.AllMonitorsDict.TryGetValue(id, out thisMonitor) == false)
+                    {
+                        throw new KeyNotFoundException(String.Format("Unable to retrieve the Observe Monitor {0} from Observe Environment", id));
+                    }
+                    viewModel.CurrentMonitor = thisMonitor;
+                     
+                    break;
+
+                case "POST":
+                    break;
+            }
+
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+            CommonControllerMethods.enrichTrace(viewModel.CurrentMonitor);
 
             return View(viewModel);
         }

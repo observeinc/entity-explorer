@@ -48,8 +48,8 @@ public class SelectController : Controller
                 ViewData["ErrorMessage"] = "Unable to retrieve the Observe Environment from cache or server";
             }
 
-            Activity.Current.AddTag("currentUser", currentUser.ToString());
-            Activity.Current.AddTag("observeEnvironment", observeEnvironment.ToString());
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
 
             return View(new BaseViewModel(currentUser, observeEnvironment));
         }
@@ -84,20 +84,16 @@ public class SelectController : Controller
             {
                 return RedirectToAction("Connect", "Connection");
             }
-            BaseViewModel viewModel =  new BaseViewModel(currentUser, null);
-
-            switch (HttpContext.Request.Method)
+            ObserveEnvironment observeEnvironment = this.CommonControllerMethods.GetObserveEnvironment(currentUser);
+            if (observeEnvironment == null)
             {
-                case "GET":
-                    // List<Dataset> allDatasets = this.CommonControllerMethods.getMonitorDatasets(viewModel.CurrentUser);
-                    // viewModel.AllDatasets = allDatasets;
-                    break;
-
-                case "POST":
-                    break;
+                ViewData["ErrorMessage"] = "Unable to retrieve the Observe Environment from cache or server";
             }
 
-            return View(viewModel);
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+
+            return View(new BaseViewModel(currentUser, observeEnvironment));
         }
         catch (Exception ex)
         {
@@ -136,8 +132,8 @@ public class SelectController : Controller
                 ViewData["ErrorMessage"] = "Unable to retrieve the Observe Environment from cache or server";
             }
 
-            Activity.Current.AddTag("currentUser", currentUser.ToString());
-            Activity.Current.AddTag("observeEnvironment", observeEnvironment.ToString());
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
 
             return View(new BaseViewModel(currentUser, observeEnvironment));
         }

@@ -113,6 +113,10 @@ namespace Observe.EntityExplorer.DataObjects
             {
                 this.package = this.name.Split('/')[0];
             }
+            else
+            {
+                this.package = String.Empty;
+            }
             this.description = JSONHelper.getStringValueFromJToken(entityObject, "description");
             this.iconUrl = JSONHelper.getStringValueFromJToken(entityObject, "iconUrl");
 
@@ -243,7 +247,7 @@ namespace Observe.EntityExplorer.DataObjects
             }
         }
 
-        public void PopulateExternalDatasetRelationships(Dictionary<string, ObsDataset> allDatasetsDict)
+        public void PopulateExternalDatasetRelationships()
         {
             List<ObjectRelationship> objectRelationshipsToDatasets = this.StageObjectRelationships.Where(r => r.RelatedObject is ObsDataset).ToList();
             foreach(ObjectRelationship relationship in objectRelationshipsToDatasets)
@@ -261,6 +265,6 @@ namespace Observe.EntityExplorer.DataObjects
         public List<ObjectRelationship> GetRelationshipsOfRelated(ObsStage interestingObject, ObsObjectRelationshipType relationshipType)
         {
             return this.StageObjectRelationships.Where(r => r.RelatedObject == interestingObject && r.RelationshipType == relationshipType).ToList();
-        }        
+        }
     }
 }

@@ -282,7 +282,7 @@ namespace Observe.EntityExplorer
           acceleratedRanges {
             start
             end
-            __typename            
+            __typename
           }
           targetAcceleratedRanges {
             start
@@ -350,8 +350,6 @@ namespace Observe.EntityExplorer
 
         public static string datasetSearch_related(AuthenticatedUser currentUser, string reachableFromDatasetId)
         {
-            # region GraphQL Query
-
             string graphQLQuery = @"query DatasetSearch($labelMatches: [String!], $projects: [ObjectId!], $columnMatches: [String!], $keyMatchTypes: [String!], $foreignKeyTargetMatches: [String!], $reachableFromDataset: ObjectId) {
   datasetSearch(
     labelMatches: $labelMatches
@@ -562,7 +560,6 @@ namespace Observe.EntityExplorer
     __typename
   }
 }";
-            #endregion
 
             JObject queryObject = new JObject();
             queryObject.Add("query", graphQLQuery);
@@ -1074,6 +1071,312 @@ namespace Observe.EntityExplorer
                 currentUser.AuthToken).Item1;
         }
 
+        #endregion
+
+        #region Monitors Metadata
+
+        public static string monitorSearch_all(AuthenticatedUser currentUser, string workspaceId)
+        {
+            string graphQLQuery = @"query MonitorSearchInWorkspace($workspaceId: ObjectId!) {
+  monitorsInWorkspace(workspaceId: $workspaceId) {
+    ... on WorkspaceObject {
+      id
+      name
+      description
+      iconUrl
+      workspaceId
+      managedById
+      __typename
+    }
+    ... on AuditedObject {
+      createdDate
+      createdByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      updatedDate
+      updatedByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      __typename
+    }
+    managedById
+    managedBy {
+      id
+      name
+      description
+      iconUrl
+      workspaceId
+      managedById
+      __typename
+    }    
+    comment
+    isTemplate
+    source
+    resourceInputLinkName
+    useDefaultFreshness
+    effectiveSettings {
+      monitor {
+        freshnessGoal
+        __typename
+      }
+      scanner {
+        powerLevel
+        __typename
+      }
+    }        
+    notificationSpec {
+      importance
+      merge
+      reminderFrequency
+      notifyOnReminder
+      notifyOnClose
+      __typename
+    }
+    activeMonitorInfo {
+      accelerationDisabled
+      accelerationInfo {
+        state
+        stalenessSeconds
+        alwaysAccelerated
+        configuredTargetStalenessSeconds
+        targetStalenessSeconds
+        effectiveTargetStalenessSeconds
+        rateLimitOverrideTargetStalenessSeconds
+        acceleratedRanges {
+          start
+          end
+          __typename
+        }
+        freshnessTime
+        minimumDownstreamTargetStaleness {
+          minimumDownstreamTargetStalenessSeconds
+          datasetIds
+          monitorIds
+          __typename
+        }
+        effectiveOnDemandMaterializationLength
+        errors {
+          datasetId
+          datasetName
+          transformId
+          time
+          errorText
+          __typename
+        }
+        __typename
+      }
+      statusInfo {
+        status
+        errors {
+          errorText
+          __typename
+        }
+        __typename
+      }
+      generatedDatasetIds {
+        role
+        datasetId
+        __typename
+      }
+      notificationInfo {
+        lookbackTime
+        count
+        __typename
+      }
+      __typename
+    }
+    rule {
+      ruleKind
+      layout
+      sourceColumn
+      groupByGroups {
+        columns
+        groupName
+        columnPath {
+          column
+          path
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    # definition
+    actions {
+      id
+      name
+      description
+      iconUrl
+      workspaceId
+      createdDate
+      createdByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      updatedDate
+      updatedByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      rateLimit
+      notifyOnClose
+      notifyOnReminder
+      monitors {
+        id
+      }
+      __typename
+    }
+		query {
+      outputStage
+      stages {
+        id
+        params
+        pipeline
+        layout
+        input {
+          inputName
+          inputRole
+          datasetId
+          datasetPath
+          stageId
+          __typename
+        }
+        __typename
+      }
+      layout
+      __typename
+    }    
+    __typename
+  }
+}";
+
+            JObject queryObject = new JObject();
+            queryObject.Add("query", graphQLQuery);
+            JObject idObject = new JObject();
+            idObject.Add("workspaceId", workspaceId);
+            queryObject.Add("variables", idObject);
+            
+            string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
+
+            return apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/meta",
+                "application/json", 
+                queryBody,
+                "application/json",
+                currentUser.CustomerName, 
+                currentUser.AuthToken).Item1;
+        }
+
+        public static string monitorActionsSearch_all(AuthenticatedUser currentUser, string workspaceId)
+        {
+            string graphQLQuery = @"query SearchMonitorActions($workspaceId: ObjectId!) {
+  searchMonitorActions(workspaceId: $workspaceId) {
+    id
+    name
+    description
+    iconUrl
+    workspaceId
+    createdDate
+    createdByInfo {
+      userId
+      userLabel
+      userTimezone
+      __typename
+    }
+    updatedDate
+    updatedByInfo {
+      userId
+      userLabel
+      userTimezone
+      __typename
+    }
+    rateLimit
+    notifyOnClose
+    notifyOnReminder
+    isPrivate
+    monitors {
+      id
+      name
+      __typename
+    }
+    ... on EmailAction {
+      ...ChannelActionEmail
+      __typename
+    }
+    ... on WebhookAction {
+      ...ChannelActionWebhook
+      __typename
+    }
+    ... on UnknownAction {
+      ...ChannelActionUnknown
+      __typename
+    }
+    __typename
+  }
+}
+
+fragment ChannelActionEmail on EmailAction {
+  targetUsers
+  targetAddresses
+  targetEmailStates {
+    email
+    state
+    __typename
+  }
+  subjectTemplate
+  bodyTemplate
+  isHtml
+  fragments
+  __typename
+}
+
+fragment ChannelActionWebhook on WebhookAction {
+  urlTemplate
+  method
+  headers {
+    header
+    valueTemplate
+    __typename
+  }
+  bodyTemplate
+  fragments
+  templateName
+  __typename
+}
+
+fragment ChannelActionUnknown on UnknownAction {
+  payload
+  __typename
+}";
+
+            JObject queryObject = new JObject();
+            queryObject.Add("query", graphQLQuery);
+            JObject idObject = new JObject();
+            idObject.Add("workspaceId", workspaceId);
+            queryObject.Add("variables", idObject);
+            
+            string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
+
+            return apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/meta",
+                "application/json", 
+                queryBody,
+                "application/json",
+                currentUser.CustomerName, 
+                currentUser.AuthToken).Item1;
+        }
         #endregion
 
         #region Worksheets Metadata

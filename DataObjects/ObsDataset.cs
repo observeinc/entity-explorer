@@ -20,6 +20,7 @@ namespace Observe.EntityExplorer.DataObjects
         // public List<ObsFieldDefinition> Keys { get; set; } = new List<ObsFieldDefinition>(0);
         public List<ObsRelatedKey> RelatedKeys { get; set; } = new List<ObsRelatedKey>(0);
         public List<ObsRelatedKey> ForeignKeys { get; set; } = new List<ObsRelatedKey>(0);
+
         public ObsStage OutputStage { get; set; }
         public List<ObsStage> Stages { get; set; } = new List<ObsStage>(0);
         public Dictionary<string, ObsStage> AllStagesDict { get; set; }
@@ -64,6 +65,10 @@ namespace Observe.EntityExplorer.DataObjects
             if (this.name.Contains("/") == true)
             {
                 this.package = this.name.Split('/')[0];
+            }
+            else
+            {
+                this.package = String.Empty;
             }
             this.kind = JSONHelper.getStringValueFromJToken(entityObject, "kind");
             this.path = JSONHelper.getStringValueFromJToken(entityObject, "path");

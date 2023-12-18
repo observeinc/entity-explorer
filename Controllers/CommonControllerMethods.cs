@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
@@ -32,43 +33,6 @@ public class CommonControllerMethods
         AuthenticatedUser authenticatedUser = allUsers.Where(u => u.UniqueID == userid).FirstOrDefault();
         return authenticatedUser;
     }
-
-    // public AuthenticatedUser GetCurrentUser()
-    // {
-    //     AuthenticatedUser currentUser = null;
-        
-    //     // Load AuthenticatedUser from cookie if it exists
-    //     try
-    //     {
-    //         string serializedData = this.Controller.Request.Cookies["Observe.EntityExplorer.CurrentUser"];
-    //         if (serializedData != null && serializedData.Length > 0)
-    //         {
-    //             currentUser = JsonConvert.DeserializeObject<AuthenticatedUser>(Encoding.UTF8.GetString(Convert.FromBase64String(serializedData)));
-    //         }
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         logger.Error(ex);
-    //         loggerConsole.Error(ex);
-    //     }
-
-    //     return currentUser;
-    // }
-
-    // public void SaveCurrentUser(AuthenticatedUser currentUser)
-    // {
-    //     if (currentUser != null)
-    //     {
-    //         // Save AuthenticatedUser into cookie
-    //         CookieOptions cookieOptions = new CookieOptions();
-    //         cookieOptions.Expires = DateTimeOffset.Now.AddDays(7);
-    //         this.Controller.HttpContext.Response.Cookies.Append("Observe.EntityExplorer.CurrentUser", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(currentUser))), cookieOptions);
-    //     }
-    //     else
-    //     {
-    //         this.Controller.HttpContext.Response.Cookies.Delete("Observe.EntityExplorer.CurrentUser");
-    //     }
-    // }
 
     public List<AuthenticatedUser> GetAllUsers()
     {
@@ -146,5 +110,37 @@ public class CommonControllerMethods
         string observeEnvironmentCacheKey = String.Format("ObserveEnvironment-{0}", currentUser.UniqueID);
         this.MemoryCache.Remove(observeEnvironmentCacheKey);
         logger.Info("Removed {0} cache", observeEnvironmentCacheKey);
+    }
+
+    public void enrichTrace(AuthenticatedUser currentUser)
+    {
+        //Activity.Current.AddTag("currentUser", currentUser.ToString());
+        Activity.Current.AddTag("currentUser", currentUser.UserName);
+        Activity.Current.AddTag("currentUserID", currentUser.UserID);
+        Activity.Current.AddTag("currentUserAuthenticatedOn", currentUser.AuthenticatedOn.ToString("u"));
+    }
+
+    public void enrichTrace(ObserveEnvironment observeEnvironment)
+    {
+        //Activity.Current.AddTag("observeEnvironment", observeEnvironment.ToString());
+        Activity.Current.AddTag("observeEnvironmentName", observeEnvironment.CustomerName);
+        Activity.Current.AddTag("observeEnvironmentLabel", observeEnvironment.CustomerLabel);
+        Activity.Current.AddTag("observeEnvironmentUrl", observeEnvironment.CustomerEnvironmentUrl);
+        Activity.Current.AddTag("observeEnvironmentLoadedOn", observeEnvironment.LoadedOn.ToString("u"));
+    }
+
+    public void enrichTrace(ObsDataset thisObject)
+    {
+        Activity.Current.AddTag("currentObject", thisObject.ToString());
+    }
+
+    public void enrichTrace(ObsMonitor thisObject)
+    {
+        Activity.Current.AddTag("currentObject", thisObject.ToString());
+    }
+
+    public void enrichTrace(ObsDashboard thisObject)
+    {
+        Activity.Current.AddTag("currentObject", thisObject.ToString());
     }
 }

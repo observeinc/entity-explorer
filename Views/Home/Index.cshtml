@@ -93,24 +93,69 @@
                 </tr>
             </table>
         </td>
-        <td><a asp-area="" asp-controller="Select" asp-action="Dataset" asp-route-userid="@Model.CurrentUser.UniqueID">🎫 Explore Datasets</a> - Review the structure of various datasets</td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Dataset" asp-route-userid="@Model.CurrentUser.UniqueID">🎫 Explore Datasets</a> - Review the structure and dependencies of datasets</td>
     </tr>
     <tr>
         <td>Dashboards</td>
         <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Dashboard).Count</td>
-        <td><a asp-area="" asp-controller="Select" asp-action="Dashboard" asp-route-userid="@Model.CurrentUser.UniqueID">📈 Explore Dashboards</a> - Review the structure of yours and app dashboards</td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Dashboard" asp-route-userid="@Model.CurrentUser.UniqueID">📈 Explore Dashboards</a> - Review the structure and dependencies of custom and app dashboards</td>
     </tr>
     <tr>
         <td>Worksheets</td>
-        <td>TODO</td>
+        <td>
+            
+        </td>
         <td><a asp-area="" asp-controller="Select" asp-action="Worksheet" asp-route-userid="@Model.CurrentUser.UniqueID">📝 Explore Worksheets</a> - Review the structure of ad-hoc worksheets</td>
     </tr>
     <tr>
         <td>Monitors</td>
-        <td>TODO</td>
-        <td><a asp-area="" asp-controller="Select" asp-action="Monitor" asp-route-userid="@Model.CurrentUser.UniqueID">📟 Explore Monitors</a> - Review the structure of monitor datasets</td>
+        <td>
+            <table>
+                <tr>
+                    <th>Category</th>
+                    <th>Number</th>
+                </tr>
+                <tr>
+                    <td>Total</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor).Count</td>
+                </tr>
+                <tr>
+                    <td>Metric Threshold</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.MetricThresholdMonitor).Count</td>
+                </tr>
+                <tr>
+                    <td>Log Threshold</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.LogThresholdMonitor).Count</td>
+                </tr>
+                <tr>
+                    <td>Resource Count</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.ResourceCountThresholdMonitor).Count</td>
+                </tr>
+                <tr>
+                    <td>Promotion</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.PromotionMonitor).Count</td>
+                </tr>
+                <tr>
+                    <td>Text</td>
+                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.ResourceTextValueMonitor).Count</td>
+                </tr>
+            </table>
+        </td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Monitor" asp-route-userid="@Model.CurrentUser.UniqueID">📟 Explore Monitors</a> - Review the monitor configuration and dataset dependencies</td>
     </tr>
+@{
+    ObsObject syntheticNonExistentObject = new ObsObject();
+    syntheticNonExistentObject.id = "-1";
+    syntheticNonExistentObject.name = "All Objects";
+}
     <tr>
+        <td>All Relationships</td>
+        <td><button id="buttonVisualize_RelatedObjectsGraph" onclick="goToGraphVizOnline('textArea_RelatedObjectsGraph')">🔭 View</button></td>
+        <td>
+            <textarea id="textArea_RelatedObjectsGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(syntheticNonExistentObject, @Model.ObserveEnvironment.ObjectRelationships)</textarea>
+        </td>
+    </tr>
+    @* <tr>
         <td>All Data</td>
         <td>Export to Excel </td>
         <td>
@@ -119,6 +164,7 @@
     <button type="submit" id="buttonExportToExcel" name="buttonExportToExcel" value="Export to Excel">Export All to Excel <img src="https://cdn-dynmedia-1.microsoft.com/is/image/microsoftcorp/Icon_Excel_2x_RE2Xztz?resMode=sharp2&op_usm=1.5,0.65,15,0&wid=64&hei=64&qlt=99&fit=constrain" /></button>
 }
         </td>
-    </tr>
+    </tr> *@
 </table>
 
+<script src="~/js/DetailsCommon.js" asp-append-version="true"></script>

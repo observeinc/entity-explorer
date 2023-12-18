@@ -72,8 +72,8 @@ public class HomeController : Controller
                     break;
             }
 
-            Activity.Current.AddTag("currentUser", currentUser.ToString());
-            Activity.Current.AddTag("observeEnvironment", observeEnvironment.ToString());
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
             
             return View(new BaseViewModel(currentUser, observeEnvironment));
         }

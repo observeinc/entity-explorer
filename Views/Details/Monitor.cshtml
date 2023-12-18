@@ -1,11 +1,12 @@
 ﻿@using Observe.EntityExplorer.DataObjects;
+@using System.Text;
 
-@model Observe.EntityExplorer.Models.DetailsDashboardViewModel;
+@model Observe.EntityExplorer.Models.DetailsMonitorViewModel;
 
 @{
-    if (@Model.CurrentDashboard != null)
+    if (@Model.CurrentMonitor != null)
     {
-        ViewData["Title"] = String.Format("{0} ({1}) Dashboard Details", @Model.CurrentDashboard.name, @Model.CurrentDashboard.id);
+        ViewData["Title"] = String.Format("{0} ({1}) Monitor Details", @Model.CurrentMonitor.name, @Model.CurrentMonitor.id);
     }
 }
 
@@ -19,12 +20,12 @@
 
 <p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
 
-<h1>📈 Dashboard Details - @Model.CurrentDashboard.name (@Model.CurrentDashboard.id)</h1>
+<h1>📟 Monitor Details - @Model.CurrentMonitor.name (@Model.CurrentMonitor.id)</h1>
 
 <p>
     <a href="#RelatedDatasetsAncestors">⏫ Ancestors/Inputs</a> 
+    <a href="#RelatedDatasetsSupporting">⏬ Supporting</a> 
     <a href="#RelatedDatasetsGraph">🔀 Related Datasets Graph</a>
-    <a href="#Parameters">🔧 Parameters</a>
     <a href="#Stages">🏛️ Stages</a>
     <a href="#StagesGraph">⛲ Stages Graph</a>
 </p>
@@ -34,54 +35,98 @@
         <td>Observe</td>
         <td>
             @{
-                <a href="@String.Format("{0}workspace/{1}/dashboard/{2}",           @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentDashboard.id)">📄 View</a>
-                <a href="@String.Format("{0}workspace/{1}/dashboard/{2}?edit=true", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentDashboard.id)">🛠️ Edit</a>
+                <a href="@String.Format("{0}workspace/{1}/notification/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, Convert.ToBase64String(Encoding.UTF8.GetBytes(String.Format("{{\"monitorId\":\"{0}\"}}", @Model.CurrentMonitor.id))))">📄 Notifications</a>
+                <a href="@String.Format("{0}workspace/{1}/monitor/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentMonitor.id)">🛠️ Edit</a>
             }
         </td>
     </tr>
     <tr>
         <td>Name</td>
         <td>
-            @Model.CurrentDashboard.name (@Model.CurrentDashboard.id) in @Model.CurrentUser.CustomerLabel (@Model.CurrentUser.CustomerName)
+            @Model.CurrentMonitor.name (@Model.CurrentMonitor.id) in @Model.CurrentUser.CustomerLabel (@Model.CurrentUser.CustomerName)
         </td>
     </tr>
     <tr>
-        <td>Description</td>
-        <td>@Model.CurrentDashboard.description</td>
+        <td>Comment</td>
+        <td>@Model.CurrentMonitor.comment</td>
+    </tr>
+    <tr>
+        <td>Type</td>
+        <td>
+            @{
+                ObsCompositeObjectType objectType = ObsCompositeObjectType.Monitor; 
+                if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.MetricThresholdMonitor) == ObsCompositeObjectType.MetricThresholdMonitor)
+                {
+                    objectType = ObsCompositeObjectType.MetricThresholdMonitor;
+                }
+                else if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.LogThresholdMonitor) == ObsCompositeObjectType.LogThresholdMonitor)
+                {
+                    objectType = ObsCompositeObjectType.LogThresholdMonitor;
+                }
+                else if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.ResourceCountThresholdMonitor) == ObsCompositeObjectType.ResourceCountThresholdMonitor)
+                {
+                    objectType = ObsCompositeObjectType.ResourceCountThresholdMonitor;
+                }
+                else if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.PromotionMonitor) == ObsCompositeObjectType.PromotionMonitor)
+                {
+                    objectType = ObsCompositeObjectType.PromotionMonitor;
+                }
+                else if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.ResourceTextValueMonitor) == ObsCompositeObjectType.ResourceTextValueMonitor)
+                {
+                    objectType = ObsCompositeObjectType.ResourceTextValueMonitor;
+                }
+            }
+
+            @Html.Raw(objectType switch {ObsCompositeObjectType.MetricThresholdMonitor => "📈", ObsCompositeObjectType.LogThresholdMonitor => "📜", ObsCompositeObjectType.ResourceCountThresholdMonitor => "🍫", ObsCompositeObjectType.PromotionMonitor => "🕙", ObsCompositeObjectType.ResourceTextValueMonitor => "🏆", _ => "❓"}) @Model.CurrentMonitor.kind @Model.CurrentMonitor.ObjectType
+        </td>
     </tr>
     <tr>
         <td>Source</td>
         <td>
-            @Html.Raw(@Model.CurrentDashboard.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) @Model.CurrentDashboard.OriginType
+            @Html.Raw(@Model.CurrentMonitor.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) @Model.CurrentMonitor.OriginType
         </td>
     </tr>
-    @* <tr>
-        <td>Icon</td>
-        <td>@Model.CurrentDashboard.iconUrl</td>
-    </tr> *@
     <tr>
         <td>Components</td>
-        <td>Sections: @Model.CurrentDashboard.NumSections 
-            Widgets: @Model.CurrentDashboard.NumWidgets 
-            Stages: @Model.CurrentDashboard.NumStages 
-            Parameters: @Model.CurrentDashboard.NumParameters 
+        <td>Actions: @Model.CurrentMonitor.NumActions
+            Stages: @Model.CurrentMonitor.NumStages 
         </td>
+    </tr>
+    <tr>
+        <td>Enabled</td>
+        <td>@Html.Raw(@Model.CurrentMonitor.IsEnabled switch {true => "✅", false => "❌"})@Model.CurrentMonitor.IsEnabled</td>
+    </tr>
+    <tr>
+        <td>Template</td>
+        <td>@Model.CurrentMonitor.IsTemplate</td>
     </tr>
     <tr>
         <td>Created</td>
-        <td>@Model.CurrentDashboard.createdDate.ToString("u")/@Model.CurrentDashboard.createdBy.label</td>
+        <td>@Model.CurrentMonitor.createdDate.ToString("u")/@Model.CurrentMonitor.createdBy.label</td>
     </tr>
     <tr>
         <td>Updated</td>
-        <td>@Model.CurrentDashboard.updatedDate.ToString("u")/@Model.CurrentDashboard.updatedBy.label</td>
+        <td>@Model.CurrentMonitor.updatedDate.ToString("u")/@Model.CurrentMonitor.updatedBy.label</td>
     </tr>
+    <tr>
+        <td>⚙️ Settings</td>
+        <td><pre><code class="language-json">@Model.CurrentMonitor.Settings</code></pre></td>
+    </tr>    
+    <tr>
+        <td>📨 Notifications</td>
+        <td><pre><code class="language-json">@Model.CurrentMonitor.Notification</code></pre></td>
+    </tr>    
+    <tr>
+        <td>ℹ️ Info</td>
+        <td><pre><code class="language-json">@Model.CurrentMonitor.ActiveMonitorInfo</code></pre></td>
+    </tr>    
 </table>
 
 @{
-    List<ObjectRelationship> ancestorRelationships = Model.ObserveEnvironment.GetAllAncestorRelationshipsOfThis(@Model.CurrentDashboard);
+    List<ObjectRelationship> ancestorRelationships = Model.ObserveEnvironment.GetAllAncestorRelationshipsOfThis(@Model.CurrentMonitor);
     if (ancestorRelationships.Count > 0)
     {
-        <h2 id="RelatedDatasetsAncestors">⏫ Ancestors/Inputs</h2>
+        <h2 id="RelatedDatasetsAncestors">⏫ Ancestors</h2>
         <a href="#top">Back to Top</a>
 
         <table class="AlternatingRowTable">
@@ -127,9 +172,33 @@
                         <td><span title="@entityThis.description">@entityThis.name</span></td>
                     </tr>
                 }
-                else if (objectRelationship.ThisObject is ObsDashboard)
+            }
+        </table>
+    }
+}
+
+@{
+    List<ObjectRelationship> descendantRelationships = Model.ObserveEnvironment.GetAllMonitorSupportDatasetRelationships(@Model.CurrentMonitor);
+    if (descendantRelationships.Count > 0)
+    {
+        <h2 id="RelatedDatasetsSupporting">⏬ Supporting</h2>
+        <a href="#top">Back to Top</a>
+
+        <table class="AlternatingRowTable">
+            <tr>
+                <th>Details</th>
+                <th>View</th>
+                <th>Edit</th>
+                <th>Type</th>
+                <th>Origin</th>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Relationship</th>
+            </tr>
+            @foreach (ObjectRelationship objectRelationship in descendantRelationships)
+            {
+                if (objectRelationship.RelatedObject is ObsDataset)
                 {
-                    ObsDashboard entityThis = (ObsDashboard)objectRelationship.ThisObject;
                     ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
 
                     <tr>
@@ -141,13 +210,6 @@
                         <td>@entityRelated.id</td>
                         <td><span title="@entityRelated.description">@entityRelated.name</span></td>
                         <td>@objectRelationship.RelationshipType</td>
-                        <td>@Html.ActionLink("📈 Details", "Dashboard", "Details", new { id= entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
-                        <td><a href="@String.Format("{0}workspace/{1}/dashboard/{2}",           @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">📄 View</a></td>
-                        <td><a href="@String.Format("{0}workspace/{1}/dashboard/{2}?edit=true", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
-                        <td>📈 Dashboard</td>
-                        <td>@Html.Raw(entityThis.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"})@entityThis.OriginType</td>
-                        <td>@entityThis.id</td>
-                        <td>@entityThis.name</td>
                     </tr>
                 }
             }
@@ -159,59 +221,17 @@
 <a href="#top">Back to Top</a>
 
 @{
-    List<ObjectRelationship> allRelationships = new List<ObjectRelationship>(ancestorRelationships.Count);
+    List<ObjectRelationship> allRelationships = new List<ObjectRelationship>(ancestorRelationships.Count + descendantRelationships.Count);
     allRelationships.AddRange(ancestorRelationships);
-    allRelationships.AddRange(@Model.CurrentDashboard.StageObjectRelationships);
+    allRelationships.AddRange(descendantRelationships);
+    allRelationships.AddRange(@Model.CurrentMonitor.StageObjectRelationships);
     allRelationships = allRelationships.OrderBy(r => r.ToString()).ToList();
     <p>
-        <textarea id="textArea_RelatedDatasetsGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentDashboard, allRelationships)</textarea>
+        <textarea id="textArea_RelatedDatasetsGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentMonitor, allRelationships)</textarea>
         <br/>
         <button id="buttonVisualize_RelatedDatasetsGraph" onclick="goToGraphVizOnline('textArea_RelatedDatasetsGraph')">🔭 View</button>
     </p>
 }
-
-<h2 id="Parameters">🔧 Parameters</h2>
-<a href="#top">Back to Top</a>
-
-<table class="AlternatingRowTable">
-    <tr>
-        <th>Name</th>
-        <th>ID</th>
-        <th>Type</th>
-        <th>Data Type</th>
-        <th>Source Type</th>
-        <th>Source Object</th>
-        <th>Source Column</th>
-        <th>Default Value</th>
-        <th>Allow Empty</th>
-    </tr>
-    @foreach (ObsParameter entity in Model.CurrentDashboard.Parameters)
-    {
-        <tr>
-            <td>@entity.name</td>
-            <td>$@entity.id</td>
-            <td>@Html.Raw(entity.viewType switch {"resource-input" => "🛆", "single-select" => "⛛", "text" => "🔤", "numeric" => "#️⃣", "input" => "🌫️", _ => "?"}) @entity.viewType</td>
-            <td>@entity.dataType</td>
-            <td>@entity.sourceType</td>
-            <td>
-                @if (entity.SourceObject != null)
-                {
-                    if (entity.SourceObject is ObsDataset)
-                    {
-                        @Html.ActionLink(String.Format("🎫 {0}", entity.SourceObject.name) , "Dataset", "Details", new { id= entity.SourceObject.id, userid=@Model.CurrentUser.UniqueID }, null)
-                    }
-                    else if (entity.SourceObject is ObsStage)
-                    {                        
-                        <a href="@String.Format("#{0}", entity.SourceObject.id)">🏛️ @entity.SourceObject.name</a>
-                    }
-                }
-            </td>
-            <td>@entity.sourceColumn</td>
-            <td>@entity.defaultValue</td>
-            <td>@entity.allowEmpty</td>
-        </tr>
-    }
-</table>
 
 <h2 id="Stages">🏛️ Stages</h2>
 <a href="#top">Back to Top</a>
@@ -224,14 +244,17 @@
         <th>ID</th>
         <th>Uses</th>
         <th>Used By</th>
-        <th>Params</th>
     </tr>
-    @foreach (ObsStage entity in Model.CurrentDashboard.Stages)
+    @foreach (ObsStage entity in Model.CurrentMonitor.Stages)
     {    
         <tr>
             <td><a href="@String.Format("#{0}", entity.id)">🏛️ Details</a></td>
             <td>
                 @Html.Raw(entity.type switch {"table" => "📑", "timeseries" => "📉", "bar" => "📊", "circular" => "🥧", "stacked_area" => "🗻", "singlevalue" => "#️⃣", "list" => "📜", "valueovertime" => "⏳", "gantt" => "📐", _ => ""}) @entity.type
+                @if (@entity == Model.CurrentMonitor.OutputStage)
+                {
+                    @Html.Raw("🏁 OUTPUT");
+                }
             </td>
             <td>@entity.name</td>
             <td>@entity.id</td>
@@ -249,11 +272,6 @@
                     {
                         @Html.Raw(String.Format("🔗Link>This {0} <br/>", entityDatasetLinkRelationshipsSource.Count))
                     }
-                    List<ObjectRelationship> entityParamDataRelationshipsSource = entityRelationshipsSource.Where(r => r.RelatedObject is ObsParameter && r.RelationshipType == ObsObjectRelationshipType.ProvidesParameter).ToList();
-                    if (entityParamDataRelationshipsSource.Count > 0)
-                    {
-                        @Html.Raw(String.Format("🔧Param>This: {0} <br/>", entityParamDataRelationshipsSource.Count));
-                    }
                     List<ObjectRelationship> entityStageDataRelationshipsSource = entityRelationshipsSource.Where(r => r.RelatedObject is ObsStage && r.RelationshipType == ObsObjectRelationshipType.ProvidesData).ToList();
                     if (entityStageDataRelationshipsSource.Count > 0)
                     {
@@ -268,17 +286,12 @@
             </td>
             <td>
                 @{
-                    List<ObjectRelationship> entityRelationshipsTarget = Model.CurrentDashboard.GetRelationshipsOfRelated(entity);
+                    List<ObjectRelationship> entityRelationshipsTarget = Model.CurrentMonitor.GetRelationshipsOfRelated(entity);
 
                     List<ObjectRelationship> entityDataRelationshipsTarget = entityRelationshipsTarget.Where(r => r.RelationshipType == ObsObjectRelationshipType.ProvidesData).ToList();
                     if (entityDataRelationshipsTarget.Count > 0)
                     {
                         @Html.Raw(String.Format("📝This>Data: {0} <br/>", entityDataRelationshipsTarget.Count));
-                    }
-                    List<ObjectRelationship> entityDataRelationshipsParamTarget = entityRelationshipsTarget.Where(r => r.ThisObject is ObsParameter && r.RelationshipType == ObsObjectRelationshipType.ProvidesData).ToList();
-                    if (entityDataRelationshipsParamTarget.Count > 0)
-                    {
-                        @Html.Raw(String.Format("📝This>Param: {0} <br/>", entityDataRelationshipsParamTarget.Count));
                     }
                     List<ObjectRelationship> entityLinkRelationshipsTarget = entityRelationshipsTarget.Where(r => r.RelationshipType == ObsObjectRelationshipType.Linked).ToList();
                     if (entityLinkRelationshipsTarget.Count > 0)
@@ -287,21 +300,12 @@
                     }
                 }                
             </td>
-            <td>
-                @if (entityParamDataRelationshipsSource.Count > 0)
-                {
-                    foreach(ObjectRelationship relationship in entityParamDataRelationshipsSource)
-                    {
-                        @Html.Raw(String.Format("{0} (${1}) <br/>", relationship.RelatedObject.name, relationship.RelatedObject.id));
-                    }
-                }
-            </td>
         </tr>
     }
 </table>
 
 <table>
-    @foreach (ObsStage entity in Model.CurrentDashboard.Stages)
+    @foreach (ObsStage entity in Model.CurrentMonitor.Stages)
     {
         <tr id="@entity.id">
             <td>Stage</td>
@@ -371,27 +375,11 @@
                                 <td>@objectRelationship.name</td>
                             </tr>
                         }
-                        else if (objectRelationship.RelatedObject is ObsParameter)
-                        {
-                            ObsParameter entityRelated = (ObsParameter)objectRelationship.RelatedObject;
-
-                            <tr>
-                                <td><a href="#Parameters">🔧 Details</a></td>
-                                <td>&nbsp;</td>
-                                <td>&nbsp;</td>
-                                <td>🔧 Parameter</td>
-                                <td>👋 User</td>
-                                <td>$@entityRelated.id</td>
-                                <td>@entityRelated.name</td>
-                                <td>@objectRelationship.RelationshipType</td>
-                                <td>@objectRelationship.name</td>
-                            </tr>                                
-                        }
                     }
                 </table>
             </td>
         </tr>
-        List<ObjectRelationship> relationshipsTarget = Model.CurrentDashboard.GetRelationshipsOfRelated(entity);
+        List<ObjectRelationship> relationshipsTarget = Model.CurrentMonitor.GetRelationshipsOfRelated(entity);        
         if (relationshipsTarget.Count > 0)
         {
             <tr>
@@ -440,10 +428,6 @@
             </tr>
         }
         <tr>
-            <td>Preview</td>
-            <td><img src="@entity.thumbnail" /></td>
-        </tr>        
-        <tr>
             <td colspan="2"><pre><code class="language-javascript">@entity.pipeline</code></pre></td>
         </tr>
     }
@@ -453,7 +437,7 @@
 <a href="#top">Back to Top</a>
 
 <p>
-    <textarea id="textArea_StagesGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentDashboard, @Model.CurrentDashboard.StageObjectRelationships)</textarea>
+    <textarea id="textArea_StagesGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentMonitor, @Model.CurrentMonitor.StageObjectRelationships)</textarea>
     <br/>
     <button id="buttonVisualize_textArea_StagesGraph" onclick="goToGraphVizOnline('textArea_StagesGraph')">🔭 View</button>
 </p>

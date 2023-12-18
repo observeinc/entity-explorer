@@ -14,6 +14,8 @@
     return;
 }
 
+<p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
+
 <h1>🎫 Select Dataset and Action</h1>
 @{
     ObsCompositeObjectType[] categoriesOfDatasets = new ObsCompositeObjectType[] {
@@ -25,19 +27,11 @@
         ObsCompositeObjectType.MonitorSupportDataset,
         ObsCompositeObjectType.InterfaceMetricDataset,
         ObsCompositeObjectType.InterfaceLogDataset};
-
 }
 <p>
     @foreach (ObsCompositeObjectType objectType in categoriesOfDatasets)
     {    
         <a href="#@objectType">@objectType</a>
-    }
-</p>
-
-<p>
-    @using (Html.BeginForm("Dataset", "Select", FormMethod.Post))
-    {
-        <button type="submit" id="buttonExportToExcel" name="buttonExportToExcel" value="Export to Excel">Export to Excel <img src="https://cdn-dynmedia-1.microsoft.com/is/image/microsoftcorp/Icon_Excel_2x_RE2Xztz?resMode=sharp2&op_usm=1.5,0.65,15,0&wid=64&hei=64&qlt=99&fit=constrain" /></button>
     }
 </p>
 
@@ -59,6 +53,7 @@
                 <th>Origin</th>
                 <th>ID</th>
                 <th>Name</th>
+                <th>Desc.</th>
                 <th>Components</th>
                 <th>Uses</th>
                 <th>Used By</th>
@@ -74,7 +69,13 @@
                     <td>@Html.Raw(entity.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @entity.kind</td>
                     <td>@Html.Raw(entity.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entity.source">@entity.OriginType</span></td>
                     <td>@entity.id</td>
-                    <td><span title="@entity.description">@entity.name</span></td>
+                    <td>@entity.name</td>
+                    <td>
+                        @if (entity.description.Length > 0)
+                        {
+                            <span title="@entity.description">📝</span> 
+                        }
+                    </td>
                     <td>
                         @* StagesTODO: -1/  *@
                         Fields: @entity.Fields.Count <br/>

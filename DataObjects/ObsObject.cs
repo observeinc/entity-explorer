@@ -14,7 +14,7 @@ namespace Observe.EntityExplorer.DataObjects
         public override string ToString()
         {
             return String.Format(
-                "ObsObject: {0} ({1}",
+                "ObsObject: {0} ({1})",
                 this.name,
                 this.id);
         }        
