@@ -29,8 +29,8 @@
     List<ObsCompositeObject> selectedDashboards = Model.ObserveEnvironment.ObserveObjects.Where(o => (o.ObjectType & ObsCompositeObjectType.Dashboard) == ObsCompositeObjectType.Dashboard).ToList();
 }
 
-<table class="AlternatingRowTable">
-    <tr>
+<table class="AlternatingRowTable SortableTable">
+    <thead>
         <th>Details</th>
         <th>View</th>
         <th>Edit</th>
@@ -45,7 +45,8 @@
         <th>Uses</th>
         <th>Created</th>
         <th>Updated</th>
-    </tr>
+    </thead>
+    <tbody>
     @foreach (ObsDashboard entity in selectedDashboards)
     {
         <tr id="tableRowDashboard_@entity.id">
@@ -59,6 +60,10 @@
                 @if (entity.description.Length > 0)
                 {
                     <span title="@entity.description">📝</span> 
+                }
+                else
+                {
+                    @Html.Raw("&nbsp;")
                 }
             </td>
             <td>@entity.NumSections</td>
@@ -81,7 +86,10 @@
                 }
             </td>            
             <td>@entity.createdDate.ToString("u")/@entity.createdBy.label</td>
-            <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label </td>
+            <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label</td>
         </tr>
     }
+    </tbody>
 </table>
+
+<script src="~/js/DetailsCommon.js" asp-append-version="true"></script>

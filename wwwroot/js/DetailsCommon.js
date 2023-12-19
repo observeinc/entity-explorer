@@ -1,6 +1,12 @@
-﻿$(document).ready(function() {
+﻿$(document).ready( function() {
+    //$('[id^="datasetTable"]').DataTable( {
+    $(".SortableTable").DataTable( {
+        paging: false
+    });
     hljs.highlightAll();
     hljs.initLineNumbersOnLoad();
+
+    
 });
 
 function goToGraphVizOnline(textArea)

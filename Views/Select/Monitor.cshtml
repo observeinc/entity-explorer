@@ -43,8 +43,8 @@
         <a href="#top">Back to Top</a>
     }
 
-    <table class="AlternatingRowTable">
-        <tr>
+    <table class="AlternatingRowTable SortableTable">
+        <thead>
             <th>Details</th>
             <th>Notif.</th>
             <th>Edit</th>
@@ -59,7 +59,8 @@
             <th>Uses</th>
             <th>Created</th>
             <th>Updated</th>
-        </tr>
+        </thead>
+        <tbody>
         @foreach (ObsMonitor entity in selectedMonitors)
         {
             <tr id="tableRowMonitor_@entity.id">
@@ -94,8 +95,11 @@
                     }
                 </td>            
                 <td>@entity.createdDate.ToString("u")/@entity.createdBy.label</td>
-                <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label </td>
+                <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label</td>
             </tr>
         }
+        </tbody>
     </table>    
 }
+
+<script src="~/js/DetailsCommon.js" asp-append-version="true"></script>

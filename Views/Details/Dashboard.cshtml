@@ -84,8 +84,8 @@
         <h2 id="RelatedDatasetsAncestors">⏫ Ancestors/Inputs</h2>
         <a href="#top">Back to Top</a>
 
-        <table class="AlternatingRowTable">
-            <tr>
+        <table class="AlternatingRowTable SortableTable">
+            <thead>
                 <th>Details</th>
                 <th>View</th>
                 <th>Edit</th>
@@ -101,7 +101,9 @@
                 <th>Origin</th>
                 <th>ID</th>
                 <th>Name</th>
-            </tr>
+                <th>Direct</th>
+            </thead>
+            <tbody>
             @foreach (ObjectRelationship objectRelationship in ancestorRelationships)
             {
                 if (objectRelationship.ThisObject is ObsDataset)
@@ -125,6 +127,7 @@
                         <td>@Html.Raw(entityThis.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityThis.source">@entityThis.OriginType</span></td>
                         <td>@entityThis.id</td>
                         <td><span title="@entityThis.description">@entityThis.name</span></td>
+                        <td>&nbsp;</td>
                     </tr>
                 }
                 else if (objectRelationship.ThisObject is ObsDashboard)
@@ -148,9 +151,11 @@
                         <td>@Html.Raw(entityThis.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"})@entityThis.OriginType</td>
                         <td>@entityThis.id</td>
                         <td>@entityThis.name</td>
+                        <td>@if(@entityThis == @Model.CurrentDashboard) { @Html.Raw("✨") }</td>
                     </tr>
                 }
             }
+            </tbody>
         </table>
     }
 }

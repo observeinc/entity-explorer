@@ -249,8 +249,8 @@
         <h2 id="RelatedDatasetsAncestors">⏫ Ancestors</h2>
         <a href="#top">Back to Top</a>
 
-        <table class="AlternatingRowTable">
-            <tr>
+        <table class="AlternatingRowTable SortableTable">
+            <thead>
                 <th>Details</th>
                 <th>View</th>
                 <th>Edit</th>
@@ -266,7 +266,9 @@
                 <th>Origin</th>
                 <th>ID</th>
                 <th>Name</th>
-            </tr>
+                <th>Direct</th>
+            </thead>
+            <tbody>
             @foreach (ObjectRelationship objectRelationship in ancestorRelationships)
             {
                 if (objectRelationship.ThisObject is ObsDataset)
@@ -290,9 +292,11 @@
                         <td>@Html.Raw(entityThis.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityThis.source">@entityThis.OriginType</span></td>
                         <td>@entityThis.id</td>
                         <td><span title="@entityThis.description">@entityThis.name</span></td>
+                        <td>@if(@entityThis == @Model.CurrentDataset) { @Html.Raw("✨") }</td>
                     </tr>
                 }
             }
+            </tbody>
         </table>
     }
 }
@@ -304,8 +308,8 @@
         <h2 id="RelatedDatasetsDescendants">⏬ Descendants</h2>
         <a href="#top">Back to Top</a>
 
-        <table class="AlternatingRowTable">
-            <tr>
+        <table class="AlternatingRowTable SortableTable">
+            <thead>
                 <th>Details</th>
                 <th>View</th>
                 <th>Edit</th>
@@ -321,7 +325,9 @@
                 <th>Origin</th>
                 <th>ID</th>
                 <th>Name</th>
-            </tr>
+                <th>Direct</th>
+            </thead>
+            <tbody>
             @foreach (ObjectRelationship objectRelationship in descendantRelationships)
             {
                 if (objectRelationship.ThisObject is ObsDataset)
@@ -345,9 +351,11 @@
                         <td>@Html.Raw(entityThis.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityThis.source">@entityThis.OriginType</span></td>
                         <td>@entityThis.id</td>
                         <td><span title="@entityThis.description">@entityThis.name</span></td>
+                        <td>@if(@entityRelated == @Model.CurrentDataset) { @Html.Raw("✨") }</td>
                     </tr>
                 }
             }
+            </tbody>
         </table>
     }
 }
@@ -592,8 +600,8 @@
     List<ObsObject> selectedDashboards = dashboardsRelationshipsAll.Select(d => d.ThisObject).ToList();
 }
 
-<table class="AlternatingRowTable">
-    <tr>
+<table class="AlternatingRowTable SortableTable">
+    <thead>
         <th>Details</th>
         <th>View</th>
         <th>Edit</th>
@@ -607,7 +615,8 @@
         <th>Uses</th>
         <th>Created</th>
         <th>Updated</th>
-    </tr>
+    </thead>
+    <tbody>
     @foreach (ObsDashboard entity in selectedDashboards)
     {
         <tr id="tableRowDashboard_@entity.id">
@@ -637,9 +646,10 @@
                 }
             </td>          
             <td>@entity.createdDate.ToString("u")/@entity.createdBy.label</td>
-            <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label </td>
+            <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label</td>
         </tr>
     }
+    </tbody>
 </table>
 
 <h2 id="RelatedMonitors">📟 Related Monitors</h2>
@@ -655,8 +665,8 @@
     List<ObsObject> selectedMonitors = monitorsRelationshipsAll.Select(d => d.ThisObject).ToList();
 }
 
-<table class="AlternatingRowTable">
-    <tr>
+<table class="AlternatingRowTable SortableTable">
+    <thead>
         <th>Details</th>
         <th>Notif.</th>
         <th>Edit</th>
@@ -671,7 +681,8 @@
         <th>Uses</th>
         <th>Created</th>
         <th>Updated</th>
-    </tr>
+    </thead>
+    <tbody>
     @foreach (ObsMonitor entity in selectedMonitors)
     {
         <tr id="tableRowMonitor_@entity.id">
@@ -707,9 +718,10 @@
                 }
             </td>            
             <td>@entity.createdDate.ToString("u")/@entity.createdBy.label</td>
-            <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label </td>
+            <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label</td>
         </tr>
-    }    
+    }
+    </tbody>
 </table>
 
 <script src="~/js/DetailsCommon.js" asp-append-version="true"></script>

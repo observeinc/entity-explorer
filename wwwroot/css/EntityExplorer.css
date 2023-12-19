@@ -49,3 +49,11 @@ code.opalDisplay {
 .hljs-ln-code {
   padding-left: 10px;
 }
+
+/* datatable padding overrides */
+table.dataTable tbody td {
+  padding: 1px 1px !important;
+}
+table.dataTable thead tr th, table.dataTable thead tr td {
+  padding: 1px !important; 
+}
