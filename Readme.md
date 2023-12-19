@@ -328,7 +328,7 @@ List of all datasets feeding data into this dashboard.
 
 Visual diagram showing relationship between datasets related to this dashboard.
 
-![Dataset Graph](/docs/screenshots/details/Dashboard/DashboardDependencies.png?raw=true)
+![Dataset Graph](/docs/screenshots/details/dashboard/DashboardDependencies.png?raw=true)
 
 ### Parameters - Dashboard
 
