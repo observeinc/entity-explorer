@@ -134,7 +134,7 @@ Authenticate options:
   * Specify your API token if you have one issued to you
   * OR
   * Specify token taken from the GraphQL Bearer authentication in your browser devtools
-* Delegate
+* Delegate (must be > Reader)
   * Log into Observe UI to approve your sign-in
   * Return to this UI to complete sign-in
 
@@ -142,7 +142,7 @@ Authenticate options:
 
 ### Connect with Delegate Login
 
-To connect with delegation:
+To connect with delegation, you must have > Reader role. If you have it:
 
 * Specify account and username
 * Click "Connect with Observe UI" button
