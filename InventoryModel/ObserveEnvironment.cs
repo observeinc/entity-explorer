@@ -6,6 +6,10 @@ using Observe.EntityExplorer.DataObjects;
 using System;
 using System.Text;
 using System.Net;
+using Newtonsoft.Json.Bson;
+using CsvHelper;
+using System.Globalization;
+using CsvHelper.Configuration;
 
 namespace Observe.EntityExplorer
 {
@@ -21,9 +25,9 @@ namespace Observe.EntityExplorer
         private Logger logger = LogManager.GetCurrentClassLogger();
         private static Logger loggerConsole = LogManager.GetLogger("Observe.EntityExplorer.Console");
 
-        // All Dashboards, Worksheets and Datasets
+        // All Dashboards, Monitors, Worksheets and Datasets
         public List<ObsCompositeObject> ObserveObjects { get; set; } = new List<ObsCompositeObject>(256);
-        // All relationships between Dashboards, Worksheets and Datasets, as well as between Stages in Dashboards, Worksheets and Datasets
+        // All relationships between Dashboards, Monitors, Worksheets and Datasets, as well as between Stages in Dashboards, Monitors, Worksheets and Datasets
         public List<ObjectRelationship> ObjectRelationships { get; set; } = new List<ObjectRelationship>(256 * 8);
         
         // Individual entities by type
@@ -62,7 +66,7 @@ namespace Observe.EntityExplorer
             {
                 dataset.AddRelatedKeys(this.AllDatasetsDict);
                 dataset.AddForeignKeys(this.AllDatasetsDict);
-                dataset.PopulateExternalDatasetRelationships(this.AllDatasetsDict);
+                dataset.PopulateExternalDatasetRelationships(this.AllDatasetsDict);                
                 this.ObjectRelationships.AddRange(dataset.ExternalObjectRelationships);
             }
 
@@ -107,6 +111,153 @@ namespace Observe.EntityExplorer
 
             #endregion
 
+            #region Dataset and Monitor datasets acceleration info
+
+            foreach (ObsDataset dataset in allDatasets)
+            {
+                dataset.AddAccelerationInfo(this.AllDatasetsDict, this.AllMonitorsDict);
+            }
+
+            foreach (ObsMonitor monitor in allMonitors)
+            {
+                monitor.AddAccelerationInfo(this.AllDatasetsDict, this.AllMonitorsDict);
+            }
+
+            #endregion
+
+            #region Get usage data 
+
+            #region Usage - transform
+
+            // Get 1 hour data
+            List<ObsCreditsTransform> transformUsage1hList = getUsageTransform(currentUser, 1);
+            foreach (ObsCreditsTransform usageRow in transformUsage1hList)
+            {
+                ObsDataset thisDataset = null;
+                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
+                {
+                    thisDataset.Transform1H = usageRow;
+                }
+            }
+
+            // Get 1 day data
+            List<ObsCreditsTransform> transformUsage1dList = getUsageTransform(currentUser, 24);
+            foreach (ObsCreditsTransform usageRow in transformUsage1dList)
+            {
+                ObsDataset thisDataset = null;
+                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
+                {
+                    thisDataset.Transform1D = usageRow;
+                }
+            }
+
+            // Get 1 week data
+            List<ObsCreditsTransform> transformUsage1wList = getUsageTransform(currentUser, 24 * 7);
+            foreach (ObsCreditsTransform usageRow in transformUsage1wList)
+            {
+                ObsDataset thisDataset = null;
+                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
+                {
+                    thisDataset.Transform1W = usageRow;
+                }
+            }
+
+            // // Get 1 month data
+            // List<ObsCreditsTransform> transformUsage1mList = getUsageTransform(currentUser, 24 * 30);
+            // foreach (ObsCreditsTransform transformUsage in transformUsage1wList)
+            // {
+            //     ObsDataset thisDataset = null;
+            //     if (this.AllDatasetsDict.TryGetValue(transformUsage.DatasetID, out thisDataset) == true)
+            //     {
+            //         thisDataset.Transform1M = transformUsage;
+            //     }
+            // }
+
+            #endregion
+
+            #region Usage - monitor
+
+            List<ObsCreditsMonitor> monitorUsage1hList = getUsageMonitor(currentUser, 1);
+            foreach (ObsCreditsMonitor usageRow in monitorUsage1hList)
+            {
+                ObsMonitor thisMonitor = null;
+                if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
+                {
+                    thisMonitor.Transform1H = usageRow;
+                }
+            }
+
+            // Get 1 day data
+            List<ObsCreditsMonitor> monitorUsage1dList = getUsageMonitor(currentUser, 24);
+            foreach (ObsCreditsMonitor usageRow in monitorUsage1dList)
+            {
+                ObsMonitor thisMonitor = null;
+                if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
+                {
+                    thisMonitor.Transform1D = usageRow;
+                }
+            }
+
+            // Get 1 week data
+            List<ObsCreditsMonitor> monitorUsage1wList = getUsageMonitor(currentUser, 24 * 7);
+            foreach (ObsCreditsMonitor usageRow in monitorUsage1wList)
+            {
+                ObsMonitor thisMonitor = null;
+                if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
+                {
+                    thisMonitor.Transform1W = usageRow;
+                }
+            }
+
+            #endregion
+
+            #region Usage - query
+
+            List<ObsCreditsQuery> queryUsage1hList = getUsageQuery(currentUser, 1);
+            foreach (ObsCreditsQuery usageRow in queryUsage1hList)
+            {
+                ObsDataset thisDataset = null;
+                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
+                {
+                    thisDataset.Query1H.Credits = thisDataset.Query1H.Credits + usageRow.Credits; 
+                    thisDataset.Query1HUsers.Add(usageRow);
+                }
+            }
+
+            // Get 1 day data
+            List<ObsCreditsQuery> queryUsage1dList = getUsageQuery(currentUser, 24);
+            foreach (ObsCreditsQuery usageRow in queryUsage1dList)
+            {
+                ObsDataset thisDataset = null;
+                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
+                {
+                    thisDataset.Query1D.Credits = thisDataset.Query1D.Credits + usageRow.Credits; 
+                    thisDataset.Query1DUsers.Add(usageRow);
+                }
+            }
+
+            // Get 1 week data
+            List<ObsCreditsQuery> queryUsage1wList = getUsageQuery(currentUser, 24 * 7);
+            foreach (ObsCreditsQuery usageRow in queryUsage1wList)
+            {
+                ObsDataset thisDataset = null;
+                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
+                {
+                    thisDataset.Query1W.Credits = thisDataset.Query1W.Credits + usageRow.Credits; 
+                    thisDataset.Query1WUsers.Add(usageRow);
+                }
+            }
+            foreach (ObsDataset dataset in allDatasets)
+            {
+                dataset.Query1HUsers = dataset.Query1HUsers.OrderBy(q => q.UserName).ToList();
+                dataset.Query1DUsers = dataset.Query1DUsers.OrderBy(q => q.UserName).ToList();
+                dataset.Query1WUsers = dataset.Query1WUsers.OrderBy(q => q.UserName).ToList();
+            }                        
+
+            #endregion
+
+            #endregion
+
             this.LoadedOn = DateTime.UtcNow;
         }
 
@@ -121,6 +272,7 @@ namespace Observe.EntityExplorer
                     dataset._raw = datasetFull._raw;
 
                     dataset.AddStages(this.AllDatasetsDict);
+                    dataset.AddAccelerationInfo(this.AllDatasetsDict, this.AllMonitorsDict);
                 }
             }
         }
@@ -251,11 +403,12 @@ namespace Observe.EntityExplorer
                         foreach (var datasetsGroupedByOriginTypeGroup in datasetsGroupedByOriginType)
                         {
                             List<ObsDataset> allDatasetsInGroup = datasetsGroupedByOriginTypeGroup.ToList();
+                            string iconForGroup = getIconOriginType(datasetsGroupedByOriginTypeGroup.Key);
                             switch (datasetsGroupedByOriginTypeGroup.Key)
                             {
                                 case ObsObjectOriginType.DataStream:
                                     sb.AppendLine("  subgraph cluster_ds_datastream {");
-                                    sb.AppendFormat("    label=\"🎏 DataStreams ({0})\"", allDatasetsInGroup.Count).AppendLine();
+                                    sb.AppendFormat("    label=\"{0} DataStreams ({1})\"", iconForGroup, allDatasetsInGroup.Count).AppendLine();
                                     foreach(ObsDataset dataset in allDatasetsInGroup)
                                     {
                                         if (dataset == interestingObject) continue;
@@ -272,7 +425,7 @@ namespace Observe.EntityExplorer
                                         List<ObsDataset> allDatasetsInAppGroup = allAppDatasetsGroupedByPackageGroup.ToList();
 
                                         sb.AppendFormat("  subgraph cluster_ds_app_{0} {{", escapeGraphVizObjectNameForSubGraph(allAppDatasetsGroupedByPackageGroup.Key)).AppendLine();
-                                        sb.AppendFormat("    label=\"📊 App Datasets [{0}] ({1})\" style=\"filled\" fillcolor=\"lightyellow\"", allAppDatasetsGroupedByPackageGroup.Key, allDatasetsInAppGroup.Count).AppendLine();
+                                        sb.AppendFormat("    label=\"{0} App Datasets [{1}] ({2})\" style=\"filled\" fillcolor=\"lightyellow\"", iconForGroup, allAppDatasetsGroupedByPackageGroup.Key, allDatasetsInAppGroup.Count).AppendLine();
                                         foreach(ObsDataset dataset in allDatasetsInAppGroup)
                                         {
                                             if (dataset == interestingObject) continue;
@@ -287,7 +440,7 @@ namespace Observe.EntityExplorer
                                     List<ObsDataset> obsDatasetsMetric = allDatasetsInGroup.Where(d => (d.ObjectType & ObsCompositeObjectType.MetricSMADataset) == ObsCompositeObjectType.MetricSMADataset).ToList();
     
                                     sb.AppendLine("  subgraph cluster_ds_metric_support {");
-                                    sb.AppendFormat("    label=\"📈 Metric Support Datasets ({0})\" style=\"filled\" fillcolor=\"paleturquoise\"", obsDatasetsMetric.Count).AppendLine();
+                                    sb.AppendFormat("    label=\"{0} Metric Support Datasets ({1})\" style=\"filled\" fillcolor=\"paleturquoise\"", iconForGroup, obsDatasetsMetric.Count).AppendLine();
                                     foreach(ObsDataset dataset in obsDatasetsMetric)
                                     {
                                         if (dataset == interestingObject) continue;
@@ -310,7 +463,7 @@ namespace Observe.EntityExplorer
 
                                 case ObsObjectOriginType.Terraform:
                                     sb.AppendLine("  subgraph cluster_ds_user_terraform {");
-                                    sb.AppendFormat("    label=\"🛤️ Terraformed Datasets ({0})\" style=\"filled\" fillcolor=\"linen\"", allDatasetsInGroup.Count).AppendLine();
+                                    sb.AppendFormat("    label=\"{0} Terraformed Datasets ({1})\" style=\"filled\" fillcolor=\"linen\"", iconForGroup, allDatasetsInGroup.Count).AppendLine();
                                     foreach(ObsDataset dataset in allDatasetsInGroup)
                                     {
                                         if (dataset == interestingObject) continue;
@@ -322,7 +475,7 @@ namespace Observe.EntityExplorer
 
                                 case ObsObjectOriginType.User:
                                     sb.AppendLine("  subgraph cluster_ds_user {");
-                                    sb.AppendFormat("    label=\"👋 User Datasets ({0})\" style=\"filled\" fillcolor=\"palegreen\"", allDatasetsInGroup.Count).AppendLine();
+                                    sb.AppendFormat("    label=\"{0} User Datasets ({1})\" style=\"filled\" fillcolor=\"palegreen\"", iconForGroup, allDatasetsInGroup.Count).AppendLine();
                                     foreach(ObsDataset dataset in allDatasetsInGroup)
                                     {
                                         if (dataset == interestingObject) continue;
@@ -428,6 +581,7 @@ namespace Observe.EntityExplorer
                         foreach (var dashboardsGroupedByOriginTypeGroup in dashboardsGroupedByOriginType)
                         {
                             List<ObsDashboard> allDashboardsInGroup = dashboardsGroupedByOriginTypeGroup.ToList();
+                            string iconForGroup = getIconOriginType(dashboardsGroupedByOriginTypeGroup.Key);
                             switch (dashboardsGroupedByOriginTypeGroup.Key)
                             {
                                 case ObsObjectOriginType.App:
@@ -437,7 +591,7 @@ namespace Observe.EntityExplorer
                                         List<ObsDashboard> allDashboardsInAppGroup = allAppDashboardsGroupedByPackageGroup.ToList();
 
                                         sb.AppendFormat("  subgraph cluster_da_app_{0} {{", escapeGraphVizObjectNameForSubGraph(allAppDashboardsGroupedByPackageGroup.Key)).AppendLine();
-                                        sb.AppendFormat("    label=\"📊 App Dashboards [{0}] ({1})\" style=\"filled\" fillcolor=\"thistle\"", allAppDashboardsGroupedByPackageGroup.Key, allDashboardsInAppGroup.Count).AppendLine();
+                                        sb.AppendFormat("    label=\"{0} App Dashboards [{1}] ({2})\" style=\"filled\" fillcolor=\"thistle\"", iconForGroup, allAppDashboardsGroupedByPackageGroup.Key, allDashboardsInAppGroup.Count).AppendLine();
                                         foreach(ObsDashboard dashboard in allDashboardsInAppGroup)
                                         {
                                             if (dashboard == interestingObject) continue;
@@ -450,7 +604,7 @@ namespace Observe.EntityExplorer
 
                                 case ObsObjectOriginType.System:
                                     sb.AppendLine("  subgraph cluster_da_system {");
-                                    sb.AppendFormat("    label=\"📈 System Dashboards ({0})\" style=\"filled\" fillcolor=\"mistyrose\"", allDashboardsInGroup.Count).AppendLine();
+                                    sb.AppendFormat("    label=\"{0} System Dashboards ({1})\" style=\"filled\" fillcolor=\"mistyrose\"", iconForGroup, allDashboardsInGroup.Count).AppendLine();
                                     foreach(ObsDashboard dashboard in allDashboardsInGroup)
                                     {
                                         if (dashboard == interestingObject) continue;
@@ -462,7 +616,7 @@ namespace Observe.EntityExplorer
 
                                 case ObsObjectOriginType.User:
                                     sb.AppendLine("  subgraph cluster_da_user {");
-                                    sb.AppendFormat("    label=\"👋 User Dashboards ({0})\" style=\"filled\" fillcolor=\"olivedrab2\"", allDashboardsInGroup.Count).AppendLine();
+                                    sb.AppendFormat("    label=\"{0} User Dashboards ({1})\" style=\"filled\" fillcolor=\"olivedrab2\"", iconForGroup, allDashboardsInGroup.Count).AppendLine();
                                     foreach(ObsDashboard dashboard in allDashboardsInGroup)
                                     {
                                         if (dashboard == interestingObject) continue;
@@ -485,6 +639,7 @@ namespace Observe.EntityExplorer
                         foreach (var monitorsGroupedByOriginTypeGroup in monitorsGroupedByOriginType)
                         {
                             List<ObsMonitor> allMonitorsInGroup = monitorsGroupedByOriginTypeGroup.ToList();
+                            string iconForGroup = getIconOriginType(monitorsGroupedByOriginTypeGroup.Key);
                             switch (monitorsGroupedByOriginTypeGroup.Key)
                             {
                                 case ObsObjectOriginType.App:
@@ -494,7 +649,7 @@ namespace Observe.EntityExplorer
                                         List<ObsMonitor> allMonitorsInAppGroup = allAppMonitorsGroupedByPackageGroup.ToList();
 
                                         sb.AppendFormat("  subgraph cluster_mon_app_{0} {{", escapeGraphVizObjectNameForSubGraph(allAppMonitorsGroupedByPackageGroup.Key)).AppendLine();
-                                        sb.AppendFormat("    label=\"📊 App Monitors [{0}] ({1})\" style=\"filled\" fillcolor=\"wheat\"", allAppMonitorsGroupedByPackageGroup.Key, allMonitorsInAppGroup.Count).AppendLine();
+                                        sb.AppendFormat("    label=\"{0} App Monitors [{1}] ({2})\" style=\"filled\" fillcolor=\"wheat\"", iconForGroup, allAppMonitorsGroupedByPackageGroup.Key, allMonitorsInAppGroup.Count).AppendLine();
                                         foreach(ObsMonitor monitor in allMonitorsInAppGroup)
                                         {
                                             if (monitor == interestingObject) continue;
@@ -507,7 +662,7 @@ namespace Observe.EntityExplorer
 
                                 case ObsObjectOriginType.System:
                                     sb.AppendLine("  subgraph cluster_mon_system {");
-                                    sb.AppendFormat("    label=\"📈 System Monitors ({0})\" style=\"filled\" fillcolor=\"oldlace\"", allMonitorsInGroup.Count).AppendLine();
+                                    sb.AppendFormat("    label=\"{0} System Monitors ({1})\" style=\"filled\" fillcolor=\"oldlace\"", iconForGroup, allMonitorsInGroup.Count).AppendLine();
                                     foreach(ObsMonitor monitor in allMonitorsInGroup)
                                     {
                                         if (monitor == interestingObject) continue;
@@ -519,7 +674,7 @@ namespace Observe.EntityExplorer
 
                                 case ObsObjectOriginType.User:
                                     sb.AppendLine("  subgraph cluster_mon_user {");
-                                    sb.AppendFormat("    label=\"👋 User Monitors ({0})\" style=\"filled\" fillcolor=\"lightcyan\"", allMonitorsInGroup.Count).AppendLine();
+                                    sb.AppendFormat("    label=\"{0} User Monitors ({1})\" style=\"filled\" fillcolor=\"lightcyan\"", iconForGroup, allMonitorsInGroup.Count).AppendLine();
                                     foreach(ObsMonitor monitor in allMonitorsInGroup)
                                     {
                                         if (monitor == interestingObject) continue;
@@ -576,10 +731,24 @@ namespace Observe.EntityExplorer
             sb.AppendLine("// Edges");
             foreach (ObjectRelationship relationship in allRelationships)
             {
-                sb.AppendLine(getGraphVizEdgeDefinition(relationship));
+                // Check if we're outputting incoming links to the focus object that has stages
+                if (relationship.ThisObject == interestingObject)
+                {
+                    // Out->here, so skip the double-linking. The links to Stages will explain what's going on
+                    sb.AppendLine();
+                }
+                else if (relationship.RelatedObject == interestingObject)
+                {
+                    // here->out
+                    sb.AppendLine(getGraphVizEdgeDefinition(relationship));
+                }
+                else
+                {
+                    sb.AppendLine(getGraphVizEdgeDefinition(relationship));
+                }
             }
             
-            // Close
+            // Close the entire doc
             sb.AppendLine("}");
 
             return sb.ToString();
@@ -593,21 +762,18 @@ namespace Observe.EntityExplorer
         private string getGraphVizNodeDefinition(ObsDataset dataset, bool highlight)
         {
             string nodeColor = "black";
-            string nodeIcon = "";
+            string nodeIcon = getIconType(dataset);
             if ((dataset.ObjectType & ObsCompositeObjectType.EventDataset) == ObsCompositeObjectType.EventDataset)
             {
                 nodeColor = "purple";
-                nodeIcon = "📅";
             }
             else if ((dataset.ObjectType & ObsCompositeObjectType.ResourceDataset) == ObsCompositeObjectType.ResourceDataset)
             {
                 nodeColor = "blue";
-                nodeIcon = "🗃";
             }
             else if ((dataset.ObjectType & ObsCompositeObjectType.IntervalDataset) == ObsCompositeObjectType.IntervalDataset)
             {
                 nodeColor = "maroon";
-                nodeIcon = "⏲";
             }
 
             string nodeShape = "rectangle";
@@ -642,49 +808,7 @@ namespace Observe.EntityExplorer
 
         private string getGraphVizNodeDefinition(ObsStage stage)
         {
-            string nodeIcon = "❓";
-
-            switch (stage.type)
-            {
-                case "table":
-                    nodeIcon = "📑";
-                    break;
-
-                case "timeseries":
-                    nodeIcon = "📉";
-                    break;
-
-                case "bar":
-                    nodeIcon = "📊";
-                    break;
-
-                case "circular":
-                    nodeIcon = "🥧";
-                    break;
-
-                case "stacked_area":
-                    nodeIcon = "🗻";
-                    break;
-
-                case "singlevalue":
-                    nodeIcon = "#️⃣";
-                    break;
-
-                case "list":
-                    nodeIcon = "📜";
-                    break;
-
-                case "valueovertime":
-                    nodeIcon = "⏳";
-                    break;
-
-                 case "gantt":
-                    nodeIcon = "📐";
-                    break;
-
-                default:
-                    break;
-            }
+            string nodeIcon = getIconWidgetType(stage);
 
             string nodeColor = "black";
             if (stage.visible == false)
@@ -731,33 +855,7 @@ namespace Observe.EntityExplorer
 
         private string getGraphVizNodeDefinition(ObsParameter parameter)
         {
-            string nodeIcon = "❓";
-
-            switch (parameter.viewType)
-            {
-                case "resource-input":
-                    nodeIcon = "🛆";
-                    break;
-
-                case "single-select":
-                    nodeIcon = "⛛";
-                    break;
-
-                case "text":
-                    nodeIcon = "🔤";
-                    break;
-
-                case "numeric":
-                    nodeIcon = "#️⃣";
-                    break;
-
-                case "input":
-                    nodeIcon = "🌫️";
-                    break;
-
-                default:
-                    break;
-            }
+            string nodeIcon = getIconParameterType(parameter);
 
             // TODO maybe change color based on the source of the parameter (Dataset, Stage, UserInput)
             string nodeColor = "black";
@@ -806,28 +904,30 @@ namespace Observe.EntityExplorer
         private string getGraphVizNodeDefinition(ObsMonitor monitor, bool highlight)
         {
             string nodeColor = "black";
-            string nodeIcon = "";
+            ObsCompositeObjectType objectType = ObsCompositeObjectType.Unknown;
 
             if ((monitor.ObjectType & ObsCompositeObjectType.MetricThresholdMonitor) == ObsCompositeObjectType.MetricThresholdMonitor)
             {
-                nodeIcon = "📈";
+                objectType = ObsCompositeObjectType.MetricThresholdMonitor;
             }
             else if ((monitor.ObjectType & ObsCompositeObjectType.LogThresholdMonitor) == ObsCompositeObjectType.LogThresholdMonitor)
             {
-                nodeIcon = "📜";
+                objectType = ObsCompositeObjectType.LogThresholdMonitor;
             }
             else if ((monitor.ObjectType & ObsCompositeObjectType.ResourceCountThresholdMonitor) == ObsCompositeObjectType.ResourceCountThresholdMonitor)
             {
-                nodeIcon = "🍫";
+                objectType = ObsCompositeObjectType.ResourceCountThresholdMonitor;
             }
             else if ((monitor.ObjectType & ObsCompositeObjectType.PromotionMonitor) == ObsCompositeObjectType.PromotionMonitor)
             {
-                nodeIcon = "🕙";
+                objectType = ObsCompositeObjectType.PromotionMonitor;
             }
             else if ((monitor.ObjectType & ObsCompositeObjectType.ResourceTextValueMonitor) == ObsCompositeObjectType.ResourceTextValueMonitor)
             {
-                nodeIcon = "🏆";
+                objectType = ObsCompositeObjectType.ResourceTextValueMonitor;
             }
+
+            string nodeIcon = getIconMonitorType(objectType);
 
             string nodeShape = "folder";
 
@@ -968,6 +1068,79 @@ namespace Observe.EntityExplorer
 
         #endregion
 
+        #region Icon rendering for various object type labels
+
+        internal string getIconType(ObsDataset obsDataset)
+        {
+            return obsDataset.kind switch
+            {
+                "Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "❓"
+            };
+        }
+
+        internal string getIconMonitorType(ObsCompositeObjectType objectType)
+        {
+            return objectType switch
+            {
+                ObsCompositeObjectType.MetricThresholdMonitor => "📈", ObsCompositeObjectType.LogThresholdMonitor => "📜", ObsCompositeObjectType.ResourceCountThresholdMonitor => "🍫", ObsCompositeObjectType.PromotionMonitor => "🕙", ObsCompositeObjectType.ResourceTextValueMonitor => "🏆", _ => "❓"
+            };
+        }
+
+        internal string getIconOriginType(ObsCompositeObject obsObject)
+        {
+            return getIconOriginType(obsObject.OriginType);
+        }
+
+        internal string getIconOriginType(ObsObjectOriginType obsObjectOriginType)
+        {
+            return obsObjectOriginType switch 
+            {
+                ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"
+            };
+        }
+
+        internal string getIconEnabled(ObsMonitor obsMonitor)
+        {
+            return obsMonitor.IsEnabled switch
+            {
+                true => "✅", false => "❌"
+            };
+        }
+
+        internal string getIconWidgetType(ObsStage obsStage)
+        {
+            return obsStage.type switch
+            {
+                "table" => "📑", "timeseries" => "📉", "bar" => "📊", "circular" => "🥧", "stacked_area" => "🗻", "singlevalue" => "#️⃣", "list" => "📜", "valueovertime" => "⏳", "gantt" => "📐", _ => ""
+            };
+        }
+
+        internal string getIconParameterType(ObsParameter obsParameter)
+        {
+            return obsParameter.viewType switch
+            {
+                "resource-input" => "🛆", "single-select" => "⛛", "text" => "🔤", "numeric" => "#️⃣", "input" => "🌫️", _ => "❓"
+            };
+        }
+
+        internal string getIconFieldType(ObsFieldDefinition obsFieldDefinition)
+        {
+            return obsFieldDefinition.type switch
+            {
+                "timestamp" => "🕘", "duration" => "⏰", "string" => "📝", "int64" => "⑽", "float64" => "⒑", "object" => "🎛", "variant" => "💫", "array" => "🔢", "bool" => "❓", _ => " "
+            };
+        }
+
+        internal string getDatasetURLPartType(ObsDataset obsDataset)
+        {
+            return obsDataset.kind switch
+            {
+                "Event" => "event", "Resource" => "resource", "Interval" => "event", _ => "fallthroughdonttknow"
+            };
+        }
+
+        #endregion
+
         private List<ObsDataset> getAllDatasets(AuthenticatedUser currentUser)
         {
             string entitySearchResults = ObserveConnection.datasetSearch_all(currentUser);
@@ -1097,5 +1270,74 @@ namespace Observe.EntityExplorer
 
             return monitorsList;
         }        
+
+        internal List<ObsCreditsTransform> getUsageTransform(AuthenticatedUser currentUser, int intervalHours)
+        {
+            List<ObsCreditsTransform> usageList = new List<ObsCreditsTransform>(1000);
+            try
+            {
+                string queryResults = ObserveConnection.getUsageData_transform(currentUser, intervalHours);
+                if (queryResults.Length == 0)
+                {
+                    throw new InvalidDataException(String.Format("Invalid response on getUsageData_transform for {0}", currentUser));
+                }
+
+                usageList = CsvHelperHelper.ReadListFromCSVString<ObsCreditsTransform>(queryResults);
+
+            }
+            catch (WebException ex)
+            {
+                logger.Error(ex);
+                loggerConsole.Error(ex);
+            }
+
+            return usageList;
+        }
+
+        internal List<ObsCreditsMonitor> getUsageMonitor(AuthenticatedUser currentUser, int intervalHours)
+        {
+            List<ObsCreditsMonitor> usageList = new List<ObsCreditsMonitor>(1000);
+            try
+            {
+                string queryResults = ObserveConnection.getUsageData_monitor(currentUser, intervalHours);
+                if (queryResults.Length == 0)
+                {
+                    throw new InvalidDataException(String.Format("Invalid response on getUsageData_monitor for {0}", currentUser));
+                }
+
+                usageList = CsvHelperHelper.ReadListFromCSVString<ObsCreditsMonitor>(queryResults);
+
+            }
+            catch (WebException ex)
+            {
+                logger.Error(ex);
+                loggerConsole.Error(ex);
+            }
+
+            return usageList;
+        }
+
+        internal List<ObsCreditsQuery> getUsageQuery(AuthenticatedUser currentUser, int intervalHours)
+        {
+            List<ObsCreditsQuery> usageList = new List<ObsCreditsQuery>(1000);
+            try
+            {
+                string queryResults = ObserveConnection.getUsageData_query(currentUser, intervalHours);
+                if (queryResults.Length == 0)
+                {
+                    throw new InvalidDataException(String.Format("Invalid response on getUsageData_query for {0}", currentUser));
+                }
+
+                usageList = CsvHelperHelper.ReadListFromCSVString<ObsCreditsQuery>(queryResults);
+
+            }
+            catch (WebException ex)
+            {
+                logger.Error(ex);
+                loggerConsole.Error(ex);
+            }
+
+            return usageList;
+        }
     }
 }

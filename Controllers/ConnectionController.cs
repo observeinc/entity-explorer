@@ -38,7 +38,6 @@ public class ConnectionController : Controller
        
         try
         {
-            // AuthenticatedUser currentUserOrig = this.CommonControllerMethods.GetCurrentUser();
             ConnectionConnectViewModel viewModel = new ConnectionConnectViewModel(null);
             viewModel.AllUsers = this.CommonControllerMethods.GetAllUsers();
             
@@ -47,55 +46,80 @@ public class ConnectionController : Controller
                 case "GET":
                     break;
 
-                case "POST":                   
-                    if (HttpContext.Request.Form["buttonConnect"].ToString() == "ConnectWithCredentials")
-                    {
-                        // Authenticate user from credentials
-                        AuthenticatedUser currentUser = null;
-                        currentUser = authenticateUser(
-                            HttpContext.Request.Form["textBoxEnvironment"], 
-                            HttpContext.Request.Form["textBoxUsername"], 
-                            HttpContext.Request.Form["textBoxPassword"],
-                            HttpContext.Request.Form["textBoxToken"]);
-
-                        // Cache this user in all environments list
-                        viewModel.AllUsers.Add(currentUser);
-                        viewModel.AllUsers = viewModel.AllUsers.DistinctBy(u => u.UniqueID).ToList();
-                        this.CommonControllerMethods.SaveAllUsers(viewModel.AllUsers);
-
-                        // Save credentials for subsequent pages
-                        //this.CommonControllerMethods.SaveCurrentUser(currentUser);
-                        viewModel.CurrentUser = currentUser;
-
-                        CommonControllerMethods.enrichTrace(currentUser);
-
-                        return RedirectToAction("Index", "Home", new {userid = currentUser.UniqueID});
-
-                    }
-                    // else if (HttpContext.Request.Form["buttonConnect"].ToString().Length > 0)
-                    // {
-                    //     // Authenticate from list of cached credentials
-                    //     AuthenticatedUser currentUser = viewModel.AllUsers.Where(u => u.UniqueID == HttpContext.Request.Form["buttonConnect"].ToString()).FirstOrDefault();
-                    //     if (currentUser != null)
-                    //     {
-                    //         // Save credentials for subsequent pages
-                    //         this.CommonControllerMethods.SaveCurrentUser(currentUser);
-                    //         viewModel.CurrentUser = currentUser;
-                    //         return RedirectToAction("Index", "Home");
-                    //     }
-                    //     else
-                    //     {
-                    //         throw new Exception(String.Format("Can't find {0} in the list of cached authenticated users", HttpContext.Request.Form["buttonConnect"].ToString()));
-                    //     }
-                    // }
-                    else if (HttpContext.Request.Form["buttonRemove"].ToString().Length > 0)
+                case "POST":
+                    if (HttpContext.Request.Form["buttonRemove"].ToString().Length > 0)
                     {
                         // Remove the saved credentials from the list
                         viewModel.AllUsers.RemoveAll(u => u.UniqueID == HttpContext.Request.Form["buttonRemove"].ToString());
                         this.CommonControllerMethods.SaveAllUsers(viewModel.AllUsers);
                         return RedirectToAction("Connect", "Connection");
                     }
+                    else if (HttpContext.Request.Form["buttonConnect"].ToString().Length > 0)
+                    {
+                        // Parse user environments
+                        AuthenticatedUser currentUser = getAuthenticatedUserEnvironment(HttpContext.Request.Form["textBoxEnvironment"], HttpContext.Request.Form["textBoxUsername"]);
 
+                        switch (HttpContext.Request.Form["buttonConnect"].ToString())
+                        {
+                            case "ConnectPassword":
+                                authenticateUserPassword(currentUser, HttpContext.Request.Form["textBoxPassword"]);
+                                getAuthenticatedUserDetails(currentUser);
+                                break;
+
+                            case "ConnectToken":
+                                authenticateUserToken(currentUser, HttpContext.Request.Form["textBoxToken"]);
+                                getAuthenticatedUserDetails(currentUser);
+                                break;
+
+                            case "ConnectDelegateStart":
+                                JObject ssoAuthStartResultsObject = authenticateUserSSOStart(currentUser);
+                                if (ssoAuthStartResultsObject != null)
+                                {
+                                    viewModel.Username = currentUser.UserName;
+                                    viewModel.Environment = currentUser.CustomerEnvironmentUrl.ToString();
+                                    viewModel.DelegateToken = JSONHelper.getStringValueFromJToken(ssoAuthStartResultsObject, "serverToken");
+                                    viewModel.DelegateURL = JSONHelper.getStringValueFromJToken(ssoAuthStartResultsObject, "url");
+
+                                    return View(viewModel);
+                                }
+                                break;
+
+                            case "ConnectDelegateComplete":
+                                if (authenticateUserSSOComplete(currentUser, HttpContext.Request.Form["textboxDelegateToken"]) == true)
+                                {
+                                    getAuthenticatedUserDetails(currentUser);
+                                }
+                                else
+                                {
+                                    viewModel.Username = currentUser.UserName;
+                                    viewModel.Environment = currentUser.CustomerEnvironmentUrl.ToString();
+                                    viewModel.DelegateToken = HttpContext.Request.Form["textboxDelegateToken"];
+                                    viewModel.DelegateURL = HttpContext.Request.Form["textboxDelegateURL"];
+
+                                    ViewData["ErrorMessage"] = "Not yet done";
+
+                                    return View(viewModel);
+                                }
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        loggerConsole.Info("Welcome user {0} ({1}) in customer {2} ({3})", currentUser.DisplayName, currentUser.UserName, currentUser.CustomerLabel, currentUser.CustomerName);
+
+                        // Cache this user in all environments list
+                        viewModel.AllUsers.Add(currentUser);
+                        viewModel.AllUsers = viewModel.AllUsers.DistinctBy(u => u.UniqueID).ToList();
+                        this.CommonControllerMethods.SaveAllUsers(viewModel.AllUsers);
+
+                        viewModel.CurrentUser = currentUser;
+
+                        CommonControllerMethods.enrichTrace(currentUser);
+
+                        return RedirectToAction("Index", "Home", new {userid = currentUser.UniqueID});
+                    }
+                    
                     break;                    
             }
 
@@ -119,15 +143,74 @@ public class ConnectionController : Controller
         }
     }
 
-    private AuthenticatedUser authenticateUser(string environment, string userName, string userPassword, string authToken)
+    // public IActionResult SSO()
+    // {
+    //     Stopwatch stopWatch = new Stopwatch();
+    //     stopWatch.Start();
+       
+    //     try
+    //     {
+    //         ConnectionSSOViewModel viewModel = new ConnectionSSOViewModel(null);
+    //         viewModel.Environment = HttpContext.Request.Query["environment"];
+    //         viewModel.Username = HttpContext.Request.Query["username"];
+    //         viewModel.DelegateURL = HttpContext.Request.Query["deletegateurl"];
+            
+    //         switch (HttpContext.Request.Method)
+    //         {
+    //             case "GET":
+    //                 AuthenticatedUser currentUser = getAuthenticatedUserEnvironment(viewModel.Environment, viewModel.Username);
+    //                 if (authenticateUserSSOComplete(currentUser, HttpContext.Request.Query["deletegatetoken"]) == true)
+    //                 {
+    //                     getAuthenticatedUserDetails(currentUser);
+    //                     // complete authentication
+
+    //                     throw new NotImplementedException("autheticated here! good job! finish this daniel");
+    //                 }
+
+    //                 break;
+
+    //             case "POST":
+    //                 break;
+    //         }
+
+    //         return View(viewModel);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         logger.Error(ex);
+    //         loggerConsole.Error(ex);
+
+    //         ViewData["ErrorMessage"] = ex.Message;
+
+    //         return View(new ConnectionSSOViewModel(null));
+    //     }
+    //     finally
+    //     {
+    //         stopWatch.Stop();
+
+    //         logger.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+    //         loggerConsole.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+    //     }
+    // }
+
+    private AuthenticatedUser getAuthenticatedUserEnvironment(string environment, string userName)
     {
         AuthenticatedUser currentUser = new AuthenticatedUser();
 
+        if (userName == null || userName.Length == 0)
+        {
+            throw new AuthenticationException("User name is empty");
+        }
+        
         currentUser.UserName = userName;
         logger.Info("currentUser.UserName={0}", currentUser.UserName);
 
-        #region Parse the environment into customer deployment
+        // Parse the environment into customer deployment
 
+        if (environment == null || environment.Length == 0)
+        {
+            throw new AuthenticationException("Account field is empty");
+        }
         logger.Info("textBoxEnvironment={0}", environment);
 
         // For customer:
@@ -175,6 +258,10 @@ public class ConnectionController : Controller
             }
         }
         logger.Info("currentUser.CustomerEnvironmentUrl={0}", currentUser.CustomerEnvironmentUrl);
+        if (currentUser.CustomerEnvironmentUrl == null)
+        {
+            throw new AuthenticationException("Unable to determine the URL from the passed environment");
+        }
 
         // Now that we have it parsed, identify the Customer components
         string[] customerDeploymentTokens = currentUser.CustomerEnvironmentUrl.Host.Split('.');
@@ -198,92 +285,230 @@ public class ConnectionController : Controller
 
         logger.Info("currentUser.CustomerName={0}", currentUser.CustomerName);
         logger.Info("currentUser.Deployment={0}", currentUser.Deployment);
+    
+        return currentUser;    
+    }
 
-        #endregion
-
-        #region Authentication process
-
-        // SSO or not?
-        if (true)
+    private bool authenticateUserPassword(AuthenticatedUser currentUser, string userPassword)
+    {
+        if (userPassword == null || userPassword.Length == 0)
         {
-            if (userPassword.Length > 0)
-            {
-                loggerConsole.Info("Authenticating {0} via password for customer {1} in {2} environment accessible at {3}", currentUser.UserName, currentUser.CustomerName, currentUser.Deployment, currentUser.CustomerEnvironmentUrl);
+            throw new AuthenticationException("User password is empty");
+        }
 
-                #region Example results
-                // {
-                //     "code": 200,
-                //     "status": "ok",
-                //     "message": "OK",
-                //     "data": {
-                //         "ok": true,
-                //         "authToken": "a;sldjas;djaslkdjaslkdjaslasdja",
-                //         "userInfo": {
-                //             "userId": "17590",
-                //             "userName": "Daniel Odievich",
-                //             "userTimezone": "",
-                //             "userStatus": "2",
-                //             "userRole": "admin"
-                //         }
-                //     }
-                // }                    
-                // 
-                // {
-                //     "code": 401,
-                //     "status": "error",
-                //     "message": "No such email and password combination exists for the given customer.",
-                //     "data": {
-                //         "ok": false,
-                //         "message": "No such email and password combination exists for the given customer."
-                //     }
-                // }
-                #endregion
-                string authenticationResults = ObserveConnection.Authenticate_Username_Password(currentUser.CustomerEnvironmentUrl, currentUser.UserName, userPassword);
-                if (authenticationResults.Length == 0)
-                {
-                    throw new InvalidOperationException(String.Format("Invalid response on authenticate user {0}", currentUser.UserName));
-                }
+        loggerConsole.Info("Authenticating {0} via password for customer {1} in {2} environment accessible at {3}", currentUser.UserName, currentUser.CustomerName, currentUser.Deployment, currentUser.CustomerEnvironmentUrl);
 
-                // Were the credentials good?
-                JObject authenticationResultsObject = JObject.Parse(authenticationResults);
-                if (JSONHelper.getBoolValueFromJToken(authenticationResultsObject, "ok") == false)
-                {                    
-                    // {
-                    //     "ok": false,
-                    //     "message": "No such email and password combination exists for the given customer."
-                    // }
-                    throw new InvalidCredentialException(String.Format("Unable to authenticate user {0} because of {1}", currentUser.UserName, JSONHelper.getStringValueFromJToken(authenticationResultsObject, "message")));
-                }
+        #region Example results
+        // {
+        //     "code": 200,
+        //     "status": "ok",
+        //     "message": "OK",
+        //     "data": {
+        //         "ok": true,
+        //         "authToken": "a;sldjas;djaslkdjaslkdjaslasdja",
+        //         "userInfo": {
+        //             "userId": "17590",
+        //             "userName": "Daniel Odievich",
+        //             "userTimezone": "",
+        //             "userStatus": "2",
+        //             "userRole": "admin"
+        //         }
+        //     }
+        // }                    
+        // 
+        // {
+        //     "code": 401,
+        //     "status": "error",
+        //     "message": "No such email and password combination exists for the given customer.",
+        //     "data": {
+        //         "ok": false,
+        //         "message": "No such email and password combination exists for the given customer."
+        //     }
+        // }
+        #endregion
+        string authenticationResults = ObserveConnection.Authenticate_Username_Password(currentUser, userPassword);
+        if (authenticationResults.Length == 0)
+        {
+            throw new InvalidOperationException(String.Format("Invalid response on authenticate user {0}", currentUser.UserName));
+        }
 
-                // If we got here, we have good credentials and first step is good
-                // {
-                //     "ok": true,
-                //     "access_key": "qDogme6EYnDvycbi-XXXXXXXXXXW"
-                // }
-                currentUser.AuthToken = JSONHelper.getStringValueFromJToken(authenticationResultsObject, "access_key");
-                if (currentUser.AuthToken.Length == 0)
-                {
-                    throw new InvalidDataException(String.Format("No authentication token available for user {0}", currentUser.UserName));
-                }
-                logger.Info("currentUser.AuthToken={0}", currentUser.AuthToken);
-            }
-            else if (authToken.Length > 0)
-            {
-                loggerConsole.Info("Authenticating {0} via token for customer {1} in {2} environment accessible at {3}", currentUser.UserName, currentUser.CustomerName, currentUser.Deployment, currentUser.CustomerEnvironmentUrl);
+        // Were the credentials good?
+        JObject authenticationResultsObject = JObject.Parse(authenticationResults);
+        if (JSONHelper.getBoolValueFromJToken(authenticationResultsObject, "ok") == false)
+        {                    
+            // {
+            //     "ok": false,
+            //     "message": "No such email and password combination exists for the given customer."
+            // }
+            throw new InvalidCredentialException(String.Format("Unable to authenticate user {0} because of {1}", currentUser.UserName, JSONHelper.getStringValueFromJToken(authenticationResultsObject, "message")));
+        }
 
-                currentUser.AuthToken = authToken;
-            }
+        // If we got here, we have good credentials and first step is good
+        // {
+        //     "ok": true,
+        //     "access_key": "qDogme6EYnDvycbi-XXXXXXXXXXW"
+        // }
+        currentUser.AuthToken = JSONHelper.getStringValueFromJToken(authenticationResultsObject, "access_key");
+        if (currentUser.AuthToken.Length == 0)
+        {
+            throw new InvalidDataException(String.Format("No authentication token available for user {0}", currentUser.UserName));
+        }
+        logger.Info("currentUser.AuthToken={0}", currentUser.AuthToken);
 
-            currentUser.AuthenticatedOn = DateTime.UtcNow;
-            logger.Info("currentUser.AuthenticatedOn={0}", currentUser.AuthenticatedOn);
+        currentUser.AuthenticatedOn = DateTime.UtcNow;
+        logger.Info("currentUser.AuthenticatedOn={0}", currentUser.AuthenticatedOn);
+
+        return true;
+    }
+
+    private bool authenticateUserToken(AuthenticatedUser currentUser, string userAuthToken)
+    {
+        if (userAuthToken == null || userAuthToken.Length == 0)
+        {
+            throw new AuthenticationException("User authentication token is empty");
+        }
+
+        loggerConsole.Info("Authenticating {0} via token for customer {1} in {2} environment accessible at {3}", currentUser.UserName, currentUser.CustomerName, currentUser.Deployment, currentUser.CustomerEnvironmentUrl);
+
+        currentUser.AuthToken = userAuthToken;
+
+        currentUser.AuthenticatedOn = DateTime.UtcNow;
+        logger.Info("currentUser.AuthenticatedOn={0}", currentUser.AuthenticatedOn);
+
+        return true;
+    }
+
+    private JObject authenticateUserSSOStart(AuthenticatedUser currentUser)
+    {
+        loggerConsole.Info("Starting authenticating {0} via SSO for customer {1} in {2} environment accessible at {3}", currentUser.UserName, currentUser.CustomerName, currentUser.Deployment, currentUser.CustomerEnvironmentUrl);
+
+        string authenticationResults = ObserveConnection.Authenticate_SSO_Start(currentUser);
+        if (authenticationResults.Length == 0)
+        {
+            throw new InvalidOperationException(String.Format("Invalid response on authenticate user {0}", currentUser.UserName));
+        }
+
+        // Was the start of getting credentials good?
+        JObject authenticationResultsObject = JObject.Parse(authenticationResults);
+        if (JSONHelper.getBoolValueFromJToken(authenticationResultsObject, "ok") == false)
+        {                    
+            // {
+            //     "ok": false,
+            //     "message": "The email address \"xdaniel.odievich@observeinc.com\" does not match customer id ###."
+            // }
+            // {
+            //     "ok": false,
+            //     "message": "Malformed login request"
+            // }
+            // {
+            //     "ok": false,
+            //     "message": "Unsupported integration"
+            // }                    
+            throw new InvalidCredentialException(String.Format("Unable to authenticate user {0} because of {1}", currentUser.UserName, JSONHelper.getStringValueFromJToken(authenticationResultsObject, "message")));
+        }
+
+        // If we got here, we have good username and request was submitted
+        // {
+        //     "ok": true,
+        //     "url": "https://######.observe-o2.com/settings/account?expectedUid=1799&serverToken=MSX3...2YPW",
+        //     "serverToken": "MSX3...2YPW"
+        // }
+        string serverToken = JSONHelper.getStringValueFromJToken(authenticationResultsObject, "serverToken");
+        if (serverToken.Length == 0)
+        {
+            throw new InvalidDataException(String.Format("No authentication token available for user {0}", currentUser.UserName));
+        }
+        logger.Info("serverToken={0}", serverToken);
+
+        string acceptanceUrl = JSONHelper.getStringValueFromJToken(authenticationResultsObject, "url");
+        if (acceptanceUrl.Length == 0)
+        {
+            throw new InvalidDataException(String.Format("No authentication token available for user {0}", currentUser.UserName));
+        }
+        logger.Info("acceptanceUrl={0}", serverToken);
+
+        return authenticationResultsObject;
+    }
+
+    private bool authenticateUserSSOComplete(AuthenticatedUser currentUser, string delegateToken)
+    {
+        if (delegateToken == null || delegateToken.Length == 0)
+        {
+            throw new AuthenticationException("Delegate token is empty");
+        }
+
+        loggerConsole.Info("Completing authenticating {0} via SSO for customer {1} in {2} environment accessible at {3}", currentUser.UserName, currentUser.CustomerName, currentUser.Deployment, currentUser.CustomerEnvironmentUrl);
+
+        string authenticationResults = ObserveConnection.Authenticate_SSO_Complete(currentUser, delegateToken);
+        if (authenticationResults.Length == 0)
+        {
+            throw new InvalidOperationException(String.Format("Invalid response on authenticate user {0}", currentUser.UserName));
+        }
+
+        // Was the end of getting credentials good?
+        JObject authenticationResultsObject = JObject.Parse(authenticationResults);
+        if (JSONHelper.getBoolValueFromJToken(authenticationResultsObject, "ok") == false)
+        {             
+            // Nothing pending       
+            // {
+            //     "ok": false,
+            //     "message": "No pending login with token \"EGNUI...RBYGP\" exists."
+            // }
+            throw new InvalidCredentialException(String.Format("Unable to authenticate user {0} because of {1}", currentUser.UserName, JSONHelper.getStringValueFromJToken(authenticationResultsObject, "message")));
+        }
+
+        // have the user accepted the token yet?
+        bool tokenSettled = JSONHelper.getBoolValueFromJToken(authenticationResultsObject, "settled");
+        logger.Info("token settled={0}", tokenSettled);
+        if (tokenSettled == false)
+        {
+            // Not yet accepted
+            // {
+            //     "ok": true,
+            //     "settled": false
+            // }
+            // nope they haven't
+            return false;
         }
         else
         {
-            throw new NotImplementedException("SSO not implemented yet");
+            // Denied
+            // {
+            //     "ok": true,
+            //     "settled": true,
+            //     "message": "Login denied."
+            // }
+            // Accepted
+            // {
+            //     "ok": true,
+            //     "settled": true,
+            //     "accessKey": "Pl....E5",
+            //     "message": "Login verified."
+            // }        
+            string tokenMessage = JSONHelper.getStringValueFromJToken(authenticationResultsObject, "message");
+            logger.Info("token message={0}", tokenMessage);
+
+            currentUser.AuthToken = JSONHelper.getStringValueFromJToken(authenticationResultsObject, "accessKey");
+            if (currentUser.AuthToken.Length == 0)
+            {
+                if (tokenMessage == "Login denied.")
+                {
+                    throw new InvalidCredentialException(String.Format("Unable to authenticate user {0} because of {1}", currentUser.UserName, tokenMessage));
+                }
+                return false;
+            }
+            else
+            {
+                currentUser.AuthenticatedOn = DateTime.UtcNow;
+                logger.Info("currentUser.AuthenticatedOn={0}", currentUser.AuthenticatedOn);
+
+                return true;
+            }
         }
+    }
 
-        #endregion
-
+    private void getAuthenticatedUserDetails(AuthenticatedUser currentUser)
+    {
         #region More details on user such as label and workspace
 
         string currentUserResults = ObserveConnection.currentUser(currentUser);
@@ -294,10 +519,14 @@ public class ConnectionController : Controller
 
         JObject currentUserResultsObject = JObject.Parse(currentUserResults);
         JObject currentUserObject = (JObject)JSONHelper.getJTokenValueFromJToken(currentUserResultsObject["data"], "currentUser");
-        if (currentUserObject != null)
+        if (currentUserObject == null)
         {
-            currentUser.UserID = JSONHelper.getStringValueFromJToken(currentUserObject, "id");;
-            currentUser.DisplayName = JSONHelper.getStringValueFromJToken(currentUserObject, "label");;
+            throw new AuthenticationException("Unable to get authenticated user details from query.CurrentUser");
+        }
+        else if (currentUserObject != null)
+        {
+            currentUser.UserID = JSONHelper.getStringValueFromJToken(currentUserObject, "id");
+            currentUser.DisplayName = JSONHelper.getStringValueFromJToken(currentUserObject, "label");
             currentUser.CustomerLabel = JSONHelper.getStringValueFromJToken(JSONHelper.getJTokenValueFromJToken(currentUserObject, "customer"), "label");
 
             // There is only ever 1 workspace ID right now
@@ -307,6 +536,7 @@ public class ConnectionController : Controller
                 foreach (JObject workspaceObject in workspaceArrayToken)
                 {
                     currentUser.WorkspaceID = JSONHelper.getStringValueFromJToken(workspaceObject, "id");
+                    currentUser.WorkspaceName = JSONHelper.getStringValueFromJToken(workspaceObject, "label");
                 }
             }            
         }
@@ -316,10 +546,7 @@ public class ConnectionController : Controller
         logger.Info("currentUser.CustomerLabel={0}", currentUser.CustomerLabel);
         logger.Info("currentUser.WorkspaceID={0}", currentUser.WorkspaceID);
 
-        #endregion 
-
-        loggerConsole.Info("Welcome user {0} ({1}) in customer {2} ({3})", currentUser.DisplayName, currentUser.UserName, currentUser.CustomerLabel, currentUser.CustomerName);
-
-        return currentUser;
+        #endregion
     }
+
 }

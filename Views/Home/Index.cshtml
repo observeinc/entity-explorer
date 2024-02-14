@@ -45,16 +45,17 @@
     <tr>
         <th>Category</th>
         <th>Statistics</th>
+        <th>Costs</th>
         <th>Actions</th>
     </tr>
     <tr>
         <td>Datasets</td>
         <td>
             <table>
-                <tr>
+                <thead>
                     <th>Category</th>
                     <th>Number</th>
-                </tr>
+                </thead>
                 <tr>
                     <td>Total</td>
                     <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Dataset).Count</td>
@@ -93,28 +94,52 @@
                 </tr>
             </table>
         </td>
+        <td>
+            <table>
+                <thead>
+                    <th>Length</th>
+                    <th>Transform</th>
+                    <th>Query</th>
+                </thead>
+                <tr>
+                    <td>1 hour</td>
+                    <td>@Model.ObserveEnvironment.AllDatasetsDict.Values.ToList().Sum(d => d.Transform1H.Credits).ToString("##0.#")</td>
+                    <td>@Model.ObserveEnvironment.AllDatasetsDict.Values.ToList().Sum(d => d.Query1H.Credits).ToString("#.#")</td>
+                </tr>
+                <tr>
+                    <td>1 day</td>
+                    <td>@Model.ObserveEnvironment.AllDatasetsDict.Values.ToList().Sum(d => d.Transform1D.Credits).ToString("##0.#")</td>
+                    <td>@Model.ObserveEnvironment.AllDatasetsDict.Values.ToList().Sum(d => d.Query1D.Credits).ToString("#.#")</td>
+                </tr>
+                <tr>
+                    <td>1 week</td>
+                    <td>@Model.ObserveEnvironment.AllDatasetsDict.Values.ToList().Sum(d => d.Transform1W.Credits).ToString("##0.#")</td>
+                    <td>@Model.ObserveEnvironment.AllDatasetsDict.Values.ToList().Sum(d => d.Query1W.Credits).ToString("#.#")</td>
+                </tr>
+            </table>
+        </td>
         <td><a asp-area="" asp-controller="Select" asp-action="Dataset" asp-route-userid="@Model.CurrentUser.UniqueID">🎫 Explore Datasets</a> - Review the structure and dependencies of datasets</td>
     </tr>
     <tr>
         <td>Dashboards</td>
         <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Dashboard).Count</td>
+        <td></td>
         <td><a asp-area="" asp-controller="Select" asp-action="Dashboard" asp-route-userid="@Model.CurrentUser.UniqueID">📈 Explore Dashboards</a> - Review the structure and dependencies of custom and app dashboards</td>
     </tr>
     <tr>
         <td>Worksheets</td>
-        <td>
-            
-        </td>
+        <td></td>
+        <td></td>
         <td><a asp-area="" asp-controller="Select" asp-action="Worksheet" asp-route-userid="@Model.CurrentUser.UniqueID">📝 Explore Worksheets</a> - Review the structure of ad-hoc worksheets</td>
     </tr>
     <tr>
         <td>Monitors</td>
         <td>
             <table>
-                <tr>
+                <thead>
                     <th>Category</th>
                     <th>Number</th>
-                </tr>
+                </thead>
                 <tr>
                     <td>Total</td>
                     <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor).Count</td>
@@ -141,6 +166,26 @@
                 </tr>
             </table>
         </td>
+        <td>
+            <table>
+                <thead>
+                    <th>Length</th>
+                    <th>Transform</th>
+                </thead>
+                <tr>
+                    <td>1 hour</td>
+                    <td>@Model.ObserveEnvironment.AllMonitorsDict.Values.ToList().Sum(d => d.Transform1H.Credits).ToString("##0.#")</td>
+                </tr>
+                <tr>
+                    <td>1 day</td>
+                    <td>@Model.ObserveEnvironment.AllMonitorsDict.Values.ToList().Sum(d => d.Transform1D.Credits).ToString("##0.#")</td>
+                </tr>
+                <tr>
+                    <td>1 week</td>
+                    <td>@Model.ObserveEnvironment.AllMonitorsDict.Values.ToList().Sum(d => d.Transform1W.Credits).ToString("##0.#")</td>
+                </tr>
+            </table>
+        </td>
         <td><a asp-area="" asp-controller="Select" asp-action="Monitor" asp-route-userid="@Model.CurrentUser.UniqueID">📟 Explore Monitors</a> - Review the monitor configuration and dataset dependencies</td>
     </tr>
 @{
@@ -151,6 +196,7 @@
     <tr>
         <td>All Relationships</td>
         <td><button id="buttonVisualize_RelatedObjectsGraph" onclick="goToGraphVizOnline('textArea_RelatedObjectsGraph')">🔭 View</button></td>
+        <td></td>
         <td>
             <textarea id="textArea_RelatedObjectsGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(syntheticNonExistentObject, @Model.ObserveEnvironment.ObjectRelationships)</textarea>
         </td>

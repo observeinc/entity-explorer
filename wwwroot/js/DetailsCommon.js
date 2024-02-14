@@ -20,3 +20,29 @@ function goToGraphVizOnline(textArea)
 
     window.open(graphVizUrl, "_blank");
 }
+
+function showOrHideDashboardWidgetImagePreview(checkBox)
+{
+    if (checkBox.checked == true)
+    {
+        $("tr[id^='stage_image_preview_']").show();
+    }
+    else
+    {
+        $("tr[id^='stage_image_preview_']").hide();
+    }
+}
+
+function showOrHideDashboardInputsOutputTables(checkBox)
+{
+    if (checkBox.checked == true)
+    {
+        $("tr[id^='stage_table_input_']").show();
+        $("tr[id^='stage_table_output_']").show();
+    }
+    else
+    {
+        $("tr[id^='stage_table_input_']").hide();
+        $("tr[id^='stage_table_output_']").hide();
+    }
+}

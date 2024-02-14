@@ -20,8 +20,15 @@ namespace Observe.EntityExplorer.DataObjects
         public List<ObsParameter> Parameters { get; set; } = new List<ObsParameter>(0);
         public Dictionary<string, ObsParameter> AllParametersDict { get; set; }
 
+        public ObsAccelerationInfo Acceleration { get; set; }
+
         public List<ObjectRelationship> ExternalObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
         public List<ObjectRelationship> StageObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
+
+        public ObsCreditsMonitor Transform1H { get; set; } = new ObsCreditsMonitor() {Credits = 0};
+        public ObsCreditsMonitor Transform1D { get; set; } = new ObsCreditsMonitor() {Credits = 0};
+        public ObsCreditsMonitor Transform1W { get; set; } = new ObsCreditsMonitor() {Credits = 0};
+        public ObsCreditsMonitor Transform1M { get; set; } = new ObsCreditsMonitor() {Credits = 0};
 
         public int NumStages
         { 
@@ -73,7 +80,33 @@ namespace Observe.EntityExplorer.DataObjects
         {
             get
             {
-                return JSONHelper.getStringValueOfObjectFromJToken(this._raw, "activeMonitorInfo");
+                JObject activeMonitorInfo = (JObject)JSONHelper.getJTokenValueFromJToken(this._raw, "activeMonitorInfo");
+                if (activeMonitorInfo != null)
+                {
+                    JObject activeMonitorInfoClone = (JObject)activeMonitorInfo.DeepClone();
+                    activeMonitorInfoClone.Remove("accelerationInfo");
+                    return activeMonitorInfoClone.ToString(Newtonsoft.Json.Formatting.Indented);
+                }
+                else
+                {
+                    return String.Empty;
+                }
+            }
+        }
+
+        public string AccelerationInfo
+        {
+            get
+            {
+                JObject activeMonitorInfo = (JObject)JSONHelper.getJTokenValueFromJToken(this._raw, "activeMonitorInfo");
+                if (activeMonitorInfo != null)
+                {
+                    return JSONHelper.getStringValueOfObjectFromJToken(activeMonitorInfo, "accelerationInfo");
+                }
+                else
+                {
+                    return String.Empty;
+                }
             }
         }
 
@@ -292,6 +325,21 @@ namespace Observe.EntityExplorer.DataObjects
                 this.ExternalObjectRelationships.Add(new ObjectRelationship(relationship.name, this, relationship.RelatedObject, relationship.RelationshipType));
             }
             this.ExternalObjectRelationships = this.ExternalObjectRelationships.Distinct().ToList();
+        }
+
+        public void AddAccelerationInfo(Dictionary<string, ObsDataset> allDatasetsDict, Dictionary<string, ObsMonitor> allMonitorsDict)
+        {
+            JObject entityObject = this._raw;
+
+            JObject activeMonitorInfo = (JObject)JSONHelper.getJTokenValueFromJToken(entityObject, "activeMonitorInfo");
+            if (activeMonitorInfo != null)
+            {
+                JObject accelerationInfoObject = (JObject)JSONHelper.getJTokenValueFromJToken(activeMonitorInfo, "accelerationInfo");
+                if (accelerationInfoObject != null)
+                {
+                    this.Acceleration = new ObsAccelerationInfo(accelerationInfoObject, this, allDatasetsDict, allMonitorsDict);
+                }
+            }
         }
 
         public List<ObjectRelationship> GetRelationshipsOfRelated(ObsStage interestingObject)

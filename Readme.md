@@ -4,6 +4,8 @@ Observe Entity Explorer allows discovery of dependencies between Observe objects
 
 ![Dataset Graph](/docs/screenshots/details/dataset/DatasetDependencies.png?raw=true)
 
+> **_NOTE:_**  This tool uses the Observe GraphQL API, which is not [yet] a publicly documented API. Therefore this tool, or any application that you develop that is derived from it may stop working without notice in the future. If you have specific API needs that are not covered by our currently documented API found at https://developer.observeinc.com/, please contact us for more information.
+
 ## Install Application
 
 Observe Entity Explorer can run on Windows, Mac or Linux. Compiled are in [Releases](../../releases/latest).
@@ -13,8 +15,8 @@ Observe Entity Explorer can run on Windows, Mac or Linux. Compiled are in [Relea
 1. Install .NET 8.0 SDK
 
     * Download [Microsoft Downloads web site](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) with all instructions, or:
-        * Direct [x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-8.0.100-macos-x64-installer) installer
-        * Direct [arm64 (M1/M2)](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-8.0.100-macos-arm64-installer) installer
+        * Direct [x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-8.0.200-macos-x64-installer) installer
+        * Direct [arm64 (M1/M2)](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-8.0.200-macos-arm64-installer) installer
     * OR
     * Homebrew [brew install dotnet](https://formulae.brew.sh/cask/dotnet)
 
@@ -116,25 +118,42 @@ info: Microsoft.Hosting.Lifetime[0]
       Content root path: C:\observe\observe-entity-explorer-releases\2023.10.18.0\observe-entity-explorer.win.2023.10.18.0
 ```
 
-## Connect
+## Connect Options
 
 Authenticate options:
 
 * Account
   * Full URL of the environment `https://#####.observeinc.com`
   * Just customer ID of the environment `#####`. Production URL `observeinc.com` is assumed
-  * Host name `#####.observeinc.com`
+  * Host name `#####.observeinc.com` without https://
 * Username
   * Typically it is your email
 * Password
   * Specify your password
 * Token
-  * Specify your API token if you have one
+  * Specify your API token if you have one issued to you
+  * OR
   * Specify token taken from the GraphQL Bearer authentication in your browser devtools
+* Delegate
+  * Log into Observe UI to approve your sign-in
+  * Return to this UI to complete sign-in
 
 ![Connect](/docs/screenshots/authetication/ConnectNew.png?raw=true)
 
-## Multiple Accounts
+### Connect with Delegate Login
+
+To connect with delegation:
+
+* Specify account and username
+* Click "Connect with Observe UI" button
+* Click on "Go to Observe to approve login request link"
+* In new browser window, authenticate into Observe
+* Confirm your sign-in request on "Accounts Settings" page
+* Back in Observe Entity Explorer, click "Check for Completion and Connect" button to finish signing in 
+
+![Connect Delegate](/docs/screenshots/authetication/ConnectDelegate.png?raw=true)
+
+## Connect with Multiple Accounts
 
 Your connections are saved. You can switch between them any time.
 
@@ -163,12 +182,22 @@ Type | Type of object (`Event`, `Resource`, `Interval`)
 Origin | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
 ID | Object ID
 Name | Object Name
-Desc | Description label, if present
-Components | Fields, primary and foregn keys, related keys
+Description | Description label, if present
+Parts | Fields, primary and foreign keys, related keys
 Uses | What this object uses as data inputs and data links
 Used By | What uses this object (`Data`, `Dashboard`, `Monitor`)
 Created | Who and when created this object
 Updated | Who and when updates this object last
+Transform 1h | `credits_transform` in last 1 hour
+Transform 1d | `credits_transform` in last 1 day
+Transform 1w | `credits_transform` in last 1 week
+Query 1h | `credits_adhoc_query` in last 1 hour
+Query 1d | `credits_adhoc_query` in last 1 day
+Query 1w | `credits_adhoc_query` in last 1 week
+Accel Conf. | Configured staleness target of the dataset
+Accel Eff. | The target staleness of this dataset when taking downstream datasets
+Accel Actl. | Staleness of the dataset (averaged over some moving window)
+Accel Range | Actual accelerated range of the dataset
 
 ![Dataset List](/docs/screenshots/list/dataset/SelectDataset.png?raw=true)
 
@@ -214,6 +243,13 @@ Stages | Number of stages in monitor
 Uses | What this object uses as data inputs and data links
 Created | Who and when created this object
 Updated | Who and when updates this object last
+Transform 1h | `credits_monitor` in last 1 hour
+Transform 1d | `credits_monitor` in last 1 day
+Transform 1w | `credits_monitor` in last 1 week
+Accel Conf. | Configured staleness target of the dataset
+Accel Eff. | The target staleness of this dataset when taking downstream datasets
+Accel Actl. | Staleness of the dataset (averaged over some moving window)
+Accel Range | Actual accelerated range of the dataset
 
 ![Monitor List](/docs/screenshots/list/monitor/SelectMonitor.png?raw=true)
 
@@ -233,13 +269,20 @@ Icon | Icon of the object
 Origin | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
 Created | Who and when created this object
 Updated | Who and when updates this object last
+Credits | `credits_transform` and `credits_adhoc_query` for 1 hour, 1 day, 1 week
+Query Credits | `credits_adhoc_query` for each user for 1 hour, 1 day, 1 week
 Important Fields | From/To/Label designated fields
 Fields | Table of fields and their datatypes
 Related Key | List of related keys
 Foreign Key | List of foreign keys
-Acceleration | Dataset acceleration settings
 
 ![Dataset Details](/docs/screenshots/details/dataset/DatasetDetails.png?raw=true)
+
+### Acceleration - Dataset
+
+Dataset acceleration settings.
+
+![Dataset Acceleration](/docs/screenshots/details/dataset/DatasetAcceleration.png?raw=true)
 
 ### Ancestors - Dataset
 
@@ -284,6 +327,8 @@ Used By | Objects this stage is providing data and links to
 OPAL | The OPAL pipeline for this stage
 
 ![Dataset Stage Detail](/docs/screenshots/details/dataset/DatasetStageDetail.png?raw=true)
+
+You can click "Show/Hide input and output tables" to remove details and just focus on OPAL code.
 
 ### Stages Graph - Dataset
 
@@ -375,6 +420,10 @@ OPAL | The OPAL pipeline for this stage
 
 ![Dashboard Stage Detail](/docs/screenshots/details/dashboard/DashboardStageDetail.png?raw=true)
 
+You can click "Show/Hide input and output tables" to remove details and just focus on OPAL code.
+
+You can click "Show/Hide dashboard widget image preview" to remove images and just focus on OPAL code.
+
 ### Stages Graph - Dashboard
 
 Visual diagram showing relationship between inputs and stages of this dashboard.
@@ -404,6 +453,10 @@ Notifications | Monitor notification settings
 Info | Monitor detail information
 
 ![Monitor Details](/docs/screenshots/details/monitor/MonitorDetails.png?raw=true)
+
+### Acceleration - Monitor
+
+Monitor acceleration settings similar to those of Dataset
 
 ### Ancestors - Monitor
 
@@ -436,9 +489,3 @@ logs\Observe.EntityExplorer.Console.2023-10-18.log
 logs\Observe.EntityExplorer.Main.2023-10-18.log
 logs\Observe.EntityExplorer.ObserveConnection.2023-10-18.log
 ```
-
-## Links
-
-[Notes in Notion](https://www.notion.so/observeinc/Observe-Entity-Explorer-f9fa4862610f452780f652b676142ecd?pvs=4)
-
-[#entity-explorer in Slack](https://observeinc.slack.com/archives/C05V6JN78SX)

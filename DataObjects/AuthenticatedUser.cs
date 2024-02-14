@@ -14,6 +14,8 @@ namespace Observe.EntityExplorer.DataObjects
         public string UserID { get; set; }
         [JsonProperty (PropertyName = "WI")]
         public string WorkspaceID { get; set; }
+        [JsonProperty (PropertyName = "WN")]
+        public string WorkspaceName { get; set; }
         [JsonProperty (PropertyName = "UN")]
         public string UserName { get; set; }
         [JsonProperty (PropertyName = "DN")]

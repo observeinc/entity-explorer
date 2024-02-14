@@ -31,8 +31,8 @@
 
 <table class="AlternatingRowTable SortableTable">
     <thead>
-        <th>Details</th>
         <th>View</th>
+        <th>Data</th>
         <th>Edit</th>
         <th>Origin</th>
         <th>ID</th>
@@ -50,10 +50,10 @@
     @foreach (ObsDashboard entity in selectedDashboards)
     {
         <tr id="tableRowDashboard_@entity.id">
-            <td>@Html.ActionLink("📈 Details", "Dashboard", "Details", new { id = entity.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+            <td>@Html.ActionLink("📈 View", "Dashboard", "Details", new { id = entity.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
             <td><a href="@String.Format("{0}workspace/{1}/dashboard/{2}",           @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">📄 View</a></td>
             <td><a href="@String.Format("{0}workspace/{1}/dashboard/{2}?edit=true", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">🛠️ Edit</a></td>
-            <td>@Html.Raw(entity.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"})@entity.OriginType</td>
+            <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
             <td>@entity.id</td>
             <td>@entity.name</td>
             <td>

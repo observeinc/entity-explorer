@@ -11,6 +11,10 @@ span.spanError {
   color: red;
 }
 
+table.SortableTable th {
+  writing-mode: vertical-lr;
+}
+
 table.AlternatingRowTable tr:nth-child(even) {
   background: lightcyan
 }
@@ -56,4 +60,9 @@ table.dataTable tbody td {
 }
 table.dataTable thead tr th, table.dataTable thead tr td {
   padding: 1px !important; 
+}
+
+/* Color highlighting for the acceleration*/
+span.accelSettingDifferent {
+  color: orangered;
 }

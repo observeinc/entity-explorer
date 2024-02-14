@@ -22,33 +22,66 @@
         <tr id="tableRowEnvironment">
             <td>🌐</td>
             <td><label for="textBoxEnvironment">Account</label></td>
-            <td><input type="textbox" id="textBoxEnvironment" name="textBoxEnvironment" value="" size="40" /></td>
+            <td>@Html.TextBox("textBoxEnvironment", Model.Environment, String.Empty, new {size = 40, placeholder = "https://[######].observeinc.com"})</td>
+            <td>Specify account ID, host name in [######].observeinc.com or full URL https://[######].observeinc.com</td>
         </tr>
         <tr id="tableRowUsername">
             <td>🦄</td>
             <td><label for="textBoxUsername">Username</label></td>
-            <td><input type="textbox" id="textBoxUsername" name="textBoxUsername" value="" size="40" /></td>
+            <td>@Html.TextBox("textBoxUsername", Model.Username, String.Empty, new {size = 40, placeholder = "your.name@yourcompany.com"})</td>
+            <td>Specify your username. It is most frequently your email</td>
+        </tr>
+        <tr>
         </tr>
         <tr id="tableRowPassword">
             <td>🔑</td>
             <td><label for="textBoxPassword">Password</label></td>
-            <td><input type="password" id="textBoxPassword" name="textBoxPassword" value="" size="40" /></td>
+            <td><input type="password" id="textBoxPassword" name="textBoxPassword" size="40" placeholder="your password, often looks like ******" /></td>
+            <td><button type="submit" id="buttonConnect" name="buttonConnect" value="ConnectPassword">🔑 Connect with Password</button></td>
         </tr>
         <tr>
-            <td>-</td>
-            <td>-</td>
+            <td></td>
+            <td></td>
             <td>OR</td>
+            <td></td>
         </tr>
         <tr id="tableRowToken">
             <td>🏷️</td>
             <td><label for="textBoxToken">Token</label></td>
-            <td><input type="password" id="textBoxToken" name="textBoxToken" value="" size="40" /></td>
+            <td><input type="password" id="textBoxToken" name="textBoxToken" size="40" placeholder="your API token" /></td>
+            <td><button type="submit" id="buttonConnect" name="buttonConnect" value="ConnectToken">🏷️ Connect with Token</button></td>
         </tr>
         <tr>
             <td></td>
             <td></td>
-            <td><button type="submit" id="buttonConnect" name="buttonConnect" value="ConnectWithCredentials">Connect</button></td>
+            <td>OR</td>
+            <td></td>
         </tr>
+        <tr id="tableRowDelegate">
+            <td>🔖</td>
+            <td>Delegate</td>
+            <td>Initiate delegated login in Observe UI</td>
+            <td><button type="submit" id="buttonConnect" name="buttonConnect" value="ConnectDelegateStart">🔖 Connect with Observe UI</button></td>
+        </tr>
+        @if (@Model.DelegateToken != null && @Model.DelegateToken.Length > 0)
+        {
+        <tr id="tableRowSSO">
+            <td>✔️</td>
+            <td>Approve</td>
+            <td>Approve your login in Observe UI</td>
+            <td>
+                <input type="hidden" id="textboxDelegateToken" name="textboxDelegateToken" value="@Model.DelegateToken"/>
+                <input type="hidden" id="textboxDelegateURL" name="textboxDelegateURL" value="@Model.DelegateURL"/>
+                <a href="@Model.DelegateURL" target="_blank">Go to Observe to approve login request</a>, then come back to complete the process
+            </td>
+        </tr>
+        <tr id="tableRowSSO">
+            <td>🏁</td>
+            <td>Delegate</td>
+            <td>Complete delegated login</td>
+            <td><button type="submit" id="buttonConnect" name="buttonConnect" value="ConnectDelegateComplete">🏁 Check For Completion and Connect</button></td>
+        </tr>
+        }
     </table>
     }
 </p>

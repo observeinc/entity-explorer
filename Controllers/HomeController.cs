@@ -49,6 +49,7 @@ public class HomeController : Controller
             {
                 throw new Exception("Unable to retrieve the Observe Environment from cache or server");
             }
+            CommonControllerMethods.enrichTrace(currentUser);
 
             switch (HttpContext.Request.Method)
             {
@@ -72,7 +73,6 @@ public class HomeController : Controller
                     break;
             }
 
-            CommonControllerMethods.enrichTrace(currentUser);
             CommonControllerMethods.enrichTrace(observeEnvironment);
             
             return View(new BaseViewModel(currentUser, observeEnvironment));

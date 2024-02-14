@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Security.Authentication;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -22,28 +23,71 @@ namespace Observe.EntityExplorer
 
         #region Observe Authentication
 
-        public static string Authenticate_Username_Password(Uri accountUri, string userName, string password)
+        public static string Authenticate_Username_Password(AuthenticatedUser currentUser, string password)
         {
-            string requestBody = String.Format("{{\"user_email\": \"{0}\", \"user_password\": \"{1}\", \"tokenName\": \"Authentication Token for Observe-Entity-Explorer\"}}", userName, password);
-            
+            string requestBody = String.Format("{{\"user_email\": \"{0}\", \"user_password\": \"{1}\", \"tokenName\": \"Authentication Token for Observe Entity Explorer\"}}", currentUser.UserName, password);
+
             // https://docs.observeinc.com/en/latest/content/common-topics/FAQ.html#how-do-i-create-an-access-token-that-can-do-more-than-just-ingest-data
-            return apiPOST(
-                accountUri,
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
                 "v1/login",
                 "application/json", 
                 requestBody,
                 "application/json",
                 String.Empty, 
-                String.Empty).Item1;
+                String.Empty);
+
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                throw new AuthenticationException(String.Format("Call to {0}v1/login with user {1} returned {2} {3}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, results.Item3, results.Item1));
+            }
         }
 
-        public static string Authenticate_Username_SSO(Uri accountUri, string userName)
+        public static string Authenticate_SSO_Start(AuthenticatedUser currentUser)
         {
-            string requestBody = String.Format("email={0}&password={1}", HttpUtility.UrlEncode(userName), HttpUtility.UrlEncode("SSOSSOSSO"));
+            string requestBody = String.Format("{{\"userEmail\": \"{0}\", \"clientToken\": \"Authentication Token for Observe Entity Explorer requested by {1}@{2} on {3:u}\", \"integration\": \"observe-tool-abdaf0\"}}", currentUser.UserName, Environment.UserName, Environment.MachineName, DateTime.UtcNow);
 
-            throw new NotImplementedException("SSO not implemented yet");
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/login/delegated",
+                "application/json", 
+                requestBody,
+                "application/json",
+                String.Empty, 
+                String.Empty);
+
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                throw new AuthenticationException(String.Format("Call to {0}v1/login/delegated with user {1} returned {2} {3}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, results.Item3, results.Item1));
+            }
         }
 
+        public static string Authenticate_SSO_Complete(AuthenticatedUser currentUser, string delegateToken)
+        {
+            Tuple<string, List<string>, HttpStatusCode> results = apiGET(
+                currentUser.CustomerEnvironmentUrl,
+                String.Format("v1/login/delegated/{0}", delegateToken),
+                "application/json", 
+                String.Empty, 
+                String.Empty);
+
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                throw new AuthenticationException(String.Format("Call to {0}v1/login/delegated/[token] with user {1} returned {2} {3}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, results.Item3, results.Item1));
+            }
+        }
         #endregion
 
         #region User, Customer, Workspace Metadata
@@ -105,14 +149,24 @@ namespace Observe.EntityExplorer
             queryObject.Add("variables", new JObject());
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
 
-            return apiPOST(
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
                 currentUser.CustomerEnvironmentUrl,
                 "v1/meta",
                 "application/json", 
                 queryBody,
                 "application/json",
                 currentUser.CustomerName, 
-                currentUser.AuthToken).Item1;
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
         }
 
         #endregion
@@ -287,16 +341,25 @@ namespace Observe.EntityExplorer
           targetAcceleratedRanges {
             start
             end
-            __typename            
-          }
+            __typename
+          }        
           freshnessTime
           minimumDownstreamTargetStaleness {
             minimumDownstreamTargetStalenessSeconds
             datasetIds
             monitorIds
+            shareIds
             __typename
           }
           effectiveOnDemandMaterializationLength
+          errors {
+            datasetId
+            datasetName
+            transformId
+            time
+            errorText
+            __typename
+          }
           __typename
         }
         __typename
@@ -338,14 +401,24 @@ namespace Observe.EntityExplorer
             
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
 
-            return apiPOST(
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
                 currentUser.CustomerEnvironmentUrl,
                 "v1/meta",
                 "application/json", 
                 queryBody,
                 "application/json",
                 currentUser.CustomerName, 
-                currentUser.AuthToken).Item1;
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
         }
 
         public static string datasetSearch_related(AuthenticatedUser currentUser, string reachableFromDatasetId)
@@ -511,12 +584,12 @@ namespace Observe.EntityExplorer
           acceleratedRanges {
             start
             end
-            __typename            
+            __typename
           }
           targetAcceleratedRanges {
             start
             end
-            __typename            
+            __typename
           }
           freshnessTime
           minimumDownstreamTargetStaleness {
@@ -570,14 +643,24 @@ namespace Observe.EntityExplorer
             
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
 
-            return apiPOST(
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
                 currentUser.CustomerEnvironmentUrl,
                 "v1/meta",
                 "application/json", 
                 queryBody,
                 "application/json",
                 currentUser.CustomerName, 
-                currentUser.AuthToken).Item1;
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
         }
 
         public static string dataset_single(AuthenticatedUser currentUser, string datasetId)
@@ -767,15 +850,24 @@ namespace Observe.EntityExplorer
           start
           end
           __typename
-        }
+        }        
         freshnessTime
         minimumDownstreamTargetStaleness {
           minimumDownstreamTargetStalenessSeconds
           datasetIds
           monitorIds
+          shareIds
           __typename
         }
         effectiveOnDemandMaterializationLength
+        errors {
+          datasetId
+          datasetName
+          transformId
+          time
+          errorText
+          __typename
+        }
         __typename
       }
       __typename
@@ -818,14 +910,24 @@ namespace Observe.EntityExplorer
             
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
 
-            return apiPOST(
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
                 currentUser.CustomerEnvironmentUrl,
                 "v1/meta",
                 "application/json", 
                 queryBody,
                 "application/json",
                 currentUser.CustomerName, 
-                currentUser.AuthToken).Item1;
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
         }
 
         #endregion
@@ -946,14 +1048,24 @@ namespace Observe.EntityExplorer
             
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
 
-            return apiPOST(
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
                 currentUser.CustomerEnvironmentUrl,
                 "v1/meta",
                 "application/json", 
                 queryBody,
                 "application/json",
                 currentUser.CustomerName, 
-                currentUser.AuthToken).Item1;
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
         }
 
         public static string dashboard_single(AuthenticatedUser currentUser, string dashboardId)
@@ -1061,14 +1173,24 @@ namespace Observe.EntityExplorer
             
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
 
-            return apiPOST(
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
                 currentUser.CustomerEnvironmentUrl,
                 "v1/meta",
                 "application/json", 
                 queryBody,
                 "application/json",
                 currentUser.CustomerName, 
-                currentUser.AuthToken).Item1;
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
         }
 
         #endregion
@@ -1153,11 +1275,17 @@ namespace Observe.EntityExplorer
           end
           __typename
         }
+        targetAcceleratedRanges {
+          start
+          end
+          __typename
+        }        
         freshnessTime
         minimumDownstreamTargetStaleness {
           minimumDownstreamTargetStalenessSeconds
           datasetIds
           monitorIds
+          shareIds
           __typename
         }
         effectiveOnDemandMaterializationLength
@@ -1268,14 +1396,24 @@ namespace Observe.EntityExplorer
             
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
 
-            return apiPOST(
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
                 currentUser.CustomerEnvironmentUrl,
                 "v1/meta",
                 "application/json", 
                 queryBody,
                 "application/json",
                 currentUser.CustomerName, 
-                currentUser.AuthToken).Item1;
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
         }
 
         public static string monitorActionsSearch_all(AuthenticatedUser currentUser, string workspaceId)
@@ -1368,15 +1506,26 @@ fragment ChannelActionUnknown on UnknownAction {
             
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
 
-            return apiPOST(
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
                 currentUser.CustomerEnvironmentUrl,
                 "v1/meta",
                 "application/json", 
                 queryBody,
                 "application/json",
                 currentUser.CustomerName, 
-                currentUser.AuthToken).Item1;
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
         }
+
         #endregion
 
         #region Worksheets Metadata
@@ -1450,14 +1599,127 @@ fragment ChannelActionUnknown on UnknownAction {
             
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
 
-            return apiPOST(
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
                 currentUser.CustomerEnvironmentUrl,
                 "v1/meta",
                 "application/json", 
                 queryBody,
                 "application/json",
                 currentUser.CustomerName, 
-                currentUser.AuthToken).Item1;
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
+        }
+
+        #endregion
+
+        #region Usage data
+
+        public static string getUsageData_transform(AuthenticatedUser currentUser, int intervalHours)
+        {
+            string exportQueryTemplate = @"{{
+  ""query"": {{
+    ""outputStage"": ""exportData"",
+    ""stages"": [
+      {{
+        ""input"": [
+          {{
+            ""inputName"": ""usage"",
+            ""datasetPath"": ""{0}.usage/Observe Usage Metrics""
+          }}
+        ],
+        ""stageID"": ""exportData"",
+        ""pipeline"": ""filter metric = \""credits_transform\""\nstatsby Credits:sum(value), group_by(PackageName:label(^Package), DatasetName:label(^Dataset), DatasetID:dataset_id)""
+      }}
+    ]
+  }},
+  ""rowCount"": ""10000""
+}}";
+
+            string exportQuery = String.Format(exportQueryTemplate, currentUser.WorkspaceName);
+            
+            return executeQueryAndGetData(currentUser, exportQuery, String.Format("{0}h", intervalHours));
+        }
+
+        public static string getUsageData_monitor(AuthenticatedUser currentUser, int numHoursBack)
+        {
+            string exportQueryTemplate = @"{{
+  ""query"": {{
+    ""outputStage"": ""exportData"",
+    ""stages"": [
+      {{
+        ""input"": [
+          {{
+            ""inputName"": ""usage"",
+            ""datasetPath"": ""{0}.usage/Observe Usage Metrics""
+          }}
+        ],
+        ""stageID"": ""exportData"",
+        ""pipeline"": ""filter metric = \""credits_monitor\""\nstatsby Credits:sum(value), group_by(PackageName:label(^Package), MonitorName:label(^Monitor), MonitorID:monitor_id)""
+      }}
+    ]
+  }},
+  ""rowCount"": ""10000""
+}}";
+
+            string exportQuery = String.Format(exportQueryTemplate, currentUser.WorkspaceName);
+
+            return executeQueryAndGetData(currentUser, exportQuery, String.Format("{0}h", numHoursBack));
+        }
+
+        public static string getUsageData_query(AuthenticatedUser currentUser, int numHoursBack)
+        {
+            string exportQueryTemplate = @"{{
+  ""query"": {{
+    ""outputStage"": ""exportData"",
+    ""stages"": [
+      {{
+        ""input"": [
+          {{
+            ""inputName"": ""usage"",
+            ""datasetPath"": ""{0}.usage/Observe Usage Metrics""
+          }}
+        ],
+        ""stageID"": ""exportData"",
+        ""pipeline"": ""filter metric = \""credits_adhoc_query\""\nstatsby Credits:sum(value), group_by(PackageName:label(^Package), DatasetName:label(^Dataset), DatasetID:dataset_id, UserName:label(^User))""
+      }}
+    ]
+  }},
+  ""rowCount"": ""10000""
+}}";
+
+            string exportQuery = String.Format(exportQueryTemplate, currentUser.WorkspaceName);
+            
+            return executeQueryAndGetData(currentUser, exportQuery, String.Format("{0}h", numHoursBack));
+        }
+
+        public static string executeQueryAndGetData(AuthenticatedUser currentUser, string queryBody, string intervalValue)
+        {
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                String.Format("v1/meta/export/query?interval={0}", intervalValue),
+                "text/csv",
+                queryBody,
+                "application/json", 
+                currentUser.CustomerName, 
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                throw new WebException(String.Format("Call to {0}v1/meta/export/query for user {1} returned {2} {3}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, results.Item3, results.Item1));
+            }
         }
 
         #endregion
@@ -1656,7 +1918,7 @@ fragment ChannelActionUnknown on UnknownAction {
                         var pattern = "\"user_password\": \"(.*)\",";
                         requestBody = Regex.Replace(requestBody, pattern, "\"user_password\": \"****\",", RegexOptions.IgnoreCase); 
                     }
-                    httpClient.DefaultRequestHeaders.Remove("Authorization");
+                    //httpClient.DefaultRequestHeaders.Remove("Authorization");
 
                     NLog.LogLevel logLevel = NLog.LogLevel.Info;
                     if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.Found)

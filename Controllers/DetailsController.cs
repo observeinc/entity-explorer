@@ -51,6 +51,9 @@ public class DetailsController : Controller
             }
             DetailsDatasetViewModel viewModel = new DetailsDatasetViewModel(currentUser, observeEnvironment);
 
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+
             switch (HttpContext.Request.Method)
             {
                 case "GET":
@@ -68,8 +71,6 @@ public class DetailsController : Controller
                     break;
             }
 
-            CommonControllerMethods.enrichTrace(currentUser);
-            CommonControllerMethods.enrichTrace(observeEnvironment);
             CommonControllerMethods.enrichTrace(viewModel.CurrentDataset);
 
             return View(viewModel);
@@ -113,6 +114,9 @@ public class DetailsController : Controller
             }
             DetailsDashboardViewModel viewModel = new DetailsDashboardViewModel(currentUser, observeEnvironment);
 
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+
             switch (HttpContext.Request.Method)
             {
                 case "GET":
@@ -129,8 +133,6 @@ public class DetailsController : Controller
                     break;
             }
 
-            CommonControllerMethods.enrichTrace(currentUser);
-            CommonControllerMethods.enrichTrace(observeEnvironment);
             CommonControllerMethods.enrichTrace(viewModel.CurrentDashboard);
 
             return View(viewModel);
@@ -174,6 +176,9 @@ public class DetailsController : Controller
             }
             DetailsMonitorViewModel viewModel = new DetailsMonitorViewModel(currentUser, observeEnvironment);
 
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+
             switch (HttpContext.Request.Method)
             {
                 case "GET":
@@ -190,8 +195,6 @@ public class DetailsController : Controller
                     break;
             }
 
-            CommonControllerMethods.enrichTrace(currentUser);
-            CommonControllerMethods.enrichTrace(observeEnvironment);
             CommonControllerMethods.enrichTrace(viewModel.CurrentMonitor);
 
             return View(viewModel);

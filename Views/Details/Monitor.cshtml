@@ -23,6 +23,7 @@
 <h1>📟 Monitor Details - @Model.CurrentMonitor.name (@Model.CurrentMonitor.id)</h1>
 
 <p>
+    <a href="#Acceleration">🚄 Acceleration</a> 
     <a href="#RelatedDatasetsAncestors">⏫ Ancestors/Inputs</a> 
     <a href="#RelatedDatasetsSupporting">⏬ Supporting</a> 
     <a href="#RelatedDatasetsGraph">🔀 Related Datasets Graph</a>
@@ -77,13 +78,13 @@
                 }
             }
 
-            @Html.Raw(objectType switch {ObsCompositeObjectType.MetricThresholdMonitor => "📈", ObsCompositeObjectType.LogThresholdMonitor => "📜", ObsCompositeObjectType.ResourceCountThresholdMonitor => "🍫", ObsCompositeObjectType.PromotionMonitor => "🕙", ObsCompositeObjectType.ResourceTextValueMonitor => "🏆", _ => "❓"}) @Model.CurrentMonitor.kind @Model.CurrentMonitor.ObjectType
+            @Model.ObserveEnvironment.getIconMonitorType(objectType) @Model.CurrentMonitor.kind @Model.CurrentMonitor.ObjectType
         </td>
     </tr>
     <tr>
         <td>Source</td>
         <td>
-            @Html.Raw(@Model.CurrentMonitor.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) @Model.CurrentMonitor.OriginType
+            @Model.ObserveEnvironment.getIconOriginType(@Model.CurrentMonitor) @Model.CurrentMonitor.OriginType
         </td>
     </tr>
     <tr>
@@ -94,7 +95,7 @@
     </tr>
     <tr>
         <td>Enabled</td>
-        <td>@Html.Raw(@Model.CurrentMonitor.IsEnabled switch {true => "✅", false => "❌"})@Model.CurrentMonitor.IsEnabled</td>
+        <td>@Model.ObserveEnvironment.getIconEnabled(@Model.CurrentMonitor)@Model.CurrentMonitor.IsEnabled</td>
     </tr>
     <tr>
         <td>Template</td>
@@ -109,6 +110,29 @@
         <td>@Model.CurrentMonitor.updatedDate.ToString("u")/@Model.CurrentMonitor.updatedBy.label</td>
     </tr>
     <tr>
+        <td>Credits</td>
+        <td>
+            <table>
+                <tr>
+                    <th>Length</th>
+                    <th>Transform</th>
+                </tr>
+                <tr>
+                    <td>1 hour</td>
+                    <td>@Model.CurrentMonitor.Transform1H.Credits.ToString("##0.#")</td>
+                </tr>
+                <tr>
+                    <td>1 day</td>
+                    <td>@Model.CurrentMonitor.Transform1D.Credits.ToString("##0.#")</td>
+                </tr>
+                <tr>
+                    <td>1 week</td>
+                    <td>@Model.CurrentMonitor.Transform1W.Credits.ToString("##0.#")</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
         <td>⚙️ Settings</td>
         <td><pre><code class="language-json">@Model.CurrentMonitor.Settings</code></pre></td>
     </tr>    
@@ -119,7 +143,74 @@
     <tr>
         <td>ℹ️ Info</td>
         <td><pre><code class="language-json">@Model.CurrentMonitor.ActiveMonitorInfo</code></pre></td>
-    </tr>    
+    </tr>
+</table>
+
+
+<h2 id="Acceleration">🚄 Acceleration</h2>
+<a href="#top">Back to Top</a>
+
+<table>
+    <tr>
+        <td>State</td>
+        <td>@Model.CurrentMonitor.Acceleration.state</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Always Accelerated</td>
+        <td>@Model.CurrentMonitor.Acceleration.alwaysAccelerated</td>
+        <td>Whether the dataset is "always accelerated", i.e., any query should hit accelerated data.</td>
+    </tr>
+    <tr>
+        <td>Staleness Configured</td>
+        <td style="text-align: right">@Model.CurrentMonitor.Acceleration.StalenessConfigured</td>
+        <td>Configured staleness target of the dataset.</td>
+    </tr>
+    <tr>
+        <td>Staleness Effective</td>
+        <td style="text-align: right">@Model.CurrentMonitor.Acceleration.StalenessEffective</td>
+        <td>The target staleness of this dataset when taking downstream datasets.</td>
+    </tr>
+    <tr>
+        <td>Staleness Target</td>
+        <td style="text-align: right">@Model.CurrentMonitor.Acceleration.StalenessTarget</td>
+        <td>The actual staleness target of the dataset.</td>
+    </tr>
+    <tr>
+        <td>Staleness Downstream</td>
+        <td style="text-align: right">@Model.CurrentMonitor.Acceleration.StalenessDownstream</td>
+        <td>The minimum configured target staleness across all datasets downstream of this dataset.</td>
+    </tr>
+    <tr>
+        <td>Staleness Actual</td>
+        <td style="text-align: right">@Model.CurrentMonitor.Acceleration.StalenessActual</td>
+        <td>Staleness of the dataset (averaged over some moving window).</td>
+    </tr>
+    <tr>
+        <td>EffectiveOnDemandMaterializationLength</td>
+        <td style="text-align: right">@Model.CurrentMonitor.Acceleration.EffectiveOnDemandMaterializationLength</td>
+        <td>How far back users can request backfill.</td>
+    </tr>
+    @foreach (ObsTimeRange timeRange in Model.CurrentMonitor.Acceleration.AcceleratedRanges)
+    {
+        <tr>
+            <td>Actual AcceleratedRange</td>
+            <td style="text-align: right">@timeRange.duration</td>
+            <td>@timeRange.start.ToString("u") - @timeRange.end.ToString("u")</td>
+        </tr>
+    }
+    @foreach (ObsTimeRange timeRange in Model.CurrentMonitor.Acceleration.AcceleratedRangesTarget)
+    {
+        <tr>
+            <td>Target AcceleratedRange</td>
+            <td style="text-align: right">@timeRange.duration</td>
+            <td>@timeRange.start.ToString("u") - @timeRange.end.ToString("u")</td>
+        </tr>
+    }
+    <tr>
+        <td>Raw</td>
+        <td colspan="2"><pre><code class="language-json">@Model.CurrentMonitor.AccelerationInfo</code></pre></td>
+    </tr>
 </table>
 
 @{
@@ -131,8 +222,8 @@
 
         <table class="AlternatingRowTable SortableTable">
             <thead>
-                <th>Details</th>
                 <th>View</th>
+                <th>Data</th>
                 <th>Edit</th>
                 <th>Type</th>
                 <th>Origin</th>
@@ -157,19 +248,19 @@
                     ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
                     
                     <tr>
-                        <td>@Html.ActionLink("🎫 Details", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
-                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.kind switch {"Event" => entityRelated.kind.ToLower(), "Resource" => entityRelated.kind.ToLower(), "Interval" => "event", _ => "fallthroughdonttknow"}, entityRelated.id)">📄 Data</a></td>
+                        <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityRelated), entityRelated.id)">📄 Data</a></td>
                         <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
-                        <td>@Html.Raw(entityRelated.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @entityRelated.kind</td>
-                        <td>@Html.Raw(entityRelated.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityRelated) @entityRelated.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
                         <td>@entityRelated.id</td>
                         <td><span title="@entityRelated.description">@entityRelated.name</span></td>
                         <td>@objectRelationship.RelationshipType</td>
-                        <td>@Html.ActionLink("🎫 Details", "Dataset", "Details", new { id= entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
-                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.kind switch {"Event" => entityThis.kind.ToLower(), "Resource" => entityThis.kind.ToLower(), "Interval" => "event", _ => "fallthroughdonttknow"}, entityThis.id)">📄 Data</a></td>
+                        <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityThis), entityThis.id)">📄 Data</a></td>
                         <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
-                        <td>@Html.Raw(entityThis.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @entityThis.kind</td>
-                        <td>@Html.Raw(entityThis.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityThis.source">@entityThis.OriginType</span></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityThis) @entityThis.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityThis) <span title="@entityThis.source">@entityThis.OriginType</span></td>
                         <td>@entityThis.id</td>
                         <td><span title="@entityThis.description">@entityThis.name</span></td>
                         <td>&nbsp;</td>
@@ -180,19 +271,19 @@
                     ObsMonitor entityThis = (ObsMonitor)objectRelationship.ThisObject;
                     ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
                     <tr>
-                        <td>@Html.ActionLink("🎫 Details", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
-                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.kind switch {"Event" => entityRelated.kind.ToLower(), "Resource" => entityRelated.kind.ToLower(), "Interval" => "event", _ => "fallthroughdonttknow"}, entityRelated.id)">📄 Data</a></td>
+                        <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityRelated), entityRelated.id)">📄 Data</a></td>
                         <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
-                        <td>@Html.Raw(entityRelated.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @entityRelated.kind</td>
-                        <td>@Html.Raw(entityRelated.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityRelated) @entityRelated.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
                         <td>@entityRelated.id</td>
                         <td><span title="@entityRelated.description">@entityRelated.name</span></td>
                         <td>@objectRelationship.RelationshipType</td>
-                        <td>@Html.ActionLink("📟 Details", "Monitor", "Details", new { id = entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td>@Html.ActionLink("📟 View", "Monitor", "Details", new { id = entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
                         <td><a href="@String.Format("{0}workspace/{1}/notification/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, Convert.ToBase64String(Encoding.UTF8.GetBytes(String.Format("{{\"monitorId\":\"{0}\"}}", entityThis.id))))">📄 Notif.</a></td>
                         <td><a href="@String.Format("{0}workspace/{1}/monitor/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
                         <td>📟 Monitor</td>
-                        <td>@Html.Raw(entityThis.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"})@entityThis.OriginType</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityThis) @entityThis.OriginType</td>
                         <td>@entityThis.id</td>
                         <td>@entityThis.name</td>
                         <td>@if(@entityThis == @Model.CurrentMonitor) { @Html.Raw("✨") }</td>
@@ -214,8 +305,8 @@
 
         <table class="AlternatingRowTable SortableTable">
             <thead>
-                <th>Details</th>
                 <th>View</th>
+                <th>Data</th>
                 <th>Edit</th>
                 <th>Type</th>
                 <th>Origin</th>
@@ -231,11 +322,11 @@
                     ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
 
                     <tr>
-                        <td>@Html.ActionLink("🎫 Details", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
-                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.kind switch {"Event" => entityRelated.kind.ToLower(), "Resource" => entityRelated.kind.ToLower(), "Interval" => "event", _ => "fallthroughdonttknow"}, entityRelated.id)">📄 Data</a></td>
+                        <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityRelated), entityRelated.id)">📄 Data</a></td>
                         <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
-                        <td>@Html.Raw(entityRelated.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @entityRelated.kind</td>
-                        <td>@Html.Raw(entityRelated.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityRelated) @entityRelated.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
                         <td>@entityRelated.id</td>
                         <td><span title="@entityRelated.description">@entityRelated.name</span></td>
                         <td>@objectRelationship.RelationshipType</td>
@@ -280,7 +371,7 @@
         <tr>
             <td><a href="@String.Format("#{0}", entity.id)">🏛️ Details</a></td>
             <td>
-                @Html.Raw(entity.type switch {"table" => "📑", "timeseries" => "📉", "bar" => "📊", "circular" => "🥧", "stacked_area" => "🗻", "singlevalue" => "#️⃣", "list" => "📜", "valueovertime" => "⏳", "gantt" => "📐", _ => ""}) @entity.type
+                @Model.ObserveEnvironment.getIconWidgetType(entity) @entity.type
                 @if (@entity == Model.CurrentMonitor.OutputStage)
                 {
                     @Html.Raw("🏁 OUTPUT");
@@ -334,6 +425,11 @@
     }
 </table>
 
+<p>
+<input id="checkboxDashboardInputsOutputTables" type="checkbox" checked="true" value="Show/Hide Image Preview" onclick="showOrHideDashboardInputsOutputTables(this)"/>
+<label for="checkboxDashboardInputsOutputTables">Show/Hide input and output tables</label>
+</p>
+
 <table>
     @foreach (ObsStage entity in Model.CurrentMonitor.Stages)
     {
@@ -341,7 +437,7 @@
             <td>Stage</td>
             <td>
                 @entity.name (@entity.id)
-                @Html.Raw(entity.type switch {"table" => "📑", "timeseries" => "📉", "bar" => "📊", "circular" => "🥧", "stacked_area" => "🗻", "singlevalue" => "#️⃣", "list" => "📜", "valueovertime" => "⏳", "gantt" => "📐", _ => ""}) @entity.type
+                @Model.ObserveEnvironment.getIconWidgetType(entity) @entity.type
                 @if(@entity.visible)
                 {
                     @Html.Raw("👁️ visible")
@@ -354,13 +450,13 @@
                 <a href="#top">Back to Top</a>
             </td>
         </tr>
-        <tr>
+        <tr id="stage_table_input_@entity.id">
             <td>⏫ Inputs</td>
             <td>
                 <table class="AlternatingRowTable">
                     <tr>
-                        <th>Details</th>
                         <th>View</th>
+                        <th>Data</th>
                         <th>Edit</th>
                         <th>Type</th>
                         <th>Origin</th>
@@ -378,11 +474,11 @@
                             ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
 
                             <tr>
-                                <td>@Html.ActionLink("🎫 Details", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
-                                <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.kind switch {"Event" => entityRelated.kind.ToLower(), "Resource" => entityRelated.kind.ToLower(), "Interval" => "event", _ => "fallthroughdonttknow"}, entityRelated.id)">📄 Data</a></td>
+                                <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                                <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityRelated), entityRelated.id)">📄 Data</a></td>
                                 <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
-                                <td>@Html.Raw(entityRelated.kind switch {"Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "?"}) @entityRelated.kind</td>
-                                <td>@Html.Raw(entityRelated.OriginType switch {ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"}) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                                <td>@Model.ObserveEnvironment.getIconType(entityRelated) @entityRelated.kind</td>
+                                <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
                                 <td>@entityRelated.id</td>
                                 <td><span title="@entityRelated.description">@entityRelated.name</span></td>
                                 <td>@objectRelationship.RelationshipType</td>
@@ -412,7 +508,7 @@
         List<ObjectRelationship> relationshipsTarget = Model.CurrentMonitor.GetRelationshipsOfRelated(entity);        
         if (relationshipsTarget.Count > 0)
         {
-            <tr>
+            <tr id="stage_table_output_@entity.id">
                 <td>⏬ Used By</td>
                 <td>
                     <table class="AlternatingRowTable">
