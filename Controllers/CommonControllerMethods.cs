@@ -143,4 +143,15 @@ public class CommonControllerMethods
     {
         Activity.Current.AddTag("currentObject", thisObject.ToString());
     }
+
+    public void enrichTrace(ObsWorksheet thisObject)
+    {
+        Activity.Current.AddTag("currentObject", thisObject.ToString());
+    }
+
+    public void enrichTrace(Observe.EntityExplorer.Models.SearchResultsViewModel viewModel)
+    {
+        Activity.Current.AddTag("searchQuery", viewModel.SearchQuery);
+        Activity.Current.AddTag("resultsFound", viewModel.SearchResults.Count);
+    }
 }

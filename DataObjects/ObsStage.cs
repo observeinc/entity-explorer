@@ -75,10 +75,6 @@ namespace Observe.EntityExplorer.DataObjects
             }
 
             this.Parent = parentObject;
-            if (this.Parent is ObsDataset)
-            {
-                this.visible = true;
-            }
         }
 
         public void PopulateExternalDatasetInternalStageRelationships(Dictionary<string, ObsDataset> allDatasetsDict, Dictionary<string, ObsStage> allStagesDict, List<ObsParameter> allParameters)

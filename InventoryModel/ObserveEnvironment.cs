@@ -111,6 +111,53 @@ namespace Observe.EntityExplorer
 
             #endregion
 
+            #region Worksheets
+
+            // Get all worksheets
+            List<ObsWorksheet> allWorksheets = getAllWorksheets(currentUser);
+            this.AllWorksheetsDict = allWorksheets.ToDictionary(d => d.id, d => d);
+
+            // Looks like for some environments query.worksheetSearch does not return stages, but the query.worksheet does.
+            // If we see no stages, maybe that's what's going on? So retrieve it again and sub out the raw data
+            List<ObsWorksheet> allWorksheetsWithoutStages = allWorksheets.Where(w => w.NumStages == 0).ToList();
+            var allWorksheetsWithoutStagesChunks = allWorksheetsWithoutStages.Chunk(10);
+            Parallel.ForEach<ObsWorksheet[], int>(
+                allWorksheetsWithoutStagesChunks,
+                new ParallelOptions(), 
+                () => { 
+                    // init
+                    return 0;
+                },
+                (chunkOfWorksheets, loopState, subtotal) => {
+                    // Body
+                    for (int i = 0; i <= chunkOfWorksheets.Length - 1; i++)
+                    {
+                        ObsWorksheet worksheet = chunkOfWorksheets[i];
+                        ObsWorksheet worksheetSingle = getWorksheet(currentUser, worksheet.id);
+                        if (worksheetSingle != null)
+                        {
+                            worksheet._raw = worksheetSingle._raw;
+                        }
+                    }
+                    return 0;
+                },
+                c => {
+                    // Finally
+                }
+            );
+
+            // Enrich their parameters and relationships
+            foreach (ObsWorksheet worksheet in allWorksheets)
+            {
+                worksheet.AddStagesAndParameters(this.AllDatasetsDict);
+                worksheet.PopulateExternalDatasetRelationships();
+                this.ObjectRelationships.AddRange(worksheet.ExternalObjectRelationships);
+            }
+
+            this.ObserveObjects.AddRange(allWorksheets);
+
+            #endregion
+
             #region Dataset and Monitor datasets acceleration info
 
             foreach (ObsDataset dataset in allDatasets)
@@ -259,6 +306,34 @@ namespace Observe.EntityExplorer
             #endregion
 
             this.LoadedOn = DateTime.UtcNow;
+        }
+
+        public void PopulateAllDatasetStages(AuthenticatedUser currentUser)        
+        {
+            List<ObsDataset> allDatasetsWithoutStages = this.AllDatasetsDict.Values.Where(d => d.Stages.Count == 0).ToList();
+            allDatasetsWithoutStages.RemoveAll(d => (d.ObjectType & ObsCompositeObjectType.DatastreamDataset) == ObsCompositeObjectType.DatastreamDataset);
+            allDatasetsWithoutStages.RemoveAll(d => d.OriginType == ObsObjectOriginType.External);
+            var allDatasetsWithoutStagesChunks = allDatasetsWithoutStages.Chunk(10);
+            Parallel.ForEach<ObsDataset[], int>(
+                allDatasetsWithoutStagesChunks,
+                new ParallelOptions(), 
+                () => { 
+                    // init
+                    return 0;
+                },
+                (chunkOfDatasets, loopState, subtotal) => {
+                    // Body
+                    for (int i = 0; i <= chunkOfDatasets.Length - 1; i++)
+                    {
+                        ObsDataset dataset = chunkOfDatasets[i];
+                        PopulateDatasetStages(currentUser, dataset);
+                    }
+                    return 0;
+                },
+                c => {
+                    // Finally
+                }
+            );            
         }
 
         public void PopulateDatasetStages(AuthenticatedUser currentUser, ObsDataset dataset)
@@ -485,6 +560,18 @@ namespace Observe.EntityExplorer
 
                                     break;
 
+                                case ObsObjectOriginType.External:
+                                    sb.AppendLine("  subgraph cluster_ds_external {");
+                                    sb.AppendFormat("    label=\"{0} External Datasets ({1})\" style=\"filled\" fillcolor=\"cyan2\"", iconForGroup, allDatasetsInGroup.Count).AppendLine();
+                                    foreach(ObsDataset dataset in allDatasetsInGroup)
+                                    {
+                                        if (dataset == interestingObject) continue;
+                                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(dataset)).AppendLine();
+                                    }
+                                    sb.AppendLine("  }");
+
+                                    break;
+
                                 default:
                                     break;
                             }
@@ -560,7 +647,29 @@ namespace Observe.EntityExplorer
                             {
                                 ObsWorksheet parentWorksheet = (ObsWorksheet)parentObjectOfThisGroup;
                                 
-                                throw new NotImplementedException("ObsWorksheet grouping not implemented yet");
+                                sb.AppendFormat("  subgraph cluster_worksheet_{0} {{", getGraphVizNodeName(parentWorksheet, false)).AppendLine();
+                                sb.AppendFormat("    label=\"🎈📝 Worksheet {0}\" style=\"filled\" fillcolor=\"lavender\"", WebUtility.HtmlEncode(parentWorksheet.name)).AppendLine();
+                                sb.AppendFormat("    {0}", getGraphVizNodeDefinition(parentWorksheet)).AppendLine();
+
+                                if (parentWorksheet.Parameters.Count > 0)
+                                {
+                                    sb.AppendFormat("    // Parameters").AppendLine();
+                                    sb.AppendFormat("    subgraph cluster_worksheet_{0}_parameters {{", getGraphVizNodeName(parentWorksheet, false)).AppendLine();
+                                    sb.AppendFormat("    label=\"Parameters ({0})\"", parentWorksheet.Parameters.Count).AppendLine();
+                                    foreach(ObsParameter parameter in parentWorksheet.Parameters)
+                                    {
+                                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(parameter)).AppendLine();
+                                    }
+                                    sb.AppendLine("    }");
+                                }
+
+                                sb.AppendFormat("    // Stages").AppendLine();
+                                foreach(ObsStage stage in parentWorksheet.Stages)
+                                {
+                                    sb.AppendFormat("    {0}", getGraphVizNodeDefinition(stage)).AppendLine();
+                                }
+
+                                sb.AppendLine("  }");
                             }
                             else
                             {
@@ -688,6 +797,64 @@ namespace Observe.EntityExplorer
                         
                         break;
 
+                    case "ObsWorksheet":
+                        List<ObsWorksheet> allWorksheets = allObjectsGroupedByTypeGroup.Cast<ObsWorksheet>().ToList();
+                        var worksheetsGroupedByOriginType = allWorksheets.GroupBy(d => d.OriginType);
+                        foreach (var worksheetsGroupedByOriginTypeGroup in worksheetsGroupedByOriginType)
+                        {
+                            List<ObsWorksheet> allWorksheetsInGroup = worksheetsGroupedByOriginTypeGroup.ToList();
+                            string iconForGroup = getIconOriginType(worksheetsGroupedByOriginTypeGroup.Key);
+                            switch (worksheetsGroupedByOriginTypeGroup.Key)
+                            {
+                                case ObsObjectOriginType.App:
+                                    var allAppWorksheetsGroupedByPackage = allWorksheetsInGroup.GroupBy(d => d.package);
+                                    foreach (var allAppWorksheetsGroupedByPackageGroup in allAppWorksheetsGroupedByPackage)
+                                    {
+                                        List<ObsWorksheet> allWorksheetsInAppGroup = allAppWorksheetsGroupedByPackageGroup.ToList();
+
+                                        sb.AppendFormat("  subgraph cluster_wks_app_{0} {{", escapeGraphVizObjectNameForSubGraph(allAppWorksheetsGroupedByPackageGroup.Key)).AppendLine();
+                                        sb.AppendFormat("    label=\"{0} App Worksheets [{1}] ({2})\" style=\"filled\" fillcolor=\"burlywood\"", iconForGroup, allAppWorksheetsGroupedByPackageGroup.Key, allWorksheetsInAppGroup.Count).AppendLine();
+                                        foreach(ObsWorksheet worksheet in allWorksheetsInAppGroup)
+                                        {
+                                            if (worksheet == interestingObject) continue;
+                                            sb.AppendFormat("    {0}", getGraphVizNodeDefinition(worksheet)).AppendLine();
+                                        }
+                                        sb.AppendLine("  }");
+                                    }
+
+                                    break;
+
+                                case ObsObjectOriginType.System:
+                                    sb.AppendLine("  subgraph cluster_wks_system {");
+                                    sb.AppendFormat("    label=\"{0} System Worksheets ({1})\" style=\"filled\" fillcolor=\"blanchedalmond\"", iconForGroup, allWorksheetsInGroup.Count).AppendLine();
+                                    foreach(ObsWorksheet worksheet in allWorksheetsInGroup)
+                                    {
+                                        if (worksheet == interestingObject) continue;
+                                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(worksheet)).AppendLine();
+                                    }
+                                    sb.AppendLine("  }");
+
+                                    break;
+
+                                case ObsObjectOriginType.User:
+                                    sb.AppendLine("  subgraph cluster_wks_user {");
+                                    sb.AppendFormat("    label=\"{0} User Worksheets ({1})\" style=\"filled\" fillcolor=\"mediumseagreen\"", iconForGroup, allWorksheetsInGroup.Count).AppendLine();
+                                    foreach(ObsWorksheet worksheet in allWorksheetsInGroup)
+                                    {
+                                        if (worksheet == interestingObject) continue;
+                                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(worksheet)).AppendLine();
+                                    }
+                                    sb.AppendLine("  }");
+
+                                    break;
+
+                                default:
+                                    break;
+                            }                        
+                        }
+
+                        break;
+
                     default:
                         throw new NotImplementedException(String.Format("{0} graph output not supported yet", allObjectsGroupedByTypeGroup.Key.Name));
                         //break;
@@ -712,6 +879,11 @@ namespace Observe.EntityExplorer
                 case "ObsMonitor":
                     ObsMonitor monitor = (ObsMonitor)interestingObject;
                     sb.AppendLine(getGraphVizNodeDefinition(monitor, true)).AppendLine();
+                    break;
+
+                case "ObsWorksheet":
+                    ObsWorksheet worksheet = (ObsWorksheet)interestingObject;
+                    sb.AppendLine(getGraphVizNodeDefinition(worksheet, true)).AppendLine();
                     break;
 
                 case "ObsObject":
@@ -787,6 +959,9 @@ namespace Observe.EntityExplorer
                     break;
                 case ObsObjectOriginType.System:
                     nodeShape = "diamond";
+                    break;
+                case ObsObjectOriginType.External:
+                    nodeShape = "pentagon";
                     break;
                 case ObsObjectOriginType.Terraform:
                     break;
@@ -946,6 +1121,27 @@ namespace Observe.EntityExplorer
             }
         }
 
+        private string getGraphVizNodeDefinition(ObsWorksheet worksheet)
+        {
+            return getGraphVizNodeDefinition(worksheet, false);
+        }
+
+        private string getGraphVizNodeDefinition(ObsWorksheet worksheet, bool highlight)
+        {
+            string nodeColor = "black";
+            string nodeIcon = "📝";
+            string nodeShape = "trapezium";
+
+            if (highlight == true)
+            {
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" style=\"filled\" fillcolor=\"pink\"]", getGraphVizNodeName(worksheet), nodeIcon, WebUtility.HtmlEncode(worksheet.name.Replace("/", "/\n")), nodeShape, nodeColor);
+            }
+            else
+            {
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\"]", getGraphVizNodeName(worksheet), nodeIcon, WebUtility.HtmlEncode(worksheet.name.Replace("/", "/\n")), nodeShape, nodeColor);
+            }
+        }
+
         private string getGraphVizEdgeDefinition(ObjectRelationship relationship)
         {
             string edgeColor = "black";
@@ -1095,7 +1291,7 @@ namespace Observe.EntityExplorer
         {
             return obsObjectOriginType switch 
             {
-                ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", _ => "❓"
+                ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", ObsObjectOriginType.External => "❄️", _ => "❓"
             };
         }
 
@@ -1270,6 +1466,66 @@ namespace Observe.EntityExplorer
 
             return monitorsList;
         }        
+
+        internal List<ObsWorksheet> getAllWorksheets(AuthenticatedUser currentUser)
+        {
+            string entitySearchResults = ObserveConnection.worksheetSearch_all(currentUser, currentUser.WorkspaceID);
+            if (entitySearchResults.Length == 0)
+            {
+                throw new InvalidDataException(String.Format("Invalid response on worksheetSearch_all for {0}", currentUser));
+            }
+
+            JObject entitySearchResultsObject = JObject.Parse(entitySearchResults);
+            JArray entitySearchArray = (JArray)JSONHelper.getJTokenValueFromJToken(JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "worksheetSearch"), "worksheets");
+
+            List<ObsWorksheet> worksheetsList = new List<ObsWorksheet>(0);
+            if (entitySearchArray != null)
+            {
+                worksheetsList = new List<ObsWorksheet>(entitySearchArray.Count);
+                logger.Info("Number of Worksheets={0}", entitySearchArray.Count);
+
+                foreach (JObject entitySearchObject in entitySearchArray)
+                {
+                    JObject dashboardObject = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchObject, "worksheet"); 
+                    if (dashboardObject != null)
+                    {
+                        ObsWorksheet worksheet = new ObsWorksheet(dashboardObject, currentUser);
+
+                        worksheetsList.Add(worksheet);
+
+                        logger.Trace("Worksheet={0}", worksheet);
+                        loggerConsole.Trace("Found {0}", worksheet);
+                    }
+                }
+                
+                worksheetsList = worksheetsList.OrderBy(d => d.package).ThenBy(d => d.name).ToList();
+            }
+
+            return worksheetsList;
+        }
+
+        private ObsWorksheet getWorksheet(AuthenticatedUser currentUser, string worksheetId)
+        {
+            string entitySearchResults = ObserveConnection.worksheet_single(currentUser, worksheetId);
+            if (entitySearchResults.Length == 0)
+            {
+                throw new InvalidDataException(String.Format("Invalid response on worksheet_single for {0}", currentUser));
+            }
+
+            JObject entitySearchResultsObject = JObject.Parse(entitySearchResults);
+            JObject worksheetObject = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "worksheet");
+            if (worksheetObject != null)
+            {
+                ObsWorksheet worksheet = new ObsWorksheet(worksheetObject, currentUser);
+
+                logger.Trace("Worksheet={0}", worksheet);
+                loggerConsole.Trace("Found {0}", worksheet);
+
+                return worksheet;
+            }
+
+            return null;
+        }
 
         internal List<ObsCreditsTransform> getUsageTransform(AuthenticatedUser currentUser, int intervalHours)
         {

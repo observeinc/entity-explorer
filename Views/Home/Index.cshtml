@@ -128,7 +128,7 @@
     </tr>
     <tr>
         <td>Worksheets</td>
-        <td></td>
+        <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Worksheet).Count</td>
         <td></td>
         <td><a asp-area="" asp-controller="Select" asp-action="Worksheet" asp-route-userid="@Model.CurrentUser.UniqueID">📝 Explore Worksheets</a> - Review the structure of ad-hoc worksheets</td>
     </tr>
@@ -188,6 +188,31 @@
         </td>
         <td><a asp-area="" asp-controller="Select" asp-action="Monitor" asp-route-userid="@Model.CurrentUser.UniqueID">📟 Explore Monitors</a> - Review the monitor configuration and dataset dependencies</td>
     </tr>
+    <tr>
+        <td>Relationships</td>
+        <td>
+            <table>
+                <thead>
+                    <th>Category</th>
+                    <th>Number</th>
+                </thead>
+                <tr>
+                    <td>Total</td>
+                    <td>@Model.ObserveEnvironment.ObjectRelationships.Count()</td>
+                </tr>
+                <tr>
+                    <td>ProvidesData</td>
+                    <td>@Model.ObserveEnvironment.ObjectRelationships.Where(r => r.RelationshipType == ObsObjectRelationshipType.ProvidesData).Count()</td>
+                </tr>
+                <tr>
+                    <td>Linked</td>
+                    <td>@Model.ObserveEnvironment.ObjectRelationships.Where(r => r.RelationshipType == ObsObjectRelationshipType.Linked).Count()</td>
+                </tr>
+            </table>
+        </td>            
+        <td></td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Relationship" asp-route-userid="@Model.CurrentUser.UniqueID">🧑‍🤝‍🧑 Explore Relationships</a> - See the list of relationships</td>
+    </tr>
 @{
     ObsObject syntheticNonExistentObject = new ObsObject();
     syntheticNonExistentObject.id = "-1";
@@ -195,22 +220,21 @@
 }
     <tr>
         <td>All Relationships</td>
-        <td><button id="buttonVisualize_RelatedObjectsGraph" onclick="goToGraphVizOnline('textArea_RelatedObjectsGraph')">🔭 View</button></td>
-        <td></td>
         <td>
             <textarea id="textArea_RelatedObjectsGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(syntheticNonExistentObject, @Model.ObserveEnvironment.ObjectRelationships)</textarea>
         </td>
+        <td></td>
+        <td><button id="buttonVisualize_RelatedObjectsGraph" onclick="goToGraphVizOnline('textArea_RelatedObjectsGraph')">🔭 View</button></td>
     </tr>
-    @* <tr>
-        <td>All Data</td>
-        <td>Export to Excel </td>
-        <td>
-@using (Html.BeginForm("Index", "Home", FormMethod.Post))
-{
-    <button type="submit" id="buttonExportToExcel" name="buttonExportToExcel" value="Export to Excel">Export All to Excel <img src="https://cdn-dynmedia-1.microsoft.com/is/image/microsoftcorp/Icon_Excel_2x_RE2Xztz?resMode=sharp2&op_usm=1.5,0.65,15,0&wid=64&hei=64&qlt=99&fit=constrain" /></button>
-}
-        </td>
-    </tr> *@
 </table>
 
+<h1>Search OPAL</h1>
+
+<p>
+    <form action="Search/Results" method="GET">
+        @Html.Hidden("userid", @Model.CurrentUser.UniqueID)
+        @Html.TextBox("query", String.Empty, String.Empty, new {size = 60, placeholder = "put the OPAL you want to search for here "})
+        <button type="submit" id="buttonCodeSearch">🔎 Search OPAL Code</button>
+    </form>
+</p>
 <script src="~/js/DetailsCommon.js" asp-append-version="true"></script>

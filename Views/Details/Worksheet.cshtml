@@ -1,11 +1,11 @@
 ﻿@using Observe.EntityExplorer.DataObjects;
 
-@model Observe.EntityExplorer.Models.DetailsDashboardViewModel;
+@model Observe.EntityExplorer.Models.DetailsWorksheetViewModel;
 
 @{
-    if (@Model.CurrentDashboard != null)
+    if (@Model.CurrentWorksheet != null)
     {
-        ViewData["Title"] = String.Format("{0} ({1}) Dashboard Details", @Model.CurrentDashboard.name, @Model.CurrentDashboard.id);
+        ViewData["Title"] = String.Format("{0} ({1}) Worksheet Details", @Model.CurrentWorksheet.name, @Model.CurrentWorksheet.id);
     }
 }
 
@@ -19,7 +19,7 @@
 
 <p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
 
-<h1>📈 Dashboard Details - @Model.CurrentDashboard.name (@Model.CurrentDashboard.id)</h1>
+<h1>📝 Worksheet Details - @Model.CurrentWorksheet.name (@Model.CurrentWorksheet.id)</h1>
 
 <p>
     <a href="#RelatedDatasetsAncestors">⏫ Ancestors/Inputs</a> 
@@ -34,51 +34,44 @@
         <td>Observe</td>
         <td>
             @{
-                <a href="@String.Format("{0}workspace/{1}/dashboard/{2}",           @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentDashboard.id)">📄 Data</a>
-                <a href="@String.Format("{0}workspace/{1}/dashboard/{2}?edit=true", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentDashboard.id)">🛠️ Edit</a>
+                <a href="@String.Format("{0}workspace/{1}/worksheet/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentWorksheet.id)">📄 Data</a>
             }
         </td>
     </tr>
     <tr>
         <td>Name</td>
         <td>
-            @Model.CurrentDashboard.name (@Model.CurrentDashboard.id) in @Model.CurrentUser.CustomerLabel (@Model.CurrentUser.CustomerName)
+            @Model.CurrentWorksheet.name (@Model.CurrentWorksheet.id) in @Model.CurrentUser.CustomerLabel (@Model.CurrentUser.CustomerName)
         </td>
-    </tr>
-    <tr>
-        <td>Description</td>
-        <td>@Model.CurrentDashboard.description</td>
     </tr>
     <tr>
         <td>Source</td>
         <td>
-            @Model.ObserveEnvironment.getIconOriginType(@Model.CurrentDashboard) @Model.CurrentDashboard.OriginType
+            @Model.ObserveEnvironment.getIconOriginType(@Model.CurrentWorksheet) @Model.CurrentWorksheet.OriginType
         </td>
     </tr>
     @* <tr>
         <td>Icon</td>
-        <td>@Model.CurrentDashboard.iconUrl</td>
+        <td>@Model.CurrentWorksheet.iconUrl</td>
     </tr> *@
     <tr>
         <td>Components</td>
-        <td>Sections: @Model.CurrentDashboard.NumSections 
-            Widgets: @Model.CurrentDashboard.NumWidgets 
-            Stages: @Model.CurrentDashboard.NumStages 
-            Parameters: @Model.CurrentDashboard.NumParameters 
+        <td>Stages: @Model.CurrentWorksheet.NumStages 
+            Parameters: @Model.CurrentWorksheet.NumParameters 
         </td>
     </tr>
     <tr>
         <td>Created</td>
-        <td>@Model.CurrentDashboard.createdDate.ToString("u")/@Model.CurrentDashboard.createdBy.label</td>
+        <td>@Model.CurrentWorksheet.createdDate.ToString("u")/@Model.CurrentWorksheet.createdBy.label</td>
     </tr>
     <tr>
         <td>Updated</td>
-        <td>@Model.CurrentDashboard.updatedDate.ToString("u")/@Model.CurrentDashboard.updatedBy.label</td>
+        <td>@Model.CurrentWorksheet.updatedDate.ToString("u")/@Model.CurrentWorksheet.updatedBy.label</td>
     </tr>
 </table>
 
 @{
-    List<ObjectRelationship> ancestorRelationships = Model.ObserveEnvironment.GetAllAncestorRelationshipsOfThis(@Model.CurrentDashboard);
+    List<ObjectRelationship> ancestorRelationships = Model.ObserveEnvironment.GetAllAncestorRelationshipsOfThis(@Model.CurrentWorksheet);
     if (ancestorRelationships.Count > 0)
     {
         <h2 id="RelatedDatasetsAncestors">⏫ Ancestors/Inputs</h2>
@@ -130,9 +123,9 @@
                         <td>&nbsp;</td>
                     </tr>
                 }
-                else if (objectRelationship.ThisObject is ObsDashboard)
+                else if (objectRelationship.ThisObject is ObsWorksheet)
                 {
-                    ObsDashboard entityThis = (ObsDashboard)objectRelationship.ThisObject;
+                    ObsWorksheet entityThis = (ObsWorksheet)objectRelationship.ThisObject;
                     ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
 
                     <tr>
@@ -145,13 +138,13 @@
                         <td><span title="@entityRelated.description">@entityRelated.name</span></td>
                         <td>@objectRelationship.RelationshipType</td>
                         <td>@Html.ActionLink("📈 View", "Dashboard", "Details", new { id= entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
-                        <td><a href="@String.Format("{0}workspace/{1}/dashboard/{2}",           @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">📄 Data</a></td>
-                        <td><a href="@String.Format("{0}workspace/{1}/dashboard/{2}?edit=true", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
-                        <td>📈 Dashboard</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/worksheet/{2}",@Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">📄 Data</a></td>
+                        <td>&nbsp</td>
+                        <td>📝 Worksheet</td>
                         <td>@Model.ObserveEnvironment.getIconOriginType(entityThis) @entityThis.OriginType</td>
                         <td>@entityThis.id</td>
                         <td>@entityThis.name</td>
-                        <td>@if(@entityThis == @Model.CurrentDashboard) { @Html.Raw("✨") }</td>
+                        <td>@if(@entityThis == @Model.CurrentWorksheet) { @Html.Raw("✨") }</td>
                     </tr>
                 }
             }
@@ -166,10 +159,10 @@
 @{
     List<ObjectRelationship> allRelationships = new List<ObjectRelationship>(ancestorRelationships.Count);
     allRelationships.AddRange(ancestorRelationships);
-    allRelationships.AddRange(@Model.CurrentDashboard.StageObjectRelationships);
+    allRelationships.AddRange(@Model.CurrentWorksheet.StageObjectRelationships);
     allRelationships = allRelationships.OrderBy(r => r.ToString()).ToList();
     <p>
-        <textarea id="textArea_RelatedDatasetsGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentDashboard, allRelationships)</textarea>
+        <textarea id="textArea_RelatedDatasetsGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentWorksheet, allRelationships)</textarea>
         <br/>
         <button id="buttonVisualize_RelatedDatasetsGraph" onclick="goToGraphVizOnline('textArea_RelatedDatasetsGraph')">🔭 View</button>
     </p>
@@ -190,7 +183,7 @@
         <th>Default Value</th>
         <th>Allow Empty</th>
     </tr>
-    @foreach (ObsParameter entity in Model.CurrentDashboard.Parameters)
+    @foreach (ObsParameter entity in Model.CurrentWorksheet.Parameters)
     {
         <tr>
             <td>@entity.name</td>
@@ -231,7 +224,7 @@
         <th>Used By</th>
         <th>Params</th>
     </tr>
-    @foreach (ObsStage entity in Model.CurrentDashboard.Stages)
+    @foreach (ObsStage entity in Model.CurrentWorksheet.Stages)
     {    
         <tr>
             <td><a href="@String.Format("#{0}", entity.id)">🏛️ Details</a></td>
@@ -273,7 +266,7 @@
             </td>
             <td>
                 @{
-                    List<ObjectRelationship> entityRelationshipsTarget = Model.CurrentDashboard.GetRelationshipsOfRelated(entity);
+                    List<ObjectRelationship> entityRelationshipsTarget = Model.CurrentWorksheet.GetRelationshipsOfRelated(entity);
 
                     List<ObjectRelationship> entityDataRelationshipsTarget = entityRelationshipsTarget.Where(r => r.RelationshipType == ObsObjectRelationshipType.ProvidesData).ToList();
                     if (entityDataRelationshipsTarget.Count > 0)
@@ -306,15 +299,12 @@
 </table>
 
 <p>
-<input id="checkboxDashboardWidgetImagePreview" type="checkbox" checked="true" value="Show/Hide Image Preview" onclick="showOrHideDashboardWidgetImagePreview(this)"/>
-<label for="checkboxDashboardWidgetImagePreview">Show/Hide dashboard widget image preview</label>
-
 <input id="checkboxDashboardInputsOutputTables" type="checkbox" checked="true" value="Show/Hide Image Preview" onclick="showOrHideDashboardInputsOutputTables(this)"/>
 <label for="checkboxDashboardInputsOutputTables">Show/Hide input and output tables</label>
 </p>
 
 <table>
-    @foreach (ObsStage entity in Model.CurrentDashboard.Stages)
+    @foreach (ObsStage entity in Model.CurrentWorksheet.Stages)
     {
         <tr id="@entity.id">
             <td>Stage</td>
@@ -404,7 +394,7 @@
                 </table>
             </td>
         </tr>
-        List<ObjectRelationship> relationshipsTarget = Model.CurrentDashboard.GetRelationshipsOfRelated(entity);
+        List<ObjectRelationship> relationshipsTarget = Model.CurrentWorksheet.GetRelationshipsOfRelated(entity);
         if (relationshipsTarget.Count > 0)
         {
             <tr id="stage_table_output_@entity.id">
@@ -452,10 +442,6 @@
                 </td>
             </tr>
         }
-        <tr id="stage_image_preview_@entity.id">
-            <td>Preview</td>
-            <td><img src="@entity.thumbnail" /></td>
-        </tr>        
         <tr>
             <td colspan="2"><pre><code class="language-javascript">@entity.pipeline</code></pre></td>
         </tr>
@@ -466,7 +452,7 @@
 <a href="#top">Back to Top</a>
 
 <p>
-    <textarea id="textArea_StagesGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentDashboard, @Model.CurrentDashboard.StageObjectRelationships)</textarea>
+    <textarea id="textArea_StagesGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentWorksheet, @Model.CurrentWorksheet.StageObjectRelationships)</textarea>
     <br/>
     <button id="buttonVisualize_textArea_StagesGraph" onclick="goToGraphVizOnline('textArea_StagesGraph')">🔭 View</button>
 </p>

@@ -970,58 +970,60 @@ namespace Observe.EntityExplorer
           }
           __typename
         }
-        parameters {
-          id
-          name
-          defaultValue {
-            bool
-            float64
-            int64
-            string
-            timestamp
-            duration
-            __typename
-          }
-          valueKind {
-            type
-            arrayItemType {
-              keyForDatasetId
+        ... on IWorksheetLike {
+          parameters {
+            id
+            name
+            defaultValue {
+              bool
+              float64
+              int64
+              string
+              timestamp
+              duration
+              __typename
             }
-            keyForDatasetId
+            valueKind {
+              type
+              arrayItemType {
+                keyForDatasetId
+              }
+              keyForDatasetId
+              __typename
+            }
             __typename
           }
-          __typename
-        }
-        parameterValues {
-          id
-          value {
-            bool
-            float64
-            int64
-            string
-            timestamp
-            duration
+          parameterValues {
+            id
+            value {
+              bool
+              float64
+              int64
+              string
+              timestamp
+              duration
+              __typename
+            }
             __typename
           }
-          __typename
+          stages {
+            id
+            params
+            pipeline
+            layout
+            input {
+              inputName
+              inputRole
+              datasetId
+              datasetPath
+              stageId
+              __typename
+            }
+            __typename
+          }
+          layout
         }
         defaultForDatasets
-        stages {
-          id
-          params
-          pipeline
-          layout
-          input {
-            inputName
-            inputRole
-            datasetId
-            datasetPath
-            stageId
-            __typename
-          }
-          __typename
-        }
-        layout
         effectiveSettings {
           scanner {
             powerLevel
@@ -1530,11 +1532,11 @@ fragment ChannelActionUnknown on UnknownAction {
 
         #region Worksheets Metadata
 
-        public static string worksheetSearch_basic(AuthenticatedUser currentUser, string workspaceId)
+        public static string worksheetSearch_all(AuthenticatedUser currentUser, string workspaceId)
         {
             string graphQLQuery = @"query WorksheetSearch($terms: DWSearchInput!, $maxCount: Int64) {
   worksheetSearch(terms: $terms, maxCount: $maxCount) {
-    worksheets {
+    worksheets {      
       worksheet {
         ... on WorkspaceObject {
           id
@@ -1543,9 +1545,11 @@ fragment ChannelActionUnknown on UnknownAction {
           iconUrl
           workspaceId
           managedById
+          __typename
         }
         ... on FolderObject {
           folderId
+          __typename
         }
         ... on AuditedObject {
           createdDate
@@ -1553,37 +1557,86 @@ fragment ChannelActionUnknown on UnknownAction {
             userId
             userLabel
             userTimezone
+            __typename
           }
           updatedDate
           updatedByInfo {
             userId
             userLabel
             userTimezone
+            __typename
+          }
+          __typename
+        }
+        ... on IWorksheetLike {
+          parameters {
+            id
+            name
+            defaultValue {
+              bool
+              float64
+              int64
+              string
+              timestamp
+              duration
+              __typename
+            }
+            valueKind {
+              type
+              arrayItemType {
+                keyForDatasetId
+              }
+              keyForDatasetId
+              __typename
+            }
+            __typename
+          }
+          parameterValues {
+            id
+            value {
+              bool
+              float64
+              int64
+              string
+              timestamp
+              duration
+              __typename
+            }
+            __typename
+          }
+          stages {
+            id
+            params
+            pipeline
+            layout
+            input {
+              inputName
+              inputRole
+              datasetId
+              datasetPath
+              stageId
+              __typename
+            }
+            __typename
+          }
+          layout
+        }
+        effectiveSettings {
+          scanner {
+            powerLevel
+            __typename
           }
         }
-        layout
-        stages { 
-        	id
-          params
-          pipeline
-        }
-        parameters {
-          id
-          name
-        }
-        parameterValues {
-          id
-          value {
-            bool
-            float64
-            int64
-            string
-            timestamp
-            duration
-          }
-        }
+        __typename
       }
+      score
+      inWorkspace
+      numParameters
+      numInputs
+      __typename
     }
+    warnings
+    __typename
   }
 }";
 
@@ -1596,6 +1649,131 @@ fragment ChannelActionUnknown on UnknownAction {
             JObject variablesObject = new JObject();
             variablesObject.Add("terms", workspaceIdObject);
             queryObject.Add("variables", variablesObject);
+            
+            string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
+
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/meta",
+                "application/json", 
+                queryBody,
+                "application/json",
+                currentUser.CustomerName, 
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
+        }
+
+        public static string worksheet_single(AuthenticatedUser currentUser, string worksheetId)
+        {
+            string graphQLQuery = @"query LoadWorksheet($id: ObjectId!) {
+  worksheet(id: $id) {
+    ... on WorkspaceObject {
+      id
+      name
+      description
+      iconUrl
+      workspaceId
+      managedById
+      __typename
+    }
+    ... on FolderObject {
+      folderId
+      __typename
+    }
+    ... on AuditedObject {
+      createdDate
+      createdByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      updatedDate
+      updatedByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      __typename
+    }
+    ... on IWorksheetLike {
+      parameters {
+        id
+        name
+        defaultValue {
+          bool
+          float64
+          int64
+          string
+          timestamp
+          duration
+          __typename
+        }
+        valueKind {
+          type
+          arrayItemType {
+            keyForDatasetId
+          }
+          keyForDatasetId
+          __typename
+        }
+        __typename
+      }
+      parameterValues {
+        id
+        value {
+          bool
+          float64
+          int64
+          string
+          timestamp
+          duration
+          __typename
+        }
+        __typename
+      }
+      stages {
+        id
+        params
+        pipeline
+        layout
+        input {
+          inputName
+          inputRole
+          datasetId
+          datasetPath
+          stageId
+          __typename
+        }
+        __typename
+      }
+      layout
+    }
+    effectiveSettings {
+      scanner {
+        powerLevel
+        __typename
+      }
+    }
+    __typename
+  }
+}";
+
+            JObject queryObject = new JObject();
+            queryObject.Add("query", graphQLQuery);
+            JObject idObject = new JObject();
+            idObject.Add("id", worksheetId);
+            queryObject.Add("variables", idObject);
             
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
 

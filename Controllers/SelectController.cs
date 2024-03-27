@@ -168,25 +168,62 @@ public class SelectController : Controller
             {
                 return RedirectToAction("Connect", "Connection");
             }
-            BaseViewModel viewModel = new BaseViewModel(currentUser, null);
-
-            switch (HttpContext.Request.Method)
+            ObserveEnvironment observeEnvironment = this.CommonControllerMethods.GetObserveEnvironment(currentUser);
+            if (observeEnvironment == null)
             {
-                case "GET":
-                    // List<Worksheet> allWorksheets = this.CommonControllerMethods.getWorksheets(viewModel.CurrentUser);
-                    // viewModel.AllWorksheets = allWorksheets;
-                    break;
-
-                case "POST":
-                    break;
+                ViewData["ErrorMessage"] = "Unable to retrieve the Observe Environment from cache or server";
             }
 
-            return View(viewModel);
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+
+            return View(new BaseViewModel(currentUser, observeEnvironment));
         }
         catch (Exception ex)
         {
-            logger.Error(ex);
-            loggerConsole.Error(ex);
+            logger.Error(ex, ex.Message);
+            loggerConsole.Error(ex, ex.Message);
+
+            ViewData["ErrorMessage"] = ex.Message;
+
+            return View(new BaseViewModel(null, null));
+        }
+        finally
+        {
+            stopWatch.Stop();
+
+            logger.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+            loggerConsole.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+        }    }
+
+    public IActionResult Relationship(
+        string userid)
+    {
+        Stopwatch stopWatch = new Stopwatch();
+        stopWatch.Start();
+
+        try
+        {
+            AuthenticatedUser currentUser = this.CommonControllerMethods.GetUser(userid);
+            if (currentUser == null)
+            {
+                return RedirectToAction("Connect", "Connection");
+            }
+            ObserveEnvironment observeEnvironment = this.CommonControllerMethods.GetObserveEnvironment(currentUser);
+            if (observeEnvironment == null)
+            {
+                ViewData["ErrorMessage"] = "Unable to retrieve the Observe Environment from cache or server";
+            }
+
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+
+            return View(new BaseViewModel(currentUser, observeEnvironment));
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, ex.Message);
+            loggerConsole.Error(ex, ex.Message);
 
             ViewData["ErrorMessage"] = ex.Message;
 

@@ -29,7 +29,6 @@ public class DetailsController : Controller
         this.CommonControllerMethods = new CommonControllerMethods(DetailsController.logger, this.Configuration, this, this.MemoryCache);
     }
 
-    //[Route("Details/Dataset/[datasetId]")]
     public IActionResult Dataset(
         string userid,
         string id)
@@ -83,6 +82,68 @@ public class DetailsController : Controller
             ViewData["ErrorMessage"] = ex.Message;
 
             return View(new DetailsDatasetViewModel(null, null));
+        }
+        finally
+        {
+            stopWatch.Stop();
+
+            logger.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+            loggerConsole.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+        }
+    }
+
+    public IActionResult Monitor(
+        string userid,
+        string id)
+    {
+        Stopwatch stopWatch = new Stopwatch();
+        stopWatch.Start();
+
+        try
+        {
+            AuthenticatedUser currentUser = this.CommonControllerMethods.GetUser(userid);
+            if (currentUser == null)
+            {
+                return RedirectToAction("Connect", "Connection");
+            }
+            ObserveEnvironment observeEnvironment = this.CommonControllerMethods.GetObserveEnvironment(currentUser);
+            if (observeEnvironment == null)
+            {
+                throw new Exception("Unable to retrieve the Observe Environment from cache or server");
+            }
+            DetailsMonitorViewModel viewModel = new DetailsMonitorViewModel(currentUser, observeEnvironment);
+
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+
+            switch (HttpContext.Request.Method)
+            {
+                case "GET":
+                    ObsMonitor thisMonitor = null;
+                    if (observeEnvironment.AllMonitorsDict.TryGetValue(id, out thisMonitor) == false)
+                    {
+                        throw new KeyNotFoundException(String.Format("Unable to retrieve the Observe Monitor {0} from Observe Environment", id));
+                    }
+                    viewModel.CurrentMonitor = thisMonitor;
+                     
+                    break;
+
+                case "POST":
+                    break;
+            }
+
+            CommonControllerMethods.enrichTrace(viewModel.CurrentMonitor);
+
+            return View(viewModel);
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, ex.Message);
+            loggerConsole.Error(ex, ex.Message);
+
+            ViewData["ErrorMessage"] = ex.Message;
+
+            return View(new DetailsDashboardViewModel(null, null));
         }
         finally
         {
@@ -155,7 +216,7 @@ public class DetailsController : Controller
         }
     }
 
-    public IActionResult Monitor(
+    public IActionResult Worksheet(
         string userid,
         string id)
     {
@@ -174,7 +235,7 @@ public class DetailsController : Controller
             {
                 throw new Exception("Unable to retrieve the Observe Environment from cache or server");
             }
-            DetailsMonitorViewModel viewModel = new DetailsMonitorViewModel(currentUser, observeEnvironment);
+            DetailsWorksheetViewModel viewModel = new DetailsWorksheetViewModel(currentUser, observeEnvironment);
 
             CommonControllerMethods.enrichTrace(currentUser);
             CommonControllerMethods.enrichTrace(observeEnvironment);
@@ -182,12 +243,12 @@ public class DetailsController : Controller
             switch (HttpContext.Request.Method)
             {
                 case "GET":
-                    ObsMonitor thisMonitor = null;
-                    if (observeEnvironment.AllMonitorsDict.TryGetValue(id, out thisMonitor) == false)
+                    ObsWorksheet thisWorksheet = null;
+                    if (observeEnvironment.AllWorksheetsDict.TryGetValue(id, out thisWorksheet) == false)
                     {
-                        throw new KeyNotFoundException(String.Format("Unable to retrieve the Observe Monitor {0} from Observe Environment", id));
+                        throw new KeyNotFoundException(String.Format("Unable to retrieve the Observe Dashboard {0} from Observe Environment", id));
                     }
-                    viewModel.CurrentMonitor = thisMonitor;
+                    viewModel.CurrentWorksheet = thisWorksheet;
                      
                     break;
 
@@ -195,7 +256,7 @@ public class DetailsController : Controller
                     break;
             }
 
-            CommonControllerMethods.enrichTrace(viewModel.CurrentMonitor);
+            CommonControllerMethods.enrichTrace(viewModel.CurrentWorksheet);
 
             return View(viewModel);
         }
@@ -206,7 +267,7 @@ public class DetailsController : Controller
 
             ViewData["ErrorMessage"] = ex.Message;
 
-            return View(new DetailsDashboardViewModel(null, null));
+            return View(new DetailsWorksheetViewModel(null, null));
         }
         finally
         {
@@ -215,5 +276,5 @@ public class DetailsController : Controller
             logger.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
             loggerConsole.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
         }
-    }
+    }    
 }

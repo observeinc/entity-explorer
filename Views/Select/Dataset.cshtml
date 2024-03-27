@@ -140,12 +140,15 @@
                             List<ObjectRelationship> entityDashboardRelationshipsLink = entityLinkRelationshipsTarget.Where(r => (((ObsCompositeObject)r.ThisObject).ObjectType & ObsCompositeObjectType.Dashboard) == ObsCompositeObjectType.Dashboard).ToList();
                             if (entityDashboardRelationshipsData.Count > 0 || entityDashboardRelationshipsLink.Count > 0)
                             {
-                                @Html.Raw(String.Format("📈This>Dashboard: {0} ", entityDashboardRelationshipsData.Count + entityDashboardRelationshipsLink.Count))
+                                @Html.Raw(String.Format("📈This>Dashboard: {0} <br/>", entityDashboardRelationshipsData.Count + entityDashboardRelationshipsLink.Count))
+                            }
+                            List<ObjectRelationship> entityWorksheetRelationshipsData = entityDataRelationshipsTarget.Where(r => (((ObsCompositeObject)r.ThisObject).ObjectType & ObsCompositeObjectType.Worksheet) == ObsCompositeObjectType.Worksheet).ToList();
+                            List<ObjectRelationship> entityWorksheetRelationshipsLink = entityLinkRelationshipsTarget.Where(r => (((ObsCompositeObject)r.ThisObject).ObjectType & ObsCompositeObjectType.Worksheet) == ObsCompositeObjectType.Worksheet).ToList();
+                            if (entityWorksheetRelationshipsData.Count > 0 || entityWorksheetRelationshipsLink.Count > 0)
+                            {
+                                @Html.Raw(String.Format("📝This>Worksheet: {0}", entityWorksheetRelationshipsData.Count + entityWorksheetRelationshipsLink.Count))
                             }
                         }
-                        @* As Parameter TODO: -1,
-                        By Dashboard TODO: -1,
-                        By Worksheet TODO: -1, *@
                     </td>
                     <td>@entity.createdDate.ToString("u")/ @entity.createdBy.label</td>
                     <td>@entity.updatedDate.ToString("u")/ @entity.updatedBy.label</td>

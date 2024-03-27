@@ -66,10 +66,6 @@ public class HomeController : Controller
                             throw new Exception("Unable to retrieve the Observe Environment from cache or server");
                         }
                     }
-                    else if (HttpContext.Request.Form["buttonExportToExcel"].ToString().Length > 0)
-                    {
-                        throw new NotImplementedException("buttonExportToExcel not implemented yet");
-                    }
                     break;
             }
 

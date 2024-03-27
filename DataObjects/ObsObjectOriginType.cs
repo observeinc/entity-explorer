@@ -7,6 +7,7 @@ namespace Observe.EntityExplorer.DataObjects
         App,
         User,
         Terraform,
-        DataStream
+        DataStream,
+        External
     }
 }

@@ -1,0 +1,133 @@
+﻿@using Observe.EntityExplorer.DataObjects;
+
+@model Observe.EntityExplorer.Models.SearchResultsViewModel;
+
+@{
+    ViewData["Title"] = "Code Search Results";
+}
+
+<p>
+    <span class="spanError">@ViewData["ErrorMessage"]</span>
+</p>
+@if (ViewData["ErrorMessage"] != null)
+{
+    return;
+}
+
+<p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
+
+@{
+    List<ObsStage> datasetStages = Model.SearchResults.Where(s => s.Parent is ObsDataset).ToList();
+    List<ObsDataset> datasetsResults = datasetStages.Select(s => s.Parent).ToList().Cast<ObsDataset>().Distinct().ToList();
+
+    List<ObsStage> dashboardStages = Model.SearchResults.Where(s => s.Parent is ObsDashboard).ToList();
+    List<ObsDashboard> dashboardResults = dashboardStages.Select(s => s.Parent).ToList().Cast<ObsDashboard>().Distinct().ToList();
+
+    List<ObsStage> monitorStages = Model.SearchResults.Where(s => s.Parent is ObsMonitor).ToList();
+    List<ObsMonitor> monitorResults = monitorStages.Select(s => s.Parent).ToList().Cast<ObsMonitor>().Distinct().ToList();
+
+    List<ObsStage> worksheetStages = Model.SearchResults.Where(s => s.Parent is ObsWorksheet).ToList();
+    List<ObsWorksheet> worksheetResults = worksheetStages.Select(s => s.Parent).ToList().Cast<ObsWorksheet>().Distinct().ToList();
+
+}
+
+<h1>🔎 Code Search Results</h1>
+
+<p>
+    <a href="#Datasets">🎫 Datasets (@datasetsResults.Count / @datasetStages.Count)</a> 
+    <a href="#Dashboards">📈 Dashboards (@dashboardResults.Count / @dashboardStages.Count)</a> 
+    <a href="#Monitors">📟 Monitors (@monitorResults.Count / @monitorStages.Count)</a> 
+    <a href="#Worksheets">📝 Worksheets (@worksheetResults.Count / @worksheetStages.Count)</a> 
+</p>
+
+<table>
+    <tr>
+        <td>Search Query</td>
+        <td><pre><code id="searchQuery" class="language-json">@Model.SearchQuery</code></pre></td>
+    </tr>
+</table>
+
+<h2 id="Datasets">🎫 Datasets</h2>
+<a href="#top">Back to Top</a>
+
+@foreach(ObsStage stage in datasetStages)
+{
+    ObsDataset entity = (ObsDataset)(stage.Parent);
+    <table class="AlternatingRowTable">
+        <tr>
+            <td>@Html.ActionLink("🎫 View", "Dataset", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td>@Model.ObserveEnvironment.getIconType(entity) @entity.kind</td>
+            <td>@Model.ObserveEnvironment.getIconOriginType(entity) <span title="@entity.source">@entity.OriginType</span></td>
+            <td>@entity.id</td>
+            <td>@entity.name</td>
+            <td>@stage.name (@stage.id)</td>
+            <td>@Model.ObserveEnvironment.getIconWidgetType(stage) @stage.type</td>
+        </tr>
+    </table>
+    <br/>
+    <pre><code class="language-javascript">@stage.pipeline</code></pre>
+}
+
+<h2 id="Dashboards">📈 Dashboard</h2>
+<a href="#top">Back to Top</a>
+
+@foreach(ObsStage stage in dashboardStages)
+{
+    ObsDashboard entity = (ObsDashboard)(stage.Parent);
+    <table class="AlternatingRowTable">
+        <tr>
+            <td>@Html.ActionLink("📈 View", "Dashboard", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
+            <td>@entity.id</td>
+            <td>@entity.name</td>
+            <td>@stage.name (@stage.id)</td>
+            <td>@Model.ObserveEnvironment.getIconWidgetType(stage) @stage.type</td>
+        </tr>
+    </table>
+    <br/>
+    <pre><code class="language-javascript">@stage.pipeline</code></pre>
+    <br/>
+}
+
+<h2 id="Monitors">📟 Monitors</h2>
+<a href="#top">Back to Top</a>
+
+@foreach(ObsStage stage in monitorStages)
+{
+    ObsMonitor entity = (ObsMonitor)(stage.Parent);
+    <table class="AlternatingRowTable">
+        <tr>
+            <td>@Html.ActionLink("📟 View", "Monitor", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
+            <td>@entity.id</td>
+            <td>@entity.name</td>
+            <td>@stage.name (@stage.id)</td>
+            <td>@Model.ObserveEnvironment.getIconWidgetType(stage) @stage.type</td>
+        </tr>
+    </table>
+    <br/>
+    <pre><code class="language-javascript">@stage.pipeline</code></pre>
+    <br/>
+}
+
+<h2 id="Worksheets">📝 Worksheets</h2>
+<a href="#top">Back to Top</a>
+
+@foreach(ObsStage stage in worksheetStages)
+{
+    ObsWorksheet entity = (ObsWorksheet)(stage.Parent);
+    <table class="AlternatingRowTable">
+        <tr>
+            <td>@Html.ActionLink("📝 View", "Worksheet", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
+            <td>@entity.id</td>
+            <td>@entity.name</td>
+            <td>@stage.name (@stage.id)</td>
+            <td>@Model.ObserveEnvironment.getIconWidgetType(stage) @stage.type</td>
+        </tr>
+    </table>    <br/>
+    <pre><code class="language-javascript">@stage.pipeline</code></pre>
+    <br/>
+}
+
+<script src="~/js/SearchResults.js" asp-append-version="true"></script>

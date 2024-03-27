@@ -1,0 +1,39 @@
+﻿@using Observe.EntityExplorer.DataObjects;
+
+@model Observe.EntityExplorer.Models.BaseViewModel;
+
+@{
+    ViewData["Title"] = "Relationships";
+}
+
+<p>
+    <span class="spanError">@ViewData["ErrorMessage"]</span>
+</p>
+@if (ViewData["ErrorMessage"] != null)
+{
+    return;
+}
+
+<p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
+
+<h1>🧑‍🤝‍🧑 All Relationships</h1>
+
+<table class="AlternatingRowTable SortableTable">
+    <thead>
+        <th>Related</th>
+        <th>Relationship</th>
+        <th>This</th>
+    </thead>
+    <tbody>
+@foreach (ObjectRelationship objectRelationship in Model.ObserveEnvironment.ObjectRelationships)
+{
+    <tr>
+        <td>@objectRelationship.RelatedObject</td>    
+        <td>@objectRelationship.RelationshipType</td>    
+        <td>@objectRelationship.ThisObject</td>    
+    </tr>
+}
+    </tbody>
+</table>
+
+<script src="~/js/DetailsCommon.js" asp-append-version="true"></script>

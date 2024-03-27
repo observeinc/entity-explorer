@@ -105,6 +105,10 @@ namespace Observe.EntityExplorer.DataObjects
                     this.OriginType = ObsObjectOriginType.User;
                     break;
 
+                case "external/":
+                    this.OriginType = ObsObjectOriginType.External;
+                    break;
+
                 default:
                     this.OriginType = ObsObjectOriginType.Unknown;
                     break;
@@ -367,13 +371,15 @@ namespace Observe.EntityExplorer.DataObjects
                                 this.Stages.Add(new ObsStage(stageObject, this));
                             }
                             this.AllStagesDict = this.Stages.ToDictionary(s => s.id, s => s);
-                            
-                            // Link the stages to stages and datasets
-                            foreach (ObsStage stage in this.Stages)
-                            {
-                                stage.PopulateExternalDatasetInternalStageRelationships(allDatasetsDict, this.AllStagesDict, null);
-                                this.StageObjectRelationships.AddRange(stage.ExternalObjectRelationships);
-                            }
+                        }
+
+                        // Link the stages to stages and datasets
+                        foreach (ObsStage stage in this.Stages)
+                        {
+                            // All stages in Dataset should be marked as visible
+                            stage.visible = true;
+                            stage.PopulateExternalDatasetInternalStageRelationships(allDatasetsDict, this.AllStagesDict, null);
+                            this.StageObjectRelationships.AddRange(stage.ExternalObjectRelationships);
                         }
 
                         ObsStage outputStage = null;

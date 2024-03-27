@@ -16,7 +16,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlightjs-line-numbers.js/dist/highlightjs-line-numbers.min.js"></script>    
+    <script src="https://cdn.jsdelivr.net/npm/highlightjs-line-numbers.js/dist/highlightjs-line-numbers.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </head>
 <body>
@@ -30,7 +31,7 @@
 
     <footer>
         <div>
-            Observe Entity Explorer &copy; 2023 - Observe Inc. | Version @Html.Raw(System.Reflection.Assembly.GetEntryAssembly().GetName().Version)
+            Observe Inc. Entity Explorer &copy; 2023 - 2024 | Version @Html.Raw(System.Reflection.Assembly.GetEntryAssembly().GetName().Version)
         </div>
     </footer>
 </body>

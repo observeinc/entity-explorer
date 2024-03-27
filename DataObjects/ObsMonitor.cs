@@ -298,15 +298,15 @@ namespace Observe.EntityExplorer.DataObjects
                         this.Stages.Add(new ObsStage(stageObject, this));
                     }
                     this.AllStagesDict = this.Stages.ToDictionary(s => s.id, s => s);
-                    
-                    // Link the stages to stages and datasets
-                    foreach (ObsStage stage in this.Stages)
-                    {
-                        // All stages in Monitor should be marked as visible on graphs, they are never shown in UI but still
-                        stage.visible = true;
-                        stage.PopulateExternalDatasetInternalStageRelationships(allDatasetsDict, this.AllStagesDict, null);
-                        this.StageObjectRelationships.AddRange(stage.ExternalObjectRelationships);
-                    }
+                }
+
+                // Link the stages to stages and datasets
+                foreach (ObsStage stage in this.Stages)
+                {
+                    // All stages in Monitor should be marked as visible on graphs, they are never shown in UI but still
+                    stage.visible = true;
+                    stage.PopulateExternalDatasetInternalStageRelationships(allDatasetsDict, this.AllStagesDict, null);
+                    this.StageObjectRelationships.AddRange(stage.ExternalObjectRelationships);
                 }
 
                 ObsStage outputStage = null;
