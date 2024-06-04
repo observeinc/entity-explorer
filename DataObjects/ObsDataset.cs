@@ -69,7 +69,7 @@ namespace Observe.EntityExplorer.DataObjects
 
         public ObsDataset () {}
 
-        public ObsDataset(JObject entityObject, AuthenticatedUser currentUser) : base (entityObject)
+        public ObsDataset(JObject entityObject) : base (entityObject)
         {
             this._raw = entityObject;
 

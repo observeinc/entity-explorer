@@ -1,0 +1,253 @@
+﻿@using Observe.EntityExplorer.DataObjects;
+
+@model Observe.EntityExplorer.Models.BaseViewModel;
+
+@{
+    ViewData["Title"] = "RBAC Settings";
+}
+
+<p>
+    <span class="spanError">@ViewData["ErrorMessage"]</span>
+</p>
+@if (ViewData["ErrorMessage"] != null)
+{
+    return;
+}
+
+<p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
+
+<h1>🛂 RBAC Settings</h1>
+
+<p>
+    <a href="#Users">🧑 Users (@Model.ObserveEnvironment.AllUsersDict.Count)</a>
+    <a href="#Groups">🧑‍🤝‍🧑 Groups (@Model.ObserveEnvironment.AllGroupsDict.Count)</a>
+    <a href="#Statements">🎟️ Statements (@Model.ObserveEnvironment.AllStatements.Count)</a> 
+    <a href="#Membership">👛 Membership (@Model.ObserveEnvironment.AllGroupMembers.Count)</a> 
+    <a href="#RelationshipsGraph">🌌 Relationships Graph</a>
+</p>
+
+<h2 id="Users">🧑 Users</h2>
+<a href="#top">Back to Top</a>
+
+<table class="AlternatingRowTable SortableTable">
+    <thead>
+        <th>Type</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Comment</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Expires</th>
+    </thead>
+    <tbody>
+    @foreach (ObsUser entity in @Model.ObserveEnvironment.AllUsersDict.Values.ToList())
+    {
+        <tr id="tableRowUser_@entity.id">
+            <td>@Model.ObserveEnvironment.getIconOriginType(@entity) @entity.UserType</td>
+            <td>@entity.id</td>
+            <td>@entity.name</td>
+            <td>
+                @if (entity.comment.Length > 0)
+                {
+                    <span title="@entity.comment">🧾</span> 
+                }
+            </td>
+            <td>@entity.email</td>
+            <td>@entity.role</td>
+            <td>@Model.ObserveEnvironment.getIconUserStatus(@entity) @entity.status</td>
+            <td>
+                @if (@entity.expirationTime != DateTime.MinValue) @entity.expirationTime.ToString("u")                
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h2 id="Groups">🧑‍🤝‍🧑 Groups</h2>
+<a href="#top">Back to Top</a>
+
+@{
+    List<ObsRBACGroup> groupsList = Model.ObserveEnvironment.AllGroupsDict.Values.ToList();
+    groupsList = groupsList.OrderBy(g => g.OriginType).ThenBy(g => g.name).ToList();    
+}
+
+<table class="AlternatingRowTable SortableTable">
+    <thead>
+        <th>Type</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Created</th>
+        <th>Updated</th>
+    </thead>
+    <tbody>
+    @foreach (ObsRBACGroup entity in groupsList)
+    {
+        <tr id="tableRowGroup_@entity.id">
+            <td>@Model.ObserveEnvironment.getIconOriginType(@entity) @entity.OriginType</td>
+            <td><span title="@entity.id">@entity.ID</span></td>
+            <td>@entity.name</td>
+            <td>@entity.description</td>
+            <td>@entity.createdDate.ToString("u")/ @entity.createdBy.label</td>
+            <td>@entity.updatedDate.ToString("u")/ @entity.updatedBy.label</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h2 id="Statements">🎟️ Statements</h2>
+<a href="#top">Back to Top</a>
+
+<table class="AlternatingRowTable SortableTable">
+    <thead>
+        <th>Type</th>
+        <th>ID</th>
+        @* <th>Name</th> *@
+        <th>Description</th>
+        <th>Role</th>
+        <th>Subject (Group)</th>
+        <th>Subject ID</th>
+        <th>Object (Type)</th>
+        <th>Created</th>
+        <th>Updated</th>        
+    </thead>
+    <tbody>
+    @foreach (ObsRBACStatement entity in Model.ObserveEnvironment.AllStatements)
+    {
+        <tr id="tableRowStatement_@entity.id">
+            <td>@Model.ObserveEnvironment.getIconOriginType(@entity) @entity.OriginType</td>
+            <td><span title="@entity.id">@entity.ID</span> </td>
+            @* <td>@entity.name</td> *@
+            <td>
+                @if (entity.description.Length > 0)
+                {
+                    <span title="@entity.description">🧾</span> 
+                }
+            </td>
+            <td>@entity.role</td>
+            <td>
+                @if (@entity.SubjectAll == true)
+                {
+                    @Html.Raw("🌐 All")
+                }
+                @if (@entity.SubjectGroup != null)
+                {
+                    @Html.Raw("🧑‍🤝‍🧑") <span title="@entity.SubjectGroup.description">@entity.SubjectGroup.name</span>
+                }
+                @if (@entity.SubjectUser != null)
+                {
+                    @Html.Raw("🧑") @entity.SubjectUser.name
+                }
+            </td>
+            <td>
+                @if (@entity.SubjectGroup != null)
+                {
+                    @entity.SubjectGroup.ID
+                }
+                @if (@entity.SubjectUser != null)
+                {
+                    @entity.SubjectUser.id
+                }
+            </td>
+            <td>
+                @if (@entity.ObjectAll == true)
+                {
+                    @Html.Raw("🌐 All")
+                }
+                @if (@entity.ObjectType.Length > 0)
+                {
+                    @entity.ObjectType
+                }
+                else if (@entity.ObjectObject != null)
+                {
+                    @Model.ObserveEnvironment.getIconType(@entity.ObjectObject) @entity.ObjectObject
+                }
+                @if (@entity.ObjectOwn == true)
+                {
+                    @Html.Raw(" 🎩 Own")
+                }
+            </td>
+            <td>@entity.createdDate.ToString("u")/ @entity.createdBy.label</td>
+            <td>@entity.updatedDate.ToString("u")/ @entity.updatedBy.label</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h2 id="Membership">👛 Membership</h2>
+<a href="#top">Back to Top</a>
+
+@{
+    string tclass = "AlternatingRowTable SortableTable";
+
+    if(Model.ObserveEnvironment.AllGroupMembers.Count > 10000)
+    {
+        //tclass = "AlternatingRowTable";
+    }
+}
+
+<table class="@tclass">
+    <thead>
+        <th>Type</th>
+        <th>ID</th>
+        @* <th>Name</th> *@
+        <th>Description</th>
+        <th>Parent ID</th>
+        <th>Parent</th>
+        <th>Child ID</th>
+        <th>Child</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th>Updated</th>
+    </thead>
+    <tbody>
+    @foreach (ObsRBACGroupMember entity in Model.ObserveEnvironment.AllGroupMembers)
+    {
+        <tr id="tableRowStatement_@entity.id">
+            <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
+            <td><span title="@entity.id">@entity.ID</span> </td>
+            @* <td>@entity.name</td> *@
+            <td>
+                @if (entity.description.Length > 0)
+                {
+                    <span title="@entity.description">🧾</span> 
+                }
+            </td>
+            <td>@entity.ParentGroup.ID</td>
+            <td>@Model.ObserveEnvironment.getIconOriginType(@entity.ParentGroup) <span title="@entity.ParentGroup.description">@entity.ParentGroup.name</span></td>
+            <td>@entity.ChildObject.ID</td>
+            <td>
+                @if (entity.ChildObject is ObsRBACGroup)
+                {
+                    @Html.Raw("🧑‍🤝‍🧑 ")
+                }
+                else if (entity.ChildObject is ObsUser)
+                {
+                    @Html.Raw("🧑 ")
+                }
+                @entity.ChildObject.name
+            <td>
+                @if (entity.ChildObject is ObsUser)
+                {
+                    ObsUser user = (ObsUser)entity.ChildObject;
+                    @Model.ObserveEnvironment.getIconUserStatus(user) @user.status
+                }
+            </td>
+            <td>@entity.createdDate.ToString("u")/ @entity.createdBy.label</td>
+            <td>@entity.updatedDate.ToString("u")/ @entity.updatedBy.label</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h2 id="RelationshipsGraph">🌌 Relationships Graph</h2>
+<a href="#top">Back to Top</a>
+
+<p>
+    <textarea id="textArea_RelationshipsGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRBAC()</textarea>
+    <br/>
+    <button id="buttonVisualize_textArea_RelationshipsGraph" onclick="goToGraphVizOnline('textArea_RelationshipsGraph')">🔭 View</button>
+</p>
+
+<script src="~/js/DetailsCommon.js" asp-append-version="true"></script>

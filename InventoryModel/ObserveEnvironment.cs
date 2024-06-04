@@ -1,15 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using NLog;
 using Observe.EntityExplorer.DataObjects;
-using System;
 using System.Text;
 using System.Net;
-using Newtonsoft.Json.Bson;
-using CsvHelper;
-using System.Globalization;
-using CsvHelper.Configuration;
 
 namespace Observe.EntityExplorer
 {
@@ -19,6 +12,10 @@ namespace Observe.EntityExplorer
         public string CustomerName { get; set; } = "Unknown";
         public string Deployment { get; set; } = "Unknown";
         public string CustomerLabel { get; set; } = "Unknown";
+
+        public Uri AppHostedAt { get; set; }
+
+        public string UserUniqueID { get; set; }
 
         public DateTime LoadedOn { get; set; }
 
@@ -36,6 +33,12 @@ namespace Observe.EntityExplorer
         public Dictionary<string, ObsWorksheet> AllWorksheetsDict { get; set; }
         public Dictionary<string, ObsMonitor> AllMonitorsDict { get; set; }
 
+        // RBAC
+        public Dictionary<string, ObsUser> AllUsersDict { get; set; }
+        public Dictionary<string, ObsRBACGroup> AllGroupsDict { get; set; }
+        public List<ObsRBACStatement> AllStatements { get; set; }
+        public List<ObsRBACGroupMember> AllGroupMembers { get; set; }
+        
         public override string ToString()
         {
             return String.Format(
@@ -48,12 +51,16 @@ namespace Observe.EntityExplorer
         }         
         public ObserveEnvironment () {}
 
-        public ObserveEnvironment(AuthenticatedUser currentUser)
+        public ObserveEnvironment(AuthenticatedUser currentUser, HttpContext httpContext)
         {
             this.CustomerLabel = currentUser.CustomerLabel;
             this.CustomerEnvironmentUrl = currentUser.CustomerEnvironmentUrl;
             this.CustomerName = currentUser.CustomerName;
             this.Deployment = currentUser.Deployment;
+            this.UserUniqueID = currentUser.UniqueID;            
+
+            this.AppHostedAt = new UriBuilder(httpContext.Request.Scheme, httpContext.Request.Host.Host, (httpContext.Request.Host.Port == null) ? 0 : httpContext.Request.Host.Port.Value).Uri;
+
 
             #region Datasets 
 
@@ -169,6 +176,38 @@ namespace Observe.EntityExplorer
             {
                 monitor.AddAccelerationInfo(this.AllDatasetsDict, this.AllMonitorsDict);
             }
+
+            #endregion
+
+            #region RBAC
+
+            List<ObsUser> allUsers = getAllUsers(currentUser);
+            this.AllUsersDict = allUsers.ToDictionary(u => u.id, u => u);
+
+            List<ObsRBACGroup> allGroups = getAllGroups(currentUser);
+            this.AllGroupsDict = allGroups.ToDictionary(g => g.id, g => g);
+
+            List<ObsRBACStatement> allStatements = getAllStatements(currentUser);
+            // Enrich subject and object
+            foreach (ObsRBACStatement statement in allStatements)
+            {
+                statement.AddSubject(this.AllGroupsDict, this.AllUsersDict);
+                statement.AddObject(this.ObserveObjects);
+            }            
+            allStatements = allStatements.OrderBy(s => s.OriginType).ThenBy(s => s.SubjectSort).ThenBy(s => s.ObjectSort).ToList();
+            
+            this.AllStatements = allStatements;
+
+            List<ObsRBACGroupMember> allGroupMembers = getAllGroupMembers(currentUser);
+            // Enrich subject and object
+            foreach (ObsRBACGroupMember groupMember in allGroupMembers)
+            {
+                groupMember.AddParentGroup(this.AllGroupsDict);
+                groupMember.AddChildGroupOrUser(this.AllGroupsDict, this.AllUsersDict);
+            }            
+            allGroupMembers = allGroupMembers.OrderBy(s => s.OriginType).ThenBy(s => s.ParentGroup.id).ThenBy(s => s.ChildObject.name).ToList();
+            
+            this.AllGroupMembers = allGroupMembers;
 
             #endregion
 
@@ -926,6 +965,136 @@ namespace Observe.EntityExplorer
             return sb.ToString();
         }
 
+        public string RenderGraphOfRBAC()
+        {
+            StringBuilder sb = new StringBuilder(128*100);
+            sb.AppendFormat("digraph observe_entity_explorer {{rankdir=LR node [shape=\"rect\"] label=\"{0}/{1}\"", this.CustomerName, this.CustomerLabel).AppendLine();
+
+            sb.AppendLine("");
+            sb.AppendLine("// Users");
+
+            List<ObsUser> usersList = this.AllUsersDict.Values.ToList();
+            List<ObsUser> deletedUsersList = this.AllGroupMembers.Where(m => m.ChildObject is ObsUser && ((ObsUser)m.ChildObject).status == "Deleted").ToList().Select(m => m.ChildObject).Cast<ObsUser>().ToList();
+            usersList.AddRange(deletedUsersList);            
+            var allUsersGroupedByType = usersList.GroupBy(u => u.UserType);
+            foreach (var allUsersGroupedByTypeGroup in allUsersGroupedByType)
+            {
+                List<ObsUser> allUsersInGroup = allUsersGroupedByTypeGroup.Cast<ObsUser>().ToList();
+                if ((allUsersGroupedByTypeGroup.Key & ObsUserType.System) == ObsUserType.System)
+                {
+                    sb.AppendLine("  subgraph cluster_users_system {");
+                    sb.AppendFormat("    label=\"{0} System Users [{1}] ({2})\" style=\"filled\" fillcolor=\"lightyellow\"", getIconOriginType(ObsUserType.System), allUsersGroupedByTypeGroup.Key, allUsersInGroup.Count).AppendLine();
+                    foreach(ObsUser user in allUsersInGroup)
+                    {
+                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(user)).AppendLine();
+                    }
+                    sb.AppendLine("  }");
+                }
+                else if ((allUsersGroupedByTypeGroup.Key & ObsUserType.Email) == ObsUserType.Email)
+                {
+                    sb.AppendLine("  subgraph cluster_users_email {");
+                    sb.AppendFormat("    label=\"{0} Email Users [{1}] ({2})\" style=\"filled\" fillcolor=\"seashell\"", getIconOriginType(ObsUserType.Email), allUsersGroupedByTypeGroup.Key, allUsersInGroup.Count).AppendLine();
+                    foreach(ObsUser user in allUsersInGroup)
+                    {
+                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(user)).AppendLine();
+                    }
+                    sb.AppendLine("  }");
+                }
+                else if ((allUsersGroupedByTypeGroup.Key & ObsUserType.SAML) == ObsUserType.SAML)
+                {
+                    sb.AppendLine("  subgraph cluster_users_saml {");
+                    sb.AppendFormat("    label=\"{0} SAML Users [{1}] ({2})\" style=\"filled\" fillcolor=\"cyan2\"", getIconOriginType(ObsUserType.SAML), allUsersGroupedByTypeGroup.Key, allUsersInGroup.Count).AppendLine();
+                    foreach(ObsUser user in allUsersInGroup)
+                    {
+                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(user)).AppendLine();
+                    }
+                    sb.AppendLine("  }");
+                }
+                else if ((allUsersGroupedByTypeGroup.Key & ObsUserType.Unknown) == ObsUserType.Unknown)
+                {
+                    sb.AppendLine("  subgraph cluster_users_deleted {");
+                    sb.AppendFormat("    label=\"{0} Deleted Users [{1}] ({2})\" style=\"filled\" fillcolor=\"lightpink\"", getIconOriginType(ObsUserType.Unknown), allUsersGroupedByTypeGroup.Key, allUsersInGroup.Count).AppendLine();
+                    foreach(ObsUser user in allUsersInGroup)
+                    {
+                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(user)).AppendLine();
+                    }
+                    sb.AppendLine("  }");
+                }                
+            }
+
+            sb.AppendLine("");
+            sb.AppendLine("// Groups");
+
+            List<ObsRBACGroup> groupsList = this.AllGroupsDict.Values.ToList();
+            List<ObsRBACGroup> deletedGroupsList = this.AllGroupMembers.Where(m => m.ChildObject is ObsRBACGroup && m.ChildObject.name == "Deleted group").ToList().Select(m => m.ChildObject).Cast<ObsRBACGroup>().ToList();
+            groupsList.AddRange(deletedGroupsList);
+            var allGroupsGroupedByType = groupsList.GroupBy(u => u.OriginType);
+            foreach (var allGroupsGroupedByTypeGroup in allGroupsGroupedByType)
+            {
+                List<ObsRBACGroup> allGroupsInGroup = allGroupsGroupedByTypeGroup.Cast<ObsRBACGroup>().ToList();
+                string iconForGroup = getIconOriginType(allGroupsGroupedByTypeGroup.Key);
+                switch (allGroupsGroupedByTypeGroup.Key)
+                {
+                    case ObsObjectOriginType.System:
+                        sb.AppendLine("  subgraph cluster_groups_system {");
+                        sb.AppendFormat("    label=\"{0} System Groups [{1}] ({2})\" style=\"filled\" fillcolor=\"lightyellow\"", iconForGroup, allGroupsGroupedByTypeGroup.Key, allGroupsInGroup.Count).AppendLine();
+                        foreach(ObsRBACGroup group in allGroupsInGroup)
+                        {
+                            sb.AppendFormat("    {0}", getGraphVizNodeDefinition(group)).AppendLine();
+                        }
+                        sb.AppendLine("  }");
+                        break;
+
+                    case ObsObjectOriginType.User:
+                        sb.AppendLine("  subgraph cluster_groups_user {");
+                        sb.AppendFormat("    label=\"{0} User Groups [{1}] ({2})\" style=\"filled\" fillcolor=\"seashell\"", iconForGroup, allGroupsGroupedByTypeGroup.Key, allGroupsInGroup.Count).AppendLine();
+                        foreach(ObsRBACGroup group in allGroupsInGroup)
+                        {
+                            sb.AppendFormat("    {0}", getGraphVizNodeDefinition(group)).AppendLine();
+                        }
+                        sb.AppendLine("  }");
+                        break;
+
+                    case ObsObjectOriginType.SAML:
+                        sb.AppendLine("  subgraph cluster_groups_saml {");
+                        sb.AppendFormat("    label=\"{0} SAML Groups [{1}] ({2})\" style=\"filled\" fillcolor=\"cyan2\"", iconForGroup, allGroupsGroupedByTypeGroup.Key, allGroupsInGroup.Count).AppendLine();
+                        foreach(ObsRBACGroup group in allGroupsInGroup)
+                        {
+                            sb.AppendFormat("    {0}", getGraphVizNodeDefinition(group)).AppendLine();
+                        }
+                        sb.AppendLine("  }");
+                        break;
+
+                    case ObsObjectOriginType.Unknown:
+                        sb.AppendLine("  subgraph cluster_groups_deleted {");
+                        sb.AppendFormat("    label=\"{0} Deleted Groups [{1}] ({2})\" style=\"filled\" fillcolor=\"lightpink\"", iconForGroup, allGroupsGroupedByTypeGroup.Key, allGroupsInGroup.Count).AppendLine();
+                        foreach(ObsRBACGroup group in allGroupsInGroup)
+                        {
+                            sb.AppendFormat("    {0}", getGraphVizNodeDefinition(group)).AppendLine();
+                        }
+                        sb.AppendLine("  }");
+                        break;
+
+                    default:
+                        // everything else is not possible for groups
+                        break;
+                }
+                
+
+            }            
+            
+            sb.AppendLine("");
+            sb.AppendLine("// Membership");
+            foreach (ObsRBACGroupMember groupMember in this.AllGroupMembers)
+            {
+                sb.AppendLine(getGraphVizEdgeDefinition(groupMember));
+            }
+
+            // Close the entire doc
+            sb.AppendLine("}");
+            return sb.ToString();
+        }
+
         private string getGraphVizNodeDefinition(ObsDataset dataset)
         {
             return getGraphVizNodeDefinition(dataset, false);
@@ -973,11 +1142,11 @@ namespace Observe.EntityExplorer
 
             if (highlight == true)
             {
-                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" tooltip=\"{5}\" style=\"filled\" fillcolor=\"pink\"]", getGraphVizNodeName(dataset), nodeIcon, WebUtility.HtmlEncode(dataset.name.Replace("/", "/\n")), nodeShape, nodeColor, WebUtility.HtmlEncode(dataset.description));
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" tooltip=\"{5}\" style=\"filled\" fillcolor=\"pink\" URL=\"{6}\" target=\"_blank\"]", getGraphVizNodeName(dataset), nodeIcon, WebUtility.HtmlEncode(dataset.name.Replace("/", "/\n")), nodeShape, nodeColor, WebUtility.HtmlEncode(dataset.description), getLinkToEntity(dataset));
             }
             else
             {
-                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\"]", getGraphVizNodeName(dataset), nodeIcon, WebUtility.HtmlEncode(dataset.name.Replace("/", "/\n")), nodeShape, nodeColor);
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(dataset), nodeIcon, WebUtility.HtmlEncode(dataset.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(dataset));
             }
         }
 
@@ -1018,14 +1187,15 @@ namespace Observe.EntityExplorer
             toolTip.AppendFormat("Len:{0} ", stage.pipeline.Length);
             toolTip.AppendFormat("Lines:{0}", stage.pipeline.Split("\n").Length);
             
-            return String.Format("{0} [label=\"{1}{2} [{3}]\" shape=\"{4}\" color=\"{5}\" tooltip=\"{6}\"]", 
+            return String.Format("{0} [label=\"{1}{2} [{3}]\" shape=\"{4}\" color=\"{5}\" tooltip=\"{6}\" URL=\"{7}\" target=\"_blank\"]", 
                 getGraphVizNodeName(stage), 
                 nodeIcon, 
                 WebUtility.HtmlEncode(wordWrap(stage.name, 16, new char[] { ' '})), 
                 stage.type,
                 nodeShape, 
                 nodeColor, 
-                WebUtility.HtmlEncode(toolTip.ToString()));
+                WebUtility.HtmlEncode(toolTip.ToString()),
+                getLinkToEntity(stage));
         }
 
         private string getGraphVizNodeDefinition(ObsParameter parameter)
@@ -1063,11 +1233,11 @@ namespace Observe.EntityExplorer
 
             if (highlight == true)
             {
-                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" style=\"filled\" fillcolor=\"pink\"]", getGraphVizNodeName(dashboard), nodeIcon, WebUtility.HtmlEncode(dashboard.name.Replace("/", "/\n")), nodeShape, nodeColor);
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" style=\"filled\" fillcolor=\"pink\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(dashboard), nodeIcon, WebUtility.HtmlEncode(dashboard.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(dashboard));
             }
             else
             {
-                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\"]", getGraphVizNodeName(dashboard), nodeIcon, WebUtility.HtmlEncode(dashboard.name.Replace("/", "/\n")), nodeShape, nodeColor);
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(dashboard), nodeIcon, WebUtility.HtmlEncode(dashboard.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(dashboard));
             }
         }
 
@@ -1113,11 +1283,11 @@ namespace Observe.EntityExplorer
 
             if (highlight == true)
             {
-                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" style=\"filled\" fillcolor=\"pink\"]", getGraphVizNodeName(monitor), nodeIcon, WebUtility.HtmlEncode(monitor.name.Replace("/", "/\n")), nodeShape, nodeColor);
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" style=\"filled\" fillcolor=\"pink\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(monitor), nodeIcon, WebUtility.HtmlEncode(monitor.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(monitor));
             }
             else
             {
-                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\"]", getGraphVizNodeName(monitor), nodeIcon, WebUtility.HtmlEncode(monitor.name.Replace("/", "/\n")), nodeShape, nodeColor);
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(monitor), nodeIcon, WebUtility.HtmlEncode(monitor.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(monitor));
             }
         }
 
@@ -1134,12 +1304,34 @@ namespace Observe.EntityExplorer
 
             if (highlight == true)
             {
-                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" style=\"filled\" fillcolor=\"pink\"]", getGraphVizNodeName(worksheet), nodeIcon, WebUtility.HtmlEncode(worksheet.name.Replace("/", "/\n")), nodeShape, nodeColor);
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" style=\"filled\" fillcolor=\"pink\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(worksheet), nodeIcon, WebUtility.HtmlEncode(worksheet.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(worksheet));
             }
             else
             {
-                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\"]", getGraphVizNodeName(worksheet), nodeIcon, WebUtility.HtmlEncode(worksheet.name.Replace("/", "/\n")), nodeShape, nodeColor);
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(worksheet), nodeIcon, WebUtility.HtmlEncode(worksheet.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(worksheet));
             }
+        }
+
+        private string getGraphVizNodeDefinition(ObsUser user)
+        {
+            string nodeColor = "black";
+            if (user.status != "UserStatusActive")
+            {
+                nodeColor = "gray";
+            }            
+            string nodeIcon = String.Format("{0}{1}", getIconOriginType(user.UserType), getIconUserStatus(user));
+            string nodeShape = "rectangle";
+
+            return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" tooltip=\"{5} {6}\"]", getGraphVizNodeName(user), nodeIcon, WebUtility.HtmlEncode(user.name.Replace("/", "/\n")), nodeShape, nodeColor, user.email, user.id);
+        }
+
+        private string getGraphVizNodeDefinition(ObsRBACGroup group)
+        {
+            string nodeColor = "black";       
+            string nodeIcon = getIconOriginType(group);
+            string nodeShape = "ellipse";
+
+            return String.Format("{0} [label=\"{1}{2}\n{3}\" shape=\"{4}\" color=\"{5}\" tooltip=\"{6}\"]", getGraphVizNodeName(group), nodeIcon, WebUtility.HtmlEncode(group.name.Replace("/", "/\n")), WebUtility.HtmlEncode(group.description.Replace("/", "/\n")), nodeShape, nodeColor, group.ID);
         }
 
         private string getGraphVizEdgeDefinition(ObjectRelationship relationship)
@@ -1168,6 +1360,17 @@ namespace Observe.EntityExplorer
                 getGraphVizNodeName(relationship.ThisObject),
                 edgeColor,
                 WebUtility.HtmlEncode(relationship.name));
+        }
+
+        private string getGraphVizEdgeDefinition(ObsRBACGroupMember groupMember)
+        {
+            string edgeColor = "black";
+
+            return String.Format("{0}->{1} [color=\"{2}\" tooltip=\"{3}\"]", 
+                getGraphVizNodeName(groupMember.ParentGroup), 
+                getGraphVizNodeName(groupMember.ChildObject),
+                edgeColor,
+                WebUtility.HtmlEncode(groupMember.description));
         }
 
         private string getGraphVizNodeName(ObsObject interestingObject)
@@ -1204,8 +1407,78 @@ namespace Observe.EntityExplorer
             {
                 return String.Format("{0}PRM_{1}_{2}{0}", quoteCharacter, ((ObsParameter)interestingObject).Parent.id, interestingObject.id);
             }
+            else if (interestingObject is ObsUser)
+            {
+                return String.Format("{0}USR_{1}{0}", quoteCharacter, ((ObsRBACObject)interestingObject).ID);
+            }
+            else if (interestingObject is ObsRBACGroup)
+            {
+                return String.Format("{0}GRP_{1}{0}", quoteCharacter, ((ObsRBACObject)interestingObject).ID);
+            }
 
             return String.Empty;
+        }
+
+        private string getLinkToEntity(ObsCompositeObject entity)
+        {
+            switch (entity)
+            {
+                case ObsDataset t1:
+                    return getLinkToEntity((ObsDataset)entity);
+
+                case ObsDashboard t1:
+                    return getLinkToEntity((ObsDashboard)entity);
+
+                case ObsMonitor t1:
+                    return getLinkToEntity((ObsMonitor)entity);
+
+                case ObsWorksheet t1:
+                    return getLinkToEntity((ObsWorksheet)entity);
+
+                default:
+                    return String.Empty;
+            }
+        }
+
+        private string getLinkToEntity(ObsDataset entity)
+        {
+            var linkUri = new UriBuilder(this.AppHostedAt);
+            linkUri.Path = String.Format("Details/Dataset/{0}", entity.id);
+            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            return linkUri.Uri.ToString();
+        }
+
+        private string getLinkToEntity(ObsDashboard entity)
+        {
+            var linkUri = new UriBuilder(this.AppHostedAt);
+            linkUri.Path = String.Format("Details/Dashboard/{0}", entity.id);
+            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            return linkUri.Uri.ToString();
+        }
+
+        private string getLinkToEntity(ObsMonitor entity)
+        {
+            var linkUri = new UriBuilder(this.AppHostedAt);
+            linkUri.Path = String.Format("Details/Monitor/{0}", entity.id);
+            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            return linkUri.Uri.ToString();
+        }
+
+        private string getLinkToEntity(ObsWorksheet entity)
+        {
+            var linkUri = new UriBuilder(this.AppHostedAt);
+            linkUri.Path = String.Format("Details/Worksheet/{0}", entity.id);
+            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            return linkUri.Uri.ToString();
+        }
+
+        private string getLinkToEntity(ObsStage entity)
+        {
+            string parentLink = getLinkToEntity(entity.Parent);
+
+            var linkUri = new UriBuilder(parentLink);
+            linkUri.Fragment = entity.id;
+            return linkUri.Uri.ToString();
         }
 
         private string escapeGraphVizObjectNameForSubGraph(string potentialName)
@@ -1266,6 +1539,28 @@ namespace Observe.EntityExplorer
 
         #region Icon rendering for various object type labels
 
+        internal string getIconType(ObsCompositeObject obsCompositeObject)
+        {
+            if (obsCompositeObject is ObsDataset)
+            {
+                return "🎫";
+            }
+            if (obsCompositeObject is ObsDashboard)
+            {
+                return "📈";
+            }
+            if (obsCompositeObject is ObsMonitor)
+            {
+                return "📟";
+            }
+            if (obsCompositeObject is ObsWorksheet)
+            {
+                return "📝";
+            }
+            return "❓";
+
+        }
+
         internal string getIconType(ObsDataset obsDataset)
         {
             return obsDataset.kind switch
@@ -1291,9 +1586,52 @@ namespace Observe.EntityExplorer
         {
             return obsObjectOriginType switch 
             {
-                ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", ObsObjectOriginType.External => "❄️", _ => "❓"
+                ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", ObsObjectOriginType.External => "❄️", ObsObjectOriginType.SAML => "🏢", _ => "❓"
             };
         }
+
+        internal string getIconOriginType(ObsUser obsObject)
+        {
+            return getIconOriginType(obsObject.UserType);
+        }
+        
+        internal string getIconOriginType(ObsUserType obsObjectUserType)
+        {
+            if ((obsObjectUserType & ObsUserType.System) == ObsUserType.System)
+            {
+                return "⚙️";
+            }
+            else if ((obsObjectUserType & ObsUserType.Email) == ObsUserType.Email && (obsObjectUserType & ObsUserType.SAML) == ObsUserType.SAML)
+            {
+                return "🗄️";
+            }
+            else if ((obsObjectUserType & ObsUserType.Email) == ObsUserType.Email)
+            {
+                return "📧";
+            }
+            else if ((obsObjectUserType & ObsUserType.SAML) == ObsUserType.SAML)
+            {
+                return "🏢";
+            }
+            else
+            {
+                return "❓"; 
+            }
+        }
+
+        internal string getIconOriginType(ObsRBACObject obsObject)
+        {
+            return getIconOriginType(obsObject.OriginType);
+        }
+
+        internal string getIconUserStatus(ObsUser obsUser)
+        {
+            return obsUser.status switch
+            {
+                "UserStatusActive" => "✅", "UserStatusDisabled" => "❌", "UserStatusIdpDisabled" => "🚫", "UserStatusCreated" => "🔆", "Deleted" => "📛", _ => "❓"
+            };
+        }
+
 
         internal string getIconEnabled(ObsMonitor obsMonitor)
         {
@@ -1307,7 +1645,7 @@ namespace Observe.EntityExplorer
         {
             return obsStage.type switch
             {
-                "table" => "📑", "timeseries" => "📉", "bar" => "📊", "circular" => "🥧", "stacked_area" => "🗻", "singlevalue" => "#️⃣", "list" => "📜", "valueovertime" => "⏳", "gantt" => "📐", _ => ""
+                "table" => "📑", "timeseries" => "📉", "bar" => "📊", "circular" => "🥧", "stacked_area" => "🗻", "singlevalue" => "#️⃣", "list" => "📜", "valueovertime" => "⏳", "gantt" => "📐", "flame" => "🔥", _ => ""
             };
         }
 
@@ -1337,6 +1675,8 @@ namespace Observe.EntityExplorer
 
         #endregion
 
+        #region Retrieval of objects
+
         private List<ObsDataset> getAllDatasets(AuthenticatedUser currentUser)
         {
             string entitySearchResults = ObserveConnection.datasetSearch_all(currentUser);
@@ -1359,7 +1699,7 @@ namespace Observe.EntityExplorer
                     JObject datasetObject = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchObject, "dataset"); 
                     if (datasetObject != null)
                     {
-                        ObsDataset dataset = new ObsDataset(datasetObject, currentUser);
+                        ObsDataset dataset = new ObsDataset(datasetObject);
 
                         datasetsList.Add(dataset);
 
@@ -1386,7 +1726,7 @@ namespace Observe.EntityExplorer
             JObject datasetObject = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "dataset");
             if (datasetObject != null)
             {
-                ObsDataset dataset = new ObsDataset(datasetObject, currentUser);
+                ObsDataset dataset = new ObsDataset(datasetObject);
 
                 logger.Trace("Dataset={0}", dataset);
                 loggerConsole.Trace("Found {0}", dataset);
@@ -1527,6 +1867,151 @@ namespace Observe.EntityExplorer
             return null;
         }
 
+        #endregion
+
+        #region Retrieval of RBAC
+
+        private List<ObsUser> getAllUsers(AuthenticatedUser currentUser)
+        {
+            string entitySearchResults = ObserveConnection.users(currentUser);
+            if (entitySearchResults.Length == 0)
+            {
+                throw new InvalidDataException(String.Format("Invalid response on users for {0}", currentUser));
+            }
+
+            JObject entitySearchResultsObject = JObject.Parse(entitySearchResults);
+            JObject entitySearchCurrentCustomer = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "currentCustomer");
+
+            List<ObsUser> usersList = new List<ObsUser>(0);
+            if (entitySearchCurrentCustomer != null)
+            {
+                JArray entitySearchArray = (JArray)JSONHelper.getJTokenValueFromJToken(entitySearchCurrentCustomer, "users");
+
+                usersList = new List<ObsUser>(entitySearchArray.Count);
+                logger.Info("Number of Users={0}", entitySearchArray.Count);
+
+                foreach (JObject entitySearchObject in entitySearchArray)
+                {
+                    ObsUser user = new ObsUser(entitySearchObject);
+
+                    usersList.Add(user);
+
+                    logger.Trace("User={0}", user);
+                    loggerConsole.Trace("User {0}", user);
+                }
+                
+                usersList = usersList.OrderBy(u => u.name).ToList();
+            }
+
+            return usersList;
+        }
+
+        private List<ObsRBACGroup> getAllGroups(AuthenticatedUser currentUser)
+        {
+            string entitySearchResults = ObserveConnection.rbacGroups(currentUser);
+            if (entitySearchResults.Length == 0)
+            {
+                throw new InvalidDataException(String.Format("Invalid response on rbacGroups for {0}", currentUser));
+            }
+
+            JObject entitySearchResultsObject = JObject.Parse(entitySearchResults);
+            JArray entitySearchArray = (JArray)JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "rbacGroups");
+
+            List<ObsRBACGroup> groupsList = new List<ObsRBACGroup>(0);
+            if (entitySearchArray != null)
+            {
+                groupsList = new List<ObsRBACGroup>(entitySearchArray.Count);
+
+                logger.Info("Number of Groups={0}", entitySearchArray.Count);
+
+                foreach (JObject entitySearchObject in entitySearchArray)
+                {
+                    ObsRBACGroup group = new ObsRBACGroup(entitySearchObject);
+
+                    groupsList.Add(group);
+
+                    logger.Trace("Group={0}", group);
+                    loggerConsole.Trace("Group {0}", group);
+                }
+                
+                groupsList = groupsList.OrderBy(u => u.OriginType).ThenBy(u => u.name).ToList();
+            }
+
+            return groupsList;
+        }
+
+        private List<ObsRBACStatement> getAllStatements(AuthenticatedUser currentUser)
+        {
+            string entitySearchResults = ObserveConnection.rbacStatements(currentUser);
+            if (entitySearchResults.Length == 0)
+            {
+                throw new InvalidDataException(String.Format("Invalid response on rbacStatements for {0}", currentUser));
+            }
+
+            JObject entitySearchResultsObject = JObject.Parse(entitySearchResults);
+            JArray entitySearchArray = (JArray)JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "rbacStatements");
+
+            List<ObsRBACStatement> statementsList = new List<ObsRBACStatement>(0);
+            if (entitySearchArray != null)
+            {
+                statementsList = new List<ObsRBACStatement>(entitySearchArray.Count);
+
+                logger.Info("Number of Statements={0}", entitySearchArray.Count);
+
+                foreach (JObject entitySearchObject in entitySearchArray)
+                {
+                    ObsRBACStatement statement = new ObsRBACStatement(entitySearchObject);
+
+                    statementsList.Add(statement);
+
+                    logger.Trace("Statement={0}", statement);
+                    loggerConsole.Trace("Statement {0}", statement);
+                }
+                
+                statementsList = statementsList.OrderBy(u => u.OriginType).ThenBy(u => u.description).ToList();
+            }
+
+            return statementsList;
+        }
+
+        private List<ObsRBACGroupMember> getAllGroupMembers(AuthenticatedUser currentUser)
+        {
+            string entitySearchResults = ObserveConnection.rbacGroupMembers(currentUser);
+            if (entitySearchResults.Length == 0)
+            {
+                throw new InvalidDataException(String.Format("Invalid response on rbacGroupmembers for {0}", currentUser));
+            }
+
+            JObject entitySearchResultsObject = JObject.Parse(entitySearchResults);
+            JArray entitySearchArray = (JArray)JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "rbacGroupmembers");
+
+            List<ObsRBACGroupMember> groupMemberList = new List<ObsRBACGroupMember>(0);
+            if (entitySearchArray != null)
+            {
+                groupMemberList = new List<ObsRBACGroupMember>(entitySearchArray.Count);
+
+                logger.Info("Number of GroupMembers={0}", entitySearchArray.Count);
+
+                foreach (JObject entitySearchObject in entitySearchArray)
+                {
+                    ObsRBACGroupMember groupMember = new ObsRBACGroupMember(entitySearchObject);
+
+                    groupMemberList.Add(groupMember);
+
+                    logger.Trace("GroupMember={0}", groupMember);
+                    loggerConsole.Trace("GroupMembers {0}", groupMember);
+                }
+                
+                groupMemberList = groupMemberList.OrderBy(u => u.OriginType).ThenBy(u => u.description).ToList();
+            }
+
+            return groupMemberList;
+        }
+
+        #endregion
+
+        #region Retrieval of usage
+
         internal List<ObsCreditsTransform> getUsageTransform(AuthenticatedUser currentUser, int intervalHours)
         {
             List<ObsCreditsTransform> usageList = new List<ObsCreditsTransform>(1000);
@@ -1595,5 +2080,7 @@ namespace Observe.EntityExplorer
 
             return usageList;
         }
+    
+        #endregion
     }
 }

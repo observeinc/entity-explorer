@@ -20,7 +20,7 @@
 
 <p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
 
-<h1>🎫 Dataset Details - @Model.CurrentDataset.name (@Model.CurrentDataset.id)</h1>
+<h1>@Model.ObserveEnvironment.getIconType(((ObsCompositeObject)@Model.CurrentDataset)) Dataset Details - @Model.CurrentDataset.name (@Model.CurrentDataset.id)</h1>
 
 <p>
     <a href="#Acceleration">🚄 Acceleration</a> 
@@ -29,9 +29,9 @@
     <a href="#RelatedDatasetsGraph">🔀 Related Datasets Graph</a>
     <a href="#Stages">🏛️ Stages</a>
     <a href="#StagesGraph">⛲ Stages Graph</a>
-    <a href="#RelatedDashboards">📈 Related Dashboards</a>
-    <a href="#RelatedMonitors">📟 Related Monitors</a>
-    <a href="#RelatedWorksheets">📝 Related Worksheets</a>
+    <a href="#RelatedDashboards">@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Related Dashboards</a>
+    <a href="#RelatedMonitors">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Related Monitors</a>
+    <a href="#RelatedWorksheets">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Related Worksheets</a>
 </p>
 
 <table>
@@ -784,7 +784,7 @@
     <button id="buttonVisualize_textArea_StagesGraph" onclick="goToGraphVizOnline('textArea_StagesGraph')">🔭 View</button>
 </p>
 
-<h2 id="RelatedDashboards">📈 Related Dashboards</h2>
+<h2 id="RelatedDashboards">@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Related Dashboards</h2>
 <a href="#top">Back to Top</a>
 
 @{
@@ -851,7 +851,7 @@
     </tbody>
 </table>
 
-<h2 id="RelatedMonitors">📟 Related Monitors</h2>
+<h2 id="RelatedMonitors">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Related Monitors</h2>
 <a href="#top">Back to Top</a>
 
 @{
@@ -895,7 +895,7 @@
             <td>
                 @if (entity.comment.Length > 0)
                 {
-                    <span title="@entity.comment">📝</span> 
+                    <span title="@entity.comment">🧾</span> 
                 }
             </td>
             <td>@Model.ObserveEnvironment.getIconEnabled(entity) @entity.IsEnabled</td>
@@ -923,7 +923,7 @@
     </tbody>
 </table>
 
-<h2 id="RelatedWorksheets">📝 Related Worksheets</h2>
+<h2 id="RelatedWorksheets">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Related Worksheets</h2>
 <a href="#top">Back to Top</a>
 
 @{

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.IO;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -16,6 +17,9 @@ public class CommonControllerMethods
 
     private Logger logger = LogManager.GetCurrentClassLogger();
     private static Logger loggerConsole = LogManager.GetLogger("Observe.EntityExplorer.Console");
+    
+    private string authCacheFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".observe");
+    
 
     private Controller Controller { get; }
 
@@ -41,10 +45,15 @@ public class CommonControllerMethods
         // Load AuthenticatedUser from cookie if it exists
         try
         {
-            string serializedData = this.Controller.Request.Cookies["Observe.EntityExplorer.AllUsers"];
-            if (serializedData != null && serializedData.Length > 0)
+            //string serializedData = this.Controller.Request.Cookies["Observe.EntityExplorer.AllUsers"];
+            string authCacheFilePath = Path.Combine(authCacheFolderPath, "observe-entity-explorer.auth-cache.json");
+            if (Path.Exists(authCacheFilePath) == true)
             {
-                allUsers = JsonConvert.DeserializeObject<List<AuthenticatedUser>>(Encoding.UTF8.GetString(Convert.FromBase64String(serializedData)));
+                string serializedData = File.ReadAllText(authCacheFilePath);
+                if (serializedData != null && serializedData.Length > 0)
+                {
+                    allUsers = JsonConvert.DeserializeObject<List<AuthenticatedUser>>(serializedData);
+                }
             }
         }
         catch (Exception ex)
@@ -58,10 +67,13 @@ public class CommonControllerMethods
 
     public void SaveAllUsers(List<AuthenticatedUser> allUsers)
     {
+        Directory.CreateDirectory(authCacheFolderPath);
+        string authCacheFilePath = Path.Combine(authCacheFolderPath, "observe-entity-explorer.auth-cache.json");
+        File.WriteAllText(authCacheFilePath, JsonConvert.SerializeObject(allUsers, Formatting.Indented), Encoding.UTF8);
         // Save all users into cookie
-        CookieOptions cookieOptions = new CookieOptions();
-        cookieOptions.Expires = DateTimeOffset.Now.AddDays(28);
-        this.Controller.HttpContext.Response.Cookies.Append("Observe.EntityExplorer.AllUsers", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(allUsers))), cookieOptions);
+        // CookieOptions cookieOptions = new CookieOptions();
+        // cookieOptions.Expires = DateTimeOffset.Now.AddDays(28);
+        // this.Controller.HttpContext.Response.Cookies.Append("Observe.EntityExplorer.AllUsers", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(allUsers))), cookieOptions);
     }
 
     public ObserveEnvironment GetObserveEnvironment(AuthenticatedUser currentUser) 
@@ -87,7 +99,7 @@ public class CommonControllerMethods
             logger.Info("No {0} ObserveEnvironment in cache, will create", observeEnvironmentCacheKey);
 
             // Let's build it 
-            observeEnvironment = new ObserveEnvironment(currentUser);
+            observeEnvironment = new ObserveEnvironment(currentUser, this.Controller.HttpContext);
 
             var cacheEntryOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromHours(3));
             this.MemoryCache.Set(observeEnvironmentCacheKey, observeEnvironment, cacheEntryOptions);

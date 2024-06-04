@@ -2,7 +2,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Observe.EntityExplorer.DataObjects
 {
-    public class ObsUser : ObsObject
+    public class ObsUser : ObsRBACObject
     {
         public string comment { get; set; }
         public string email { get; set; }
@@ -12,25 +12,16 @@ namespace Observe.EntityExplorer.DataObjects
         public string status { get; set; }
         public string timezone { get; set; }
         public string defaultWorkspaceId { get; set; }
-        public List<string> type { get; set; }
+        public ObsUserType UserType { get; set; } = ObsUserType.Unknown;
 
         public override string ToString()
         {
-            if (this.email == String.Empty)
-            {
-                return String.Format(
-                    "ObsUser: {0}/{1}",
-                    this.label,
-                    this.id);
-            }
-            else
-            {
-                return String.Format(
-                    "ObsUser: {0}/{1}/{2})",
-                    this.label,
-                    this.email,
-                    this.id);
-            }
+            return String.Format(
+                "ObsUser: {0}/{1}/{2}/{3}",
+                this.label,
+                this.email,
+                this.id,
+                this.UserType);
         }
 
         public ObsUser () {}
@@ -41,15 +32,33 @@ namespace Observe.EntityExplorer.DataObjects
 
             this.id = JSONHelper.getStringValueFromJToken(entityObject, "id");
             if (this.id == String.Empty) this.id = JSONHelper.getStringValueFromJToken(entityObject, "userId");
-            JArray typeArrayToken = (JArray)JSONHelper.getJTokenValueFromJToken(entityObject, "type");
-            if (typeArrayToken != null)
+            this.ID = this.id;
+            
+            this.UserType = ObsUserType.Unknown;
+            JArray typeArray = (JArray)JSONHelper.getJTokenValueFromJToken(entityObject, "type");
+            if (typeArray != null)
             {
-                this.type = typeArrayToken.ToObject<List<string>>();
-            }
-            else
-            {
-                this.type = new List<string>();
-                this.type.Add("unknown");
+                foreach (JToken typeValue in typeArray)
+                {
+                    string typeValueString = typeValue.ToString();
+                    switch (typeValueString)
+                    {
+                        case "UserTypeEmail":
+                            this.UserType = this.UserType | ObsUserType.Email;
+                            break;
+
+                        case "UserTypeSystem":
+                            this.UserType = this.UserType | ObsUserType.System;
+                            break;
+
+                        case "UserTypeSaml2":
+                            this.UserType = this.UserType | ObsUserType.SAML;
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
             }
             this.email = JSONHelper.getStringValueFromJToken(entityObject, "email");
             this.label = JSONHelper.getStringValueFromJToken(entityObject, "label");

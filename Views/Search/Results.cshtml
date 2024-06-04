@@ -34,10 +34,10 @@
 <h1>🔎 Code Search Results</h1>
 
 <p>
-    <a href="#Datasets">🎫 Datasets (@datasetsResults.Count / @datasetStages.Count)</a> 
-    <a href="#Dashboards">📈 Dashboards (@dashboardResults.Count / @dashboardStages.Count)</a> 
-    <a href="#Monitors">📟 Monitors (@monitorResults.Count / @monitorStages.Count)</a> 
-    <a href="#Worksheets">📝 Worksheets (@worksheetResults.Count / @worksheetStages.Count)</a> 
+    <a href="#Datasets">@Model.ObserveEnvironment.getIconType(new ObsDataset()) Datasets (@datasetsResults.Count / @datasetStages.Count)</a> 
+    <a href="#Dashboards">@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Dashboards (@dashboardResults.Count / @dashboardStages.Count)</a> 
+    <a href="#Monitors">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Monitors (@monitorResults.Count / @monitorStages.Count)</a> 
+    <a href="#Worksheets">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Worksheets (@worksheetResults.Count / @worksheetStages.Count)</a> 
 </p>
 
 <table>
@@ -47,7 +47,7 @@
     </tr>
 </table>
 
-<h2 id="Datasets">🎫 Datasets</h2>
+<h2 id="Datasets">@Model.ObserveEnvironment.getIconType(new ObsDataset()) Datasets</h2>
 <a href="#top">Back to Top</a>
 
 @foreach(ObsStage stage in datasetStages)
@@ -56,6 +56,7 @@
     <table class="AlternatingRowTable">
         <tr>
             <td>@Html.ActionLink("🎫 View", "Dataset", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entity), entity.id)">📄 Data</a></td>
             <td>@Model.ObserveEnvironment.getIconType(entity) @entity.kind</td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) <span title="@entity.source">@entity.OriginType</span></td>
             <td>@entity.id</td>
@@ -68,7 +69,7 @@
     <pre><code class="language-javascript">@stage.pipeline</code></pre>
 }
 
-<h2 id="Dashboards">📈 Dashboard</h2>
+<h2 id="Dashboards">@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Dashboard</h2>
 <a href="#top">Back to Top</a>
 
 @foreach(ObsStage stage in dashboardStages)
@@ -77,6 +78,7 @@
     <table class="AlternatingRowTable">
         <tr>
             <td>@Html.ActionLink("📈 View", "Dashboard", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td><a href="@String.Format("{0}workspace/{1}/dashboard/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">📄 Data</a></td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
             <td>@entity.id</td>
             <td>@entity.name</td>
@@ -89,7 +91,7 @@
     <br/>
 }
 
-<h2 id="Monitors">📟 Monitors</h2>
+<h2 id="Monitors">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Monitors</h2>
 <a href="#top">Back to Top</a>
 
 @foreach(ObsStage stage in monitorStages)
@@ -98,6 +100,7 @@
     <table class="AlternatingRowTable">
         <tr>
             <td>@Html.ActionLink("📟 View", "Monitor", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td><a href="@String.Format("{0}workspace/{1}/monitor/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">🛠️ Edit</a></td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
             <td>@entity.id</td>
             <td>@entity.name</td>
@@ -110,7 +113,7 @@
     <br/>
 }
 
-<h2 id="Worksheets">📝 Worksheets</h2>
+<h2 id="Worksheets">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Worksheets</h2>
 <a href="#top">Back to Top</a>
 
 @foreach(ObsStage stage in worksheetStages)
@@ -119,6 +122,7 @@
     <table class="AlternatingRowTable">
         <tr>
             <td>@Html.ActionLink("📝 View", "Worksheet", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td><a href="@String.Format("{0}workspace/{1}/worksheet/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">📄 Data</a></td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
             <td>@entity.id</td>
             <td>@entity.name</td>

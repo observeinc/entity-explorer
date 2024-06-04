@@ -118,19 +118,19 @@
                 </tr>
             </table>
         </td>
-        <td><a asp-area="" asp-controller="Select" asp-action="Dataset" asp-route-userid="@Model.CurrentUser.UniqueID">🎫 Explore Datasets</a> - Review the structure and dependencies of datasets</td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Dataset" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(((ObsCompositeObject)new ObsDataset())) Explore Datasets</a> - Review the structure and dependencies of datasets</td>
     </tr>
     <tr>
         <td>Dashboards</td>
         <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Dashboard).Count</td>
         <td></td>
-        <td><a asp-area="" asp-controller="Select" asp-action="Dashboard" asp-route-userid="@Model.CurrentUser.UniqueID">📈 Explore Dashboards</a> - Review the structure and dependencies of custom and app dashboards</td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Dashboard" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Explore Dashboards</a> - Review the structure and dependencies of custom and app dashboards</td>
     </tr>
     <tr>
         <td>Worksheets</td>
         <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Worksheet).Count</td>
         <td></td>
-        <td><a asp-area="" asp-controller="Select" asp-action="Worksheet" asp-route-userid="@Model.CurrentUser.UniqueID">📝 Explore Worksheets</a> - Review the structure of ad-hoc worksheets</td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Worksheet" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Explore Worksheets</a> - Review the structure of ad-hoc worksheets</td>
     </tr>
     <tr>
         <td>Monitors</td>
@@ -186,7 +186,7 @@
                 </tr>
             </table>
         </td>
-        <td><a asp-area="" asp-controller="Select" asp-action="Monitor" asp-route-userid="@Model.CurrentUser.UniqueID">📟 Explore Monitors</a> - Review the monitor configuration and dataset dependencies</td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Monitor" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Explore Monitors</a> - Review the monitor configuration and dataset dependencies</td>
     </tr>
     <tr>
         <td>Relationships</td>
@@ -225,6 +225,35 @@
         </td>
         <td></td>
         <td><button id="buttonVisualize_RelatedObjectsGraph" onclick="goToGraphVizOnline('textArea_RelatedObjectsGraph')">🔭 View</button></td>
+    </tr>
+    <tr>
+        <td>RBAC</td>
+        <td>
+            <table>
+                <thead>
+                    <th>Category</th>
+                    <th>Number</th>
+                </thead>
+                <tr>
+                    <td>Users</td>
+                    <td>@Model.ObserveEnvironment.AllUsersDict.Count()</td>
+                </tr>
+                <tr>
+                    <td>Groups</td>
+                    <td>@Model.ObserveEnvironment.AllGroupsDict.Count()</td>
+                </tr>
+                <tr>
+                    <td>Group Members</td>
+                    <td>@Model.ObserveEnvironment.AllGroupMembers.Count()</td>
+                </tr>
+                <tr>
+                    <td>Statements</td>
+                    <td>@Model.ObserveEnvironment.AllStatements.Count()</td>
+                </tr>
+            </table>
+        </td>            
+        <td></td>
+        <td><a asp-area="" asp-controller="Select" asp-action="RBAC" asp-route-userid="@Model.CurrentUser.UniqueID">🛂 Explore RBAC</a> - See the users, groups and security statements</td>
     </tr>
 </table>
 

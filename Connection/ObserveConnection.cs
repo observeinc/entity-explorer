@@ -377,7 +377,6 @@ namespace Observe.EntityExplorer
           interfaceFields {
             interfaceField
             rep
-            typeclasses
             optional
             __typename
           }
@@ -616,7 +615,6 @@ namespace Observe.EntityExplorer
           interfaceFields {
             interfaceField
             rep
-            typeclasses
             optional
             __typename
           }
@@ -885,7 +883,6 @@ namespace Observe.EntityExplorer
         interfaceFields {
           interfaceField
           rep
-          typeclasses
           optional
           __typename
         }
@@ -1774,6 +1771,267 @@ fragment ChannelActionUnknown on UnknownAction {
             JObject idObject = new JObject();
             idObject.Add("id", worksheetId);
             queryObject.Add("variables", idObject);
+            
+            string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
+
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/meta",
+                "application/json", 
+                queryBody,
+                "application/json",
+                currentUser.CustomerName, 
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
+        }
+
+        #endregion
+
+        #region RBAC
+
+        public static string rbacGroups(AuthenticatedUser currentUser)
+        {
+            string graphQLQuery = @"query RbacGroups {
+  rbacGroups {
+    id
+    name
+    description
+    memberUserIds
+    memberGroupIds
+    memberOfGroupIds
+    ... on AuditedObject {
+      createdDate
+      createdByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      updatedDate
+      updatedByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}";
+
+            JObject queryObject = new JObject();
+            queryObject.Add("query", graphQLQuery);            
+            queryObject.Add("variables", new JObject());
+            
+            string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
+
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/meta",
+                "application/json", 
+                queryBody,
+                "application/json",
+                currentUser.CustomerName, 
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
+        }
+
+        public static string rbacStatements(AuthenticatedUser currentUser)
+        {
+            string graphQLQuery = @"query RbacStatements {
+  rbacStatements {
+    id
+    description
+    subject {
+      userId
+      groupId
+      all
+      __typename
+    }
+    object {
+      objectId
+      folderId
+      workspaceId
+      type
+      name
+      owner
+      all
+      __typename
+    }
+    role
+    ... on AuditedObject {
+      createdDate
+      createdByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      updatedDate
+      updatedByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}";
+
+            JObject queryObject = new JObject();
+            queryObject.Add("query", graphQLQuery);            
+            queryObject.Add("variables", new JObject());
+            
+            string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
+
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/meta",
+                "application/json", 
+                queryBody,
+                "application/json",
+                currentUser.CustomerName, 
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
+        }
+
+        public static string rbacGroupMembers(AuthenticatedUser currentUser)
+        {
+            string graphQLQuery = @"query RbacGroupmembers {
+  rbacGroupmembers {
+    id
+    description
+    groupId
+    memberUserId
+    memberGroupId
+    ... on AuditedObject {
+      createdDate
+      createdByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      updatedDate
+      updatedByInfo {
+        userId
+        userLabel
+        userTimezone
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}";
+
+            JObject queryObject = new JObject();
+            queryObject.Add("query", graphQLQuery);            
+            queryObject.Add("variables", new JObject());
+            
+            string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
+
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/meta",
+                "application/json", 
+                queryBody,
+                "application/json",
+                currentUser.CustomerName, 
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
+        }
+        public static string users(AuthenticatedUser currentUser)
+        {
+            string graphQLQuery = @"query CurrentCustomer {
+  currentCustomer {
+    id
+    label
+    users {
+      id
+      type
+      email
+      label
+      role
+      status
+      comment
+      expirationTime
+      timezone
+      rbacGroups {
+        name
+        id
+        __typename
+      }
+      rbacStatements {
+        id
+        description
+        subject {
+          userId
+          groupId
+          all
+          __typename
+        }
+        object {
+          objectId
+          folderId
+          workspaceId
+          type
+          name
+          owner
+          all
+          __typename
+        }
+        role
+        __typename
+      }     
+      __typename
+    }
+    __typename
+  }
+}";
+
+            JObject queryObject = new JObject();
+            queryObject.Add("query", graphQLQuery);            
+            queryObject.Add("variables", new JObject());
             
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
 

@@ -17,7 +17,7 @@
 
 <p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
 
-<h1>📟 Select Monitor and Action</h1>
+<h1>@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Select Monitor and Action</h1>
 @{
     ObsCompositeObjectType[] categoriesOfMonitors = new ObsCompositeObjectType[] {
         ObsCompositeObjectType.MetricThresholdMonitor, 
@@ -81,7 +81,7 @@
                 <td>
                     @if (entity.comment.Length > 0)
                     {
-                        <span title="@entity.comment">📝</span> 
+                        <span title="@entity.comment">🧾</span> 
                     }
                 </td>
                 <td>@Model.ObserveEnvironment.getIconEnabled(entity)@entity.IsEnabled</td>

@@ -69,22 +69,6 @@ namespace Observe.EntityExplorer.DataObjects
             this.RelationshipType = relationshipType;
         }
 
-        // bool IEqualityComparer<ObjectRelationship>.Equals(ObjectRelationship x, ObjectRelationship y)
-        // {
-        //     if (x.ThisObject.id == y.ThisObject.id &&
-        //         x.ThisObject.GetType() == y.ThisObject.GetType() &&
-        //         x.RelatedObject.id == y.RelatedObject.id &&
-        //         x.RelatedObject.GetType() == y.RelatedObject.GetType() &&
-        //         x.RelationshipType == y.RelationshipType)
-        //     {
-        //         return true;
-        //     }
-        //     else
-        //     {
-        //         return false;
-        //     }
-        // }
-
         public bool Equals(ObjectRelationship other)
         {
             if (this.ThisObject.id == other.ThisObject.id &&
@@ -104,13 +88,7 @@ namespace Observe.EntityExplorer.DataObjects
         public override int GetHashCode()
         {
             return this.ToString().GetHashCode();
-            //return obj.GetHashCode();
         }
 
-        // int IEqualityComparer<ObjectRelationship>.GetHashCode(ObjectRelationship obj)
-        // {
-        //     return obj.ToString().GetHashCode();
-        //     //return obj.GetHashCode();
-        // }
     }
 }

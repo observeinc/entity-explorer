@@ -1,6 +1,8 @@
 ﻿$(document).ready(function() {
     $(".SortableTable").DataTable( {
-        paging: false
+        paging: false,
+        orderClasses: false,
+        deferRender: true
     });
     hljs.highlightAll();
     hljs.initLineNumbersOnLoad();
