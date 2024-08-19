@@ -21,9 +21,10 @@ namespace Observe.EntityExplorer.DataObjects
         EventDataset                = 1 << 18,
         ResourceDataset             = 1 << 19,
         IntervalDataset             = 1 << 20,
-        MetricSMADataset            = 1 << 21,
-        MonitorSupportDataset       = 1 << 22,
-        InterfaceMetricDataset      = 1 << 23,
-        InterfaceLogDataset         = 1 << 24
+        TableDataset                = 1 << 21,
+        MetricSMADataset            = 1 << 22,
+        MonitorSupportDataset       = 1 << 23,
+        InterfaceMetricDataset      = 1 << 24,
+        InterfaceLogDataset         = 1 << 25
     }
 }

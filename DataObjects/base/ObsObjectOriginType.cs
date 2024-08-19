@@ -9,6 +9,7 @@ namespace Observe.EntityExplorer.DataObjects
         Terraform,
         DataStream,
         External,
+        ReferenceUpload,
         SAML
     }
 }

@@ -611,6 +611,18 @@ namespace Observe.EntityExplorer
 
                                     break;
 
+                                case ObsObjectOriginType.ReferenceUpload:
+                                    sb.AppendLine("  subgraph cluster_ds_reference_tables {");
+                                    sb.AppendFormat("    label=\"{0} Reference Tables ({1})\" style=\"filled\" fillcolor=\"cyan2\"", iconForGroup, allDatasetsInGroup.Count).AppendLine();
+                                    foreach(ObsDataset dataset in allDatasetsInGroup)
+                                    {
+                                        if (dataset == interestingObject) continue;
+                                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(dataset)).AppendLine();
+                                    }
+                                    sb.AppendLine("  }");
+
+                                    break;
+
                                 default:
                                     break;
                             }
@@ -1132,6 +1144,9 @@ namespace Observe.EntityExplorer
                 case ObsObjectOriginType.External:
                     nodeShape = "pentagon";
                     break;
+                case ObsObjectOriginType.ReferenceUpload:
+                    nodeShape = "house";
+                    break;
                 case ObsObjectOriginType.Terraform:
                     break;
                 case ObsObjectOriginType.User:
@@ -1565,7 +1580,7 @@ namespace Observe.EntityExplorer
         {
             return obsDataset.kind switch
             {
-                "Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", _ => "❓"
+                "Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", "Table" => "🧇", _ => "❓"
             };
         }
 
@@ -1586,7 +1601,7 @@ namespace Observe.EntityExplorer
         {
             return obsObjectOriginType switch 
             {
-                ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", ObsObjectOriginType.External => "❄️", ObsObjectOriginType.SAML => "🏢", _ => "❓"
+                ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", ObsObjectOriginType.External => "❄️", ObsObjectOriginType.ReferenceUpload => "⏫", ObsObjectOriginType.SAML => "🏢", _ => "❓"
             };
         }
 
@@ -1669,7 +1684,7 @@ namespace Observe.EntityExplorer
         {
             return obsDataset.kind switch
             {
-                "Event" => "event", "Resource" => "resource", "Interval" => "event", _ => "fallthroughdonttknow"
+                "Event" => "event", "Resource" => "resource", "Interval" => "event", "Table" => "event",_ => "fallthroughdonttknow"
             };
         }
 

@@ -109,6 +109,10 @@ namespace Observe.EntityExplorer.DataObjects
                     this.OriginType = ObsObjectOriginType.External;
                     break;
 
+                case "referencetable/":
+                    this.OriginType = ObsObjectOriginType.ReferenceUpload;
+                    break;
+
                 default:
                     this.OriginType = ObsObjectOriginType.Unknown;
                     break;
@@ -127,7 +131,11 @@ namespace Observe.EntityExplorer.DataObjects
                 case "Interval":
                     this.ObjectType = ObsCompositeObjectType.Dataset | ObsCompositeObjectType.IntervalDataset;
                     break;
-                
+
+                case "Table":
+                    this.ObjectType = ObsCompositeObjectType.Dataset | ObsCompositeObjectType.TableDataset;
+                    break;
+
                 default:
                     this.ObjectType = ObsCompositeObjectType.Dataset;
                     break;
