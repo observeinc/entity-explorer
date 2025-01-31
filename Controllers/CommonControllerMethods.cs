@@ -42,10 +42,8 @@ public class CommonControllerMethods
     {
         List<AuthenticatedUser> allUsers = new List<AuthenticatedUser>();
         
-        // Load AuthenticatedUser from cookie if it exists
         try
         {
-            //string serializedData = this.Controller.Request.Cookies["Observe.EntityExplorer.AllUsers"];
             string authCacheFilePath = Path.Combine(authCacheFolderPath, "observe-entity-explorer.auth-cache.json");
             if (Path.Exists(authCacheFilePath) == true)
             {
@@ -70,10 +68,6 @@ public class CommonControllerMethods
         Directory.CreateDirectory(authCacheFolderPath);
         string authCacheFilePath = Path.Combine(authCacheFolderPath, "observe-entity-explorer.auth-cache.json");
         File.WriteAllText(authCacheFilePath, JsonConvert.SerializeObject(allUsers, Formatting.Indented), Encoding.UTF8);
-        // Save all users into cookie
-        // CookieOptions cookieOptions = new CookieOptions();
-        // cookieOptions.Expires = DateTimeOffset.Now.AddDays(28);
-        // this.Controller.HttpContext.Response.Cookies.Append("Observe.EntityExplorer.AllUsers", Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(allUsers))), cookieOptions);
     }
 
     public ObserveEnvironment GetObserveEnvironment(AuthenticatedUser currentUser) 
@@ -126,7 +120,6 @@ public class CommonControllerMethods
 
     public void enrichTrace(AuthenticatedUser currentUser)
     {
-        //Activity.Current.AddTag("currentUser", currentUser.ToString());
         Activity.Current.AddTag("currentUser", currentUser.UserName);
         Activity.Current.AddTag("currentUserID", currentUser.UserID);
         Activity.Current.AddTag("currentUserAuthenticatedOn", currentUser.AuthenticatedOn.ToString("u"));
@@ -134,7 +127,6 @@ public class CommonControllerMethods
 
     public void enrichTrace(ObserveEnvironment observeEnvironment)
     {
-        //Activity.Current.AddTag("observeEnvironment", observeEnvironment.ToString());
         Activity.Current.AddTag("observeEnvironmentName", observeEnvironment.CustomerName);
         Activity.Current.AddTag("observeEnvironmentLabel", observeEnvironment.CustomerLabel);
         Activity.Current.AddTag("observeEnvironmentUrl", observeEnvironment.CustomerEnvironmentUrl);
@@ -147,6 +139,11 @@ public class CommonControllerMethods
     }
 
     public void enrichTrace(ObsMonitor thisObject)
+    {
+        Activity.Current.AddTag("currentObject", thisObject.ToString());
+    }
+
+    public void enrichTrace(ObsMonitor2 thisObject)
     {
         Activity.Current.AddTag("currentObject", thisObject.ToString());
     }

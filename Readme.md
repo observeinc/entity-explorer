@@ -8,7 +8,7 @@ Observe Entity Explorer allows discovery of dependencies between Observe objects
 
 ## Install Application
 
-Observe Entity Explorer can run on Windows, Mac or Linux. Compiled are in [Releases](../../releases/latest).
+Observe Entity Explorer can run on Windows, Mac or Linux. Binaries are in [Releases](../../releases/latest).
 
 ### Install on OSX
 
@@ -99,11 +99,9 @@ dotnet publish observe-entity-explorer.csproj --self-contained --runtime <osx-x6
 bin/publish/entity-explorer/observe-entity-explorer & 
 ```
 
-## Usage
-
 ## Open the Web Site
 
-When application starts, it opens a web interface at http://localhost:50110. Open that web site in your web browser:
+When application starts, it opens a web interface (default http://localhost:50110). Open that web site in your web browser:
 
 ```console
 ./observe-entity-explorer
@@ -115,14 +113,16 @@ info: Microsoft.Hosting.Lifetime[0]
 info: Microsoft.Hosting.Lifetime[0]
       Hosting environment: Production
 info: Microsoft.Hosting.Lifetime[0]
-      Content root path: C:\observe\observe-entity-explorer-releases\2023.10.18.0\observe-entity-explorer.win.2023.10.18.0
+      Content root path: <path...>\observe-entity-explorer.<version..>
 ```
+
+You can change the port of the web site in `Kestrel.Endpoints.Http.Url` property in `appsettings.json`.
 
 ## Connect Options
 
 Authenticate options:
 
-* Account
+* Account can be either
   * Full URL of the environment `https://#####.observeinc.com`
   * Just customer ID of the environment `#####`. Production URL `observeinc.com` is assumed
   * Host name `#####.observeinc.com` without https://
@@ -133,12 +133,14 @@ Authenticate options:
 * Token
   * Specify your API token if you have one issued to you
   * OR
-  * Specify token taken from the GraphQL Bearer authentication in your browser devtools
+  * Specify token taken from the GraphQL Bearer authentication in your browser session (not recommended) 
 * Delegate (must be > Reader)
   * Log into Observe UI to approve your sign-in
   * Return to this UI to complete sign-in
 
 ![Connect](/docs/screenshots/authetication/ConnectNew.png?raw=true)
+
+Your connections are saved in `~/.observe/observe-entity-explorer.auth-cache.json` file. You can switch between them any time.
 
 ### Connect with Delegate Login
 
@@ -155,28 +157,28 @@ To connect with delegation, you must have > Reader role. If you have it:
 
 ## Connect with Multiple Accounts
 
-Your connections are saved. You can switch between them any time.
-
 You can open new tab with different connection ID.
 
 ![Multiple Connections](/docs/screenshots/authetication/ConnectSaved.png?raw=true)
 
-## Entity Summary
+## Summary Page
 
-Summary screen shows basic statistics about types of entities in your Observe environment and links to the [Dataset List](#dataset-list) [Dashboard List](#dashboard-list) for getting more details.
+Summary screen shows numbers and types of entities in your Observe environment and links to the detail pages to get more information.
 
-You can also see the entire tree of relationships of all objects in All Relationships button.
+You can see entire tree of relationships of all objects in All Relationships button.
+
+Finally you can search all OPAL in Search OPAL button (regex supported)
 
 ![Environment Summary](/docs/screenshots/summary/EnvironmentSummary.png?raw=true)
 
 ## Dataset List
 
-Select Dataset screen shows all datasets grouped by type (DataStream, Event, Resource, Log, Metric, etc).
+Datasets page lists all datasets grouped by type (DataStream, Event, Resource, Log, Metric, etc).
 
 Column | Description
 -- | --
-Details | Open the [Dataset Detail](#dataset-detail) page
-View | Open object page in Observe
+View | Open the [Dataset Detail](#dataset-detail) page
+Data | Open object page in Observe
 Edit | Open object page in Observe in edit mode
 Type | Type of object (`Event`, `Resource`, `Interval`)
 Origin | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
@@ -199,20 +201,21 @@ Accel Eff. | The target staleness of this dataset when taking downstream dataset
 Accel Actl. | Staleness of the dataset (averaged over some moving window)
 Accel Range | Actual accelerated range of the dataset
 
-![Dataset List](/docs/screenshots/list/dataset/SelectDataset.png?raw=true)
+![Dataset List](/docs/screenshots/list/dataset/Datasets.png?raw=true)
 
 ## Dashboard List
 
-Select Dashboard screen shows all dashboards.
+Dashboards list all dashboards and their core statistics.
 
 Column | Description
 -- | --
-Details | Links to the [Dashboard Detail](#dashboard-detail) page
-View | Open object page in Observe
+View | Links to the [Dashboard Detail](#dashboard-detail) page
+Data | Open object page in Observe
 Edit | Open object page in Observe in edit mode
-Origin | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
+Origin | What created this object (`System`, `App`, `User`)
 ID | Object ID
 Name | Object Name
+Desc. | Description label, if present
 Sections | Number of sections in dashboard
 Widgets | Number of widgets in dashboard
 Stages | Number of stages in dashboard
@@ -221,19 +224,19 @@ Uses | What this object uses as data inputs and data links
 Created | Who and when created this object
 Updated | Who and when updates this object last
 
-![Dashboard List](/docs/screenshots/list/dashboard/SelectDashboard.png?raw=true)
+![Dashboard List](/docs/screenshots/list/dashboard/Dashboards.png?raw=true)
 
-## Monitor List
+## Monitor (legacy) List
 
-Select Monitor screen shows all monitors.
+Monitor (legacy) page shows all legacy monitors grouped by type (Metric, Log, Count, Promotion, Resource).
 
 Column | Description
 -- | --
-Details | Links to the [Monitor Detail](#monitor-detail) page
+View | Links to the [Monitor (legacy) Detail](#monitor-v1-detail) page
 Notif | Open notification list page in Observe
 Edit | Open object page in Observe in edit mode
 Type | Type of the monitor (`Count`, `Promote`, `Threshold`, `Facet`, `Log`)
-Origin | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
+Origin | What created this object (`System`, `App`, `Terraform`, `User`)
 ID | Object ID
 Name | Object Name
 Comm. | Comment if it exists
@@ -251,102 +254,113 @@ Accel Eff. | The target staleness of this dataset when taking downstream dataset
 Accel Actl. | Staleness of the dataset (averaged over some moving window)
 Accel Range | Actual accelerated range of the dataset
 
-![Monitor List](/docs/screenshots/list/monitor/SelectMonitor.png?raw=true)
+![Monitor List](/docs/screenshots/list/monitor/Monitors.png?raw=true)
+
+## Monitor v2 List
+
+Monitors v2 page shows all new type monitors grouped by type (Metric, Count, Resource).
+
+Column | Description
+-- | --
+View | Links to the [Monitor v2 Detail](#monitor-v2-detail) page
+Edit | Open object page in Observe in edit mode
+Type | Type of the monitor (`Count`, `Promote`, `Threshold`)
+Origin | What created this object (`System`, `App`, `Terraform`, `User`)
+ID | Object ID
+Name | Object Name
+Comm. | Comment if it exists
+Enabled | Is the monitor enabled
+Actions | Number of actions in monitor
+Stages | Number of stages in monitor
+Uses | What this object uses as data inputs and data links
+Created | Who and when created this object
+Updated | Who and when updates this object last
+Transform 1h | `credits_monitor` in last 1 hour
+Transform 1d | `credits_monitor` in last 1 day
+Transform 1w | `credits_monitor` in last 1 week
+
+![Monitor List](/docs/screenshots/list/monitorv2/Monitors.png?raw=true)
+
+## Worksheets List
+
+Worksheets page shows all user worksheets.
+
+Column | Description
+-- | --
+View | Links to the [Worksheet Detail](#worksheet-detail) page
+Data | Open object page in Observe in data/edit mode
+Origin | What created this object (`System`, `App`, `Terraform`, `User`)
+ID | Object ID
+Name | Object Name
+Stages | Number of stages in worksheet
+Stages | Number of parameters in worksheet
+Uses | What this object uses as data inputs and data links
+Created | Who and when created this object
+Updated | Who and when updates this object last
+
+![Worksheets List](/docs/screenshots/list/worksheet/Worksheets.png?raw=true)
+
+## RBAC Settings
+
+Role based access control settings for users, groups and statements.
+
+![Users, Groups and Statements](/docs/screenshots/list/rbac/RBACUsersGroupsStatements.png?raw=true)
+
+Role based access control memberships.
+
+![Users, Groups and Statements](/docs/screenshots/list/rbac/RBACMemberships.png?raw=true)
+
+## Search OPAL
+
+Code search results show OPAL with hits highligted. You can show and hide all the code stages, and also navigate to the detail pages.
+
+![Code Search Results](/docs/screenshots/codesearch/CodeSearchResults.png?raw=true)
 
 ## Dataset Detail
 
-### Summary - Dataset
-
 Summary information about the dataset.
 
-Section | Description
--- | --
-Observe | Open object page in Observe
-Name | Object name and ID
-Description | Dataset description
-Type | Type of dataset
-Icon | Icon of the object
-Origin | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
-Created | Who and when created this object
-Updated | Who and when updates this object last
-Credits | `credits_transform` and `credits_adhoc_query` for 1 hour, 1 day, 1 week
-Query Credits | `credits_adhoc_query` for each user for 1 hour, 1 day, 1 week
-Important Fields | From/To/Label designated fields
-Fields | Table of fields and their datatypes
-Related Key | List of related keys
-Foreign Key | List of foreign keys
-
 ![Dataset Details](/docs/screenshots/details/dataset/DatasetDetails.png?raw=true)
-
-### Acceleration - Dataset
 
 Dataset acceleration settings.
 
 ![Dataset Acceleration](/docs/screenshots/details/dataset/DatasetAcceleration.png?raw=true)
 
-### Ancestors - Dataset
-
-List of all datasets feeding data into this dataset.
+List of all objects feeding data into this dataset.
 
 ![Dataset Ancestors](/docs/screenshots/details/dataset/DatasetAncestors.png?raw=true)
 
-### Descendants - Dataset
-
-List of all datasets using data from this dataset.
+List of all objects using data from this dataset.
 
 ![Dataset Descendants](/docs/screenshots/details/dataset/DatasetDescendants.png?raw=true)
-
-### Related Datasets Graph - Dataset
 
 Visual diagram showing relationship between datasets and dashboards related to this dataset.
 
 ![Dataset Graph](/docs/screenshots/details/dataset/DatasetDependencies.png?raw=true)
 
-### Stages - Dataset
-
-Information about each stage in the dataset.
-
-Section | Description
--- | --
-Details | Link to the Stage in the subsequent List
-Type | Type of the stage (`table`, `graph` etc)
-Name | Name of the stage
-ID | ID of the stage
-Uses | Objects providing data and links to this stage
-Used By | Objects this stage is providing data and links to
+Information about each stage in the dataset. You can click "Show/Hide input and output tables" to remove details and just focus on OPAL code.
 
 ![Dataset Stages List](/docs/screenshots/details/dataset/DatasetStagesList.png?raw=true)
 
 This table is followed by the repeated sections for each stage, containing:
 
-Section | Description
--- | --
-Name | Object name and ID
-Inputs | Objects providing data and links to this stage
-Used By | Objects this stage is providing data and links to
-OPAL | The OPAL pipeline for this stage
-
 ![Dataset Stage Detail](/docs/screenshots/details/dataset/DatasetStageDetail.png?raw=true)
-
-You can click "Show/Hide input and output tables" to remove details and just focus on OPAL code.
-
-### Stages Graph - Dataset
 
 Visual diagram showing relationship between inputs and stages of this dataset.
 
 ![Dataset Stages Graph](/docs/screenshots/details/dataset/DatasetStageDependencies.png?raw=true)
 
-### Related Dashboards
-
 List of all dashboards using this dataset.
 
 ![Dataset Related Dashboards](/docs/screenshots/details/dataset/DatasetRelatedDashboards.png?raw=true)
 
-### Related Monitors
+List of all monitors (legacy) using this dataset.
 
-List of all monitors using this dataset.
+![Dataset Related Monitors (legacy)](/docs/screenshots/details/dataset/DatasetRelatedMonitors.png?raw=true)
 
-![Dataset Related Dashboards](/docs/screenshots/details/dataset/DatasetRelatedMonitors.png?raw=true)
+List of all worksheets using this dataset.
+
+![Dataset Related Worksheets](/docs/screenshots/details/dataset/DatasetRelatedWorksheets.png?raw=true)
 
 ## Dashboard Detail
 
@@ -354,131 +368,116 @@ List of all monitors using this dataset.
 
 Summary information about the dashboard.
 
-Section | Description
--- | --
-Observe | Open object page in Observe
-Name | Object name and ID
-Source | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
-Components | Number of various components in dashboard
-Created | Who and when created this object
-Updated | Who and when updates this object last
-
 ![Dashboard Details](/docs/screenshots/details/dashboard/DashboardDetails.png?raw=true)
 
-### Ancestors/Inputs - Dashboard
+List of all objects feeding data into this dashboard.
 
-List of all datasets feeding data into this dashboard.
+![Dataset Ancestors](/docs/screenshots/details/dashboard/DashboardAncestors.png?raw=true)
 
-### Related Datasets - Dashboard
+List of all objects using data from this dataset.
 
 Visual diagram showing relationship between datasets related to this dashboard.
 
 ![Dataset Graph](/docs/screenshots/details/dashboard/DashboardDependencies.png?raw=true)
 
-### Parameters - Dashboard
-
 Information about each parameter in the dashboard.
-
-Section | Description
--- | --
-Name | Display name of parameter
-ID | ID of parameter
-Type | Type of parameter (`resource-input`, `single-select`, `text`, `numeric`, `input`)
-Data Type | Data Type of parameter ()
-Source Type | What kind of object is providing data to this parameter (`Dataset`, `Stage` or empty for text entry)
-Source Object | Link to the object that is used as input
-Source Column | The name of the column in the dataset or stage that is being used as value in the drop-down
-Default Value | Default value, if specified
-Allow Empty | Is empty value allowed
 
 ![Dashboard Parameters](/docs/screenshots/details/dashboard/DashboardParameters.png?raw=true)
 
-### Stages - Dashboard
 
-Information about each stage in the dashboard.
-
-Section | Description
--- | --
-Details | Link to the stage in the subsequent list
-Type | Type of the stage (`table`, `graph` etc)
-Name | Name of the stage
-ID | ID of the stage
-Uses | Objects providing data and links to this stage
-Used By | Objects this stage is providing data and links to
-Params | Which parameters are being used by the stage
+Information about each stage in the dashboard. You can click "Show/Hide input and output tables" to remove details and just focus on OPAL code. You can click "Show/Hide dashboard widget image preview" to remove images and just focus on OPAL code.
 
 ![Dashboard Stages](/docs/screenshots/details/dashboard/DashboardStages.png?raw=true)
 
 This table is followed by the repeated sections for each stage, containing:
 
-Section | Description
--- | --
-Name | Object name and ID
-Inputs | Objects providing data and links to this stage
-Used By | Objects this stage is providing data and links to
-OPAL | The OPAL pipeline for this stage
-
 ![Dashboard Stage Detail](/docs/screenshots/details/dashboard/DashboardStageDetail.png?raw=true)
-
-You can click "Show/Hide input and output tables" to remove details and just focus on OPAL code.
-
-You can click "Show/Hide dashboard widget image preview" to remove images and just focus on OPAL code.
-
-### Stages Graph - Dashboard
 
 Visual diagram showing relationship between inputs and stages of this dashboard.
 
 ![Dashboard Stages Graph](/docs/screenshots/details/dashboard/DashboardStageDependencies.png?raw=true)
 
-## Monitor Detail
+## Monitor v1 Detail
 
-### Summary - Monitor
-
-Summary information about the monitor.
-
-Section | Description
--- | --
-Observe | Open object page in Observe
-Name | Object name and ID
-Comment | Comment if present
-Type | Type of the monitor
-Source | What created this object (`System`, `App`, `Terraform`, `User`, `DataStream`)
-Components | Number of various components in dashboard
-Enabled | Is this monitor enabled
-Template | Is this monitor template
-Created | Who and when created this object
-Updated | Who and when updates this object last
-Settings | Monitor settings
-Notifications | Monitor notification settings
-Info | Monitor detail information
+Summary information about the monitor (legacy).
 
 ![Monitor Details](/docs/screenshots/details/monitor/MonitorDetails.png?raw=true)
 
-### Acceleration - Monitor
-
-Monitor acceleration settings similar to those of Dataset
-
-### Ancestors - Monitor
-
-List of all datasets providing data to this monitor.
+List of all objects providing data to this monitor.
 
 ![Monitor Ancestors](/docs/screenshots/details/monitor/MonitorAncestors.png?raw=true)
 
-### Supporting - Monitor
+List of all objects supporting this monitor.
 
-List of all datasets supporting this monitor.
-
-![Monitor Ancestors](/docs/screenshots/details/monitor/MonitorSupporting.png?raw=true)
-
-### Related Datasets Graph - Monitor
+![Monitor Supporting](/docs/screenshots/details/monitor/MonitorSupporting.png?raw=true)
 
 Visual diagram showing relationship between datasets related to this monitor.
 
 ![Dataset Graph](/docs/screenshots/details/monitor/MonitorDependencies.png?raw=true)
 
-### Stages - Monitor
+## Monitor v2 Detail
 
-Information about each stage in the monitor.
+Summary information about the monitor v2.
+
+![Monitor Details](/docs/screenshots/details/monitorv2/MonitorDetails.png?raw=true)
+
+Visual diagram showing relationship between datasets related to this monitor.
+
+![Dataset Graph](/docs/screenshots/details/monitorv2/MonitorDependencies.png?raw=true)
+
+## Worksheet Detail
+
+Summary information about the worksheet.
+
+![Monitor Details](/docs/screenshots/details/worksheet/WorksheetDetails.png?raw=true)
+
+## Datastream and Tokens
+
+Datastreams list.
+
+Column | Description
+-- | --
+View | Links to the [Dataset Details](#dataset-detail) page for the dataset of this datastream
+Data | Open datastream dataset data page
+Edit | Open datastream page
+Origin | What created this object (`System`, `App`, `Terraform`, `User`)
+ID | Object ID
+Name | Object Name
+Description | Comment if it exists
+Enabled | Is the datastream enabled
+Tokens | Number of tokens in datastream
+Retention | Retention setting in days
+Bytes | Bytes ingested in last hour
+GB | Gigabytes ingested in last hour
+TB | Terabytes ingested in last hour
+Created | Who and when created this object
+Updated | Who and when updates this object last
+
+Tokens list.
+
+Column | Description
+-- | --
+Data | Open datastream dataset data page filtered to this token
+Edit | Open datastream page
+Origin | What created this object (`System`, `App`, `Terraform`, `User`)
+Datastream | Datastream this token sends data to
+Type | Type of token (`token`, `poller`, `filedrop`)
+ID | Object ID
+Name | Object Name
+Description | Comment if it exists
+Enabled | Is the datastream enabled
+Tokens | Number of tokens in datastream
+Bytes | Bytes ingested in last hour
+GB | Gigabytes ingested in last hour
+TB | Terabytes ingested in last hour
+Start Ingest | When ingestion started
+Last Ingest | Last time data was received
+Last Error | Last time there was an error receiving data
+Created | Who and when created this object
+Updated | Who and when updates this object last
+
+![Datastreams and Tokens](/docs/screenshots/list/datastream/DatastreamsAndTokens.png?raw=true)
+
 
 ## Logging
 

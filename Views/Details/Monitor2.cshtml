@@ -1,0 +1,508 @@
+﻿@using Observe.EntityExplorer.DataObjects;
+@using System.Text;
+
+@model Observe.EntityExplorer.Models.DetailsMonitor2ViewModel;
+
+@{
+    if (@Model.CurrentMonitor != null)
+    {
+        ViewData["Title"] = String.Format("{0} ({1}) Monitor v2 Details", @Model.CurrentMonitor.name, @Model.CurrentMonitor.id);
+    }
+}
+
+<p>
+    <span class="spanError">@ViewData["ErrorMessage"]</span>
+</p>
+@if (ViewData["ErrorMessage"] != null)
+{
+    return;
+}
+
+<p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
+
+<h1>@Model.ObserveEnvironment.getIconType(@Model.CurrentMonitor) Monitor v2 Details - @Model.CurrentMonitor.name (@Model.CurrentMonitor.id)</h1>
+
+<p>
+    <a href="#RelatedDatasetsAncestors">⏫ Ancestors/Inputs</a> 
+    <a href="#RelatedDatasetsGraph">🔀 Related Datasets Graph</a>
+    <a href="#Stages">🏛️ Stages</a>
+    <a href="#StagesGraph">⛲ Stages Graph</a>
+</p>
+
+<table>
+    <tr>
+        <td>Observe</td>
+        <td>
+            @{
+                string navigationPrefix = "";                
+                if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.MetricThresholdMonitor) == ObsCompositeObjectType.MetricThresholdMonitor)
+                {
+                    navigationPrefix = "threshold";
+                }
+                else if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.ResourceCountThresholdMonitor) == ObsCompositeObjectType.ResourceCountThresholdMonitor)
+                {
+                    navigationPrefix = "count";
+                }
+                else if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.PromotionMonitor) == ObsCompositeObjectType.PromotionMonitor)
+                {
+                    navigationPrefix = "promote";
+                }
+                <a href="@String.Format("{0}workspace/{1}/{2}-monitor/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, navigationPrefix, @Model.CurrentMonitor.id)">🛠️ Edit</a>
+            }
+        </td>
+    </tr>
+    <tr>
+        <td>Name</td>
+        <td>
+            @Model.CurrentMonitor.name (@Model.CurrentMonitor.id) in @Model.CurrentUser.CustomerLabel (@Model.CurrentUser.CustomerName)
+        </td>
+    </tr>
+    <tr>
+        <td>Description</td>
+        <td>@Model.CurrentMonitor.description</td>
+    </tr>
+    <tr>
+        <td>Type</td>
+        <td>
+            @{
+                ObsCompositeObjectType objectType = ObsCompositeObjectType.Monitor2; 
+                if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.MetricThresholdMonitor) == ObsCompositeObjectType.MetricThresholdMonitor)
+                {
+                    objectType = ObsCompositeObjectType.MetricThresholdMonitor;
+                }
+                else if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.ResourceCountThresholdMonitor) == ObsCompositeObjectType.ResourceCountThresholdMonitor)
+                {
+                    objectType = ObsCompositeObjectType.ResourceCountThresholdMonitor;
+                }
+                else if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.PromotionMonitor) == ObsCompositeObjectType.PromotionMonitor)
+                {
+                    objectType = ObsCompositeObjectType.PromotionMonitor;
+                }
+            }
+
+            @Model.ObserveEnvironment.getIconMonitorType(objectType) @Model.CurrentMonitor.kind @Model.CurrentMonitor.ObjectType
+        </td>
+    </tr>
+    <tr>
+        <td>Source</td>
+        <td>
+            @Model.ObserveEnvironment.getIconOriginType(@Model.CurrentMonitor) @Model.CurrentMonitor.OriginType
+        </td>
+    </tr>
+    <tr>
+        <td>Components</td>
+        <td>Actions: @Model.CurrentMonitor.NumActions
+            Stages: @Model.CurrentMonitor.NumStages 
+        </td>
+    </tr>
+    <tr>
+        <td>Enabled</td>
+        <td>@Model.ObserveEnvironment.getIconEnabled(@Model.CurrentMonitor)@Model.CurrentMonitor.IsEnabled</td>
+    </tr>
+    <tr>
+        <td>Created</td>
+        <td>@Model.CurrentMonitor.createdDate.ToString("u")/@Model.CurrentMonitor.createdBy.label</td>
+    </tr>
+    <tr>
+        <td>Updated</td>
+        <td>@Model.CurrentMonitor.updatedDate.ToString("u")/@Model.CurrentMonitor.updatedBy.label</td>
+    </tr>
+    <tr>
+        <td>Credits</td>
+        <td>
+            <table>
+                <tr>
+                    <th>Length</th>
+                    <th>Transform</th>
+                </tr>
+                <tr>
+                    <td>1 hour</td>
+                    <td>@Model.CurrentMonitor.Transform1H.Credits.ToString("##0.#")</td>
+                </tr>
+                <tr>
+                    <td>1 day</td>
+                    <td>@Model.CurrentMonitor.Transform1D.Credits.ToString("##0.#")</td>
+                </tr>
+                <tr>
+                    <td>1 week</td>
+                    <td>@Model.CurrentMonitor.Transform1W.Credits.ToString("##0.#")</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    @* <tr>
+        <td>⚙️ Settings</td>
+        <td><pre><code class="language-json">@Model.CurrentMonitor.Settings</code></pre></td>
+    </tr>    
+    <tr>
+        <td>📨 Notifications</td>
+        <td><pre><code class="language-json">@Model.CurrentMonitor.Notification</code></pre></td>
+    </tr>    
+    <tr>
+        <td>ℹ️ Info</td>
+        <td><pre><code class="language-json">@Model.CurrentMonitor.ActiveMonitorInfo</code></pre></td>
+    </tr> *@
+</table>
+
+@{
+    List<ObjectRelationship> ancestorRelationships = Model.ObserveEnvironment.GetAllAncestorRelationshipsOfThis(@Model.CurrentMonitor);
+    if (ancestorRelationships.Count > 0)
+    {
+        <h2 id="RelatedDatasetsAncestors">⏫ Ancestors</h2>
+        <a href="#top">Back to Top</a>
+
+        <table class="AlternatingRowTable SortableTable">
+            <thead>
+                <th>View</th>
+                <th>Data</th>
+                <th>Edit</th>
+                <th>Type</th>
+                <th>Origin</th>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Relationship</th>
+                <th>Details</th>
+                <th>View</th>
+                <th>Edit</th>
+                <th>Type</th>
+                <th>Origin</th>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Direct</th>
+            </thead>
+            <tbody>
+            @foreach (ObjectRelationship objectRelationship in ancestorRelationships)
+            {
+                if (objectRelationship.ThisObject is ObsDataset && objectRelationship.RelatedObject is ObsDataset)
+                {
+                    ObsDataset entityThis = (ObsDataset)objectRelationship.ThisObject;
+                    ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
+                    
+                    <tr>
+                        <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityRelated), entityRelated.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityRelated) @entityRelated.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@entityRelated.id</td>
+                        <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                        <td>@objectRelationship.RelationshipType</td>
+                        <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityThis), entityThis.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityThis) @entityThis.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityThis) <span title="@entityThis.source">@entityThis.OriginType</span></td>
+                        <td>@entityThis.id</td>
+                        <td><span title="@entityThis.description">@entityThis.name</span></td>
+                        <td>&nbsp;</td>
+                    </tr>
+                }
+                else if (objectRelationship.ThisObject is ObsDataset && objectRelationship.RelatedObject is ObsDatastream)
+                {
+                    ObsDataset entityThis = (ObsDataset)objectRelationship.ThisObject;
+                    ObsDatastream entityRelated = (ObsDatastream)objectRelationship.RelatedObject;
+
+                    <tr>
+                        <td>@Html.ActionLink("🌊 View", "Datastream", "Select", String.Empty, String.Empty, "Datastreams", new { userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityRelated.DatastreamDataset), entityRelated.DatastreamDataset.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/datastreams/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityRelated) Datastream</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@entityRelated.id</td>
+                        <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                        <td>@objectRelationship.RelationshipType</td>
+                        <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityThis), entityThis.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityThis) @entityThis.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityThis) <span title="@entityThis.source">@entityThis.OriginType</span></td>
+                        <td>@entityThis.id</td>
+                        <td><span title="@entityThis.description">@entityThis.name</span></td>
+                        <td>&nbsp;</td>
+                    </tr>
+                }
+                else if (objectRelationship.ThisObject is ObsDatastream && objectRelationship.RelatedObject is ObsToken)
+                {
+                    ObsDatastream entityThis = (ObsDatastream)objectRelationship.ThisObject;
+                    ObsToken entityRelated = (ObsToken)objectRelationship.RelatedObject;
+
+                    <tr>
+                        <td>@Html.ActionLink("🎟️ View", "Datastream", "Select", String.Empty, String.Empty, "Tokens", new { userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}?filter-DATASTREAM_TOKEN_ID={4}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(((ObsDatastream)(entityRelated.Parent)).DatastreamDataset), ((ObsDatastream)(entityRelated.Parent)).DatastreamDataset.id, entityRelated.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/datastreams/{2}/{3}/{4}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.Parent.id, entityRelated.kind, entityRelated.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityRelated) @entityRelated.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@entityRelated.id</td>
+                        <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                        <td>@objectRelationship.RelationshipType</td>
+                        <td>@Html.ActionLink("🌊 View", "Datastream", "Select", String.Empty, String.Empty, "Datastreams", new { userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityThis.DatastreamDataset), entityThis.DatastreamDataset.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/datastreams/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityThis) Datastream</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityThis) <span title="@entityThis.source">@entityThis.OriginType</span></td>
+                        <td>@entityThis.id</td>
+                        <td><span title="@entityThis.description">@entityThis.name</span></td>
+                        <td>&nbsp;</td>
+                    </tr>
+                }
+                else if (objectRelationship.ThisObject is ObsMonitor2 && objectRelationship.RelatedObject is ObsDataset)
+                {
+                    ObsMonitor2 entityThis = (ObsMonitor2)objectRelationship.ThisObject;
+                    ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
+                    
+                    <tr>
+                        <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityRelated), entityRelated.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityRelated) @entityRelated.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@entityRelated.id</td>
+                        <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                        <td>@objectRelationship.RelationshipType</td>
+                        <td>@Html.ActionLink("📟 View", "Monitor", "Details", new { id = entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/notification/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, Convert.ToBase64String(Encoding.UTF8.GetBytes(String.Format("{{\"monitorId\":\"{0}\"}}", entityThis.id))))">📄 Notif.</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/monitor/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Monitor</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityThis) @entityThis.OriginType</td>
+                        <td>@entityThis.id</td>
+                        <td>@entityThis.name</td>
+                        <td>@if(@entityThis == @Model.CurrentMonitor) { @Html.Raw("✨") }</td>
+                    </tr>
+                
+                }
+            }
+            </tbody>
+        </table>
+    }
+}
+
+<h2 id="RelatedDatasetsGraph">🔀 Related Datasets Graph</h2>
+<a href="#top">Back to Top</a>
+
+@{
+    List<ObjectRelationship> allRelationships = new List<ObjectRelationship>(ancestorRelationships.Count);
+    allRelationships.AddRange(ancestorRelationships);
+    allRelationships.AddRange(@Model.CurrentMonitor.StageObjectRelationships);
+    allRelationships = allRelationships.OrderBy(r => r.ToString()).ToList();
+    <p>
+        <textarea id="textArea_RelatedDatasetsGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentMonitor, allRelationships)</textarea>
+        <br/>
+        <button id="buttonVisualize_RelatedDatasetsGraph" onclick="goToGraphVizOnline('textArea_RelatedDatasetsGraph')">🔭 View</button>
+    </p>
+}
+
+<h2 id="Stages">🏛️ Stages</h2>
+<a href="#top">Back to Top</a>
+
+<table class="AlternatingRowTable">
+    <tr>
+        <th>Details</th>
+        <th>Type</th>
+        <th>Name</th>
+        <th>ID</th>
+        <th>Uses</th>
+        <th>Used By</th>
+    </tr>
+    @foreach (ObsStage entity in Model.CurrentMonitor.Stages)
+    {    
+        <tr>
+            <td><a href="@String.Format("#{0}", entity.id)">🏛️ Details</a></td>
+            <td>
+                @Model.ObserveEnvironment.getIconWidgetType(entity) @entity.type
+                @if (@entity == Model.CurrentMonitor.OutputStage)
+                {
+                    @Html.Raw("🏁 OUTPUT");
+                }
+            </td>
+            <td>@entity.name</td>
+            <td>@entity.id</td>
+            <td>
+                @{
+                    List<ObjectRelationship> entityRelationshipsSource = entity.ExternalObjectRelationships;
+
+                    List<ObjectRelationship> entityDatasetDataRelationshipsSource = entityRelationshipsSource.Where(r => r.RelatedObject is ObsDataset && r.RelationshipType == ObsObjectRelationshipType.ProvidesData).ToList();
+                    if (entityDatasetDataRelationshipsSource.Count > 0)
+                    {
+                        @Html.Raw(String.Format("📝Data>This: {0} <br/>", entityDatasetDataRelationshipsSource.Count));
+                    }
+                    List<ObjectRelationship> entityDatasetLinkRelationshipsSource = entityRelationshipsSource.Where(r => r.RelatedObject is ObsDataset && r.RelationshipType == ObsObjectRelationshipType.Linked).ToList();
+                    if (entityDatasetLinkRelationshipsSource.Count > 0)
+                    {
+                        @Html.Raw(String.Format("🔗Link>This {0} <br/>", entityDatasetLinkRelationshipsSource.Count))
+                    }
+                    List<ObjectRelationship> entityStageDataRelationshipsSource = entityRelationshipsSource.Where(r => r.RelatedObject is ObsStage && r.RelationshipType == ObsObjectRelationshipType.ProvidesData).ToList();
+                    if (entityStageDataRelationshipsSource.Count > 0)
+                    {
+                        @Html.Raw(String.Format("📝Stage>Data>This: {0} <br/>", entityStageDataRelationshipsSource.Count));
+                    }
+                    List<ObjectRelationship> entityStageLinkRelationshipsSource = entityRelationshipsSource.Where(r => r.RelatedObject is ObsStage && r.RelationshipType == ObsObjectRelationshipType.Linked).ToList();
+                    if (entityStageLinkRelationshipsSource.Count > 0)
+                    {
+                        @Html.Raw(String.Format("🔗Stage>Link>This {0} ", entityStageLinkRelationshipsSource.Count))
+                    }
+                }
+            </td>
+            <td>
+                @{
+                    List<ObjectRelationship> entityRelationshipsTarget = Model.CurrentMonitor.GetRelationshipsOfRelated(entity);
+
+                    List<ObjectRelationship> entityDataRelationshipsTarget = entityRelationshipsTarget.Where(r => r.RelationshipType == ObsObjectRelationshipType.ProvidesData).ToList();
+                    if (entityDataRelationshipsTarget.Count > 0)
+                    {
+                        @Html.Raw(String.Format("📝This>Data: {0} <br/>", entityDataRelationshipsTarget.Count));
+                    }
+                    List<ObjectRelationship> entityLinkRelationshipsTarget = entityRelationshipsTarget.Where(r => r.RelationshipType == ObsObjectRelationshipType.Linked).ToList();
+                    if (entityLinkRelationshipsTarget.Count > 0)
+                    {
+                        @Html.Raw(String.Format("🔗This>Link {0} ", entityLinkRelationshipsTarget.Count))
+                    }
+                }                
+            </td>
+        </tr>
+    }
+</table>
+
+<p>
+<input id="checkboxDashboardInputsOutputTables" type="checkbox" checked="true" value="Show/Hide Image Preview" onclick="showOrHideDashboardInputsOutputTables(this)"/>
+<label for="checkboxDashboardInputsOutputTables">Show/Hide input and output tables</label>
+</p>
+
+<table>
+    @foreach (ObsStage entity in Model.CurrentMonitor.Stages)
+    {
+        <tr id="@entity.id">
+            <td>Stage</td>
+            <td>
+                @entity.name (@entity.id)
+                @Model.ObserveEnvironment.getIconWidgetType(entity) @entity.type
+                @if(@entity.visible)
+                {
+                    @Html.Raw("👁️ visible")
+                }
+                else 
+                {
+                    @Html.Raw("🙈 hidden")
+                }
+                <a href="#Stages">Back to Stages</a>
+                <a href="#top">Back to Top</a>
+            </td>
+        </tr>
+        <tr id="stage_table_input_@entity.id">
+            <td>⏫ Inputs</td>
+            <td>
+                <table class="AlternatingRowTable">
+                    <tr>
+                        <th>View</th>
+                        <th>Data</th>
+                        <th>Edit</th>
+                        <th>Type</th>
+                        <th>Origin</th>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Relationship</th>
+                        <th>Ref Name</th>
+                    </tr>
+                    @foreach (ObjectRelationship objectRelationship in entity.ExternalObjectRelationships)
+                    {
+                        ObsStage entityThis = (ObsStage)objectRelationship.ThisObject;
+                        
+                        if (objectRelationship.RelatedObject is ObsDataset)
+                        {
+                            ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
+
+                            <tr>
+                                <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                                <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityRelated), entityRelated.id)">📄 Data</a></td>
+                                <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
+                                <td>@Model.ObserveEnvironment.getIconType(entityRelated) @entityRelated.kind</td>
+                                <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                                <td>@entityRelated.id</td>
+                                <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                                <td>@objectRelationship.RelationshipType</td>
+                                <td>@objectRelationship.name</td>
+                            </tr>
+                        }
+                        else if (objectRelationship.RelatedObject is ObsStage)
+                        {
+                            ObsStage entityRelated = (ObsStage)objectRelationship.RelatedObject;
+                            
+                            <tr>
+                                <td><a href="@String.Format("#{0}", entityRelated.id)">🏛️ Details</a></td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                                <td>🏛️ Stage</td>
+                                <td>👋 User</td>
+                                <td>@entityRelated.id</td>
+                                <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                                <td>@objectRelationship.RelationshipType</td>
+                                <td>@objectRelationship.name</td>
+                            </tr>
+                        }
+                    }
+                </table>
+            </td>
+        </tr>
+        List<ObjectRelationship> relationshipsTarget = Model.CurrentMonitor.GetRelationshipsOfRelated(entity);        
+        if (relationshipsTarget.Count > 0)
+        {
+            <tr id="stage_table_output_@entity.id">
+                <td>⏬ Used By</td>
+                <td>
+                    <table class="AlternatingRowTable">
+                        <tr>
+                            <th>Details</th>
+                            <th>Type</th>
+                            <th>Origin</th>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Relationship</th>
+                            <th>Ref Name</th>
+                        </tr>                        
+                        @foreach (ObjectRelationship objectRelationship in relationshipsTarget)
+                        {
+                            ObsStage entityRelated= (ObsStage)objectRelationship.RelatedObject;
+                            
+                            if (objectRelationship.ThisObject is ObsDataset)
+                            {
+                                // This should not happen in Stages
+                                ObsDataset entityThis = (ObsDataset)objectRelationship.ThisObject;
+
+                                <tr>
+                                    <td>@entityThis</td>
+                                </tr>
+                            }
+                            else if (objectRelationship.ThisObject is ObsStage)
+                            {
+                                ObsStage entityThis = (ObsStage)objectRelationship.ThisObject;
+                                
+                                <tr>
+                                    <td><a href="@String.Format("#{0}", entityThis.id)">🏛️ Details</a></td>
+                                    <td>🏛️ Stage</td>
+                                    <td>👋 User</td>
+                                    <td>@entityRelated.id</td>
+                                    <td><span title="@entityThis.description">@entityThis.name</span></td>
+                                    <td>@objectRelationship.RelationshipType</td>
+                                    <td>@objectRelationship.name</td>
+                                </tr>                                
+                            }
+                        }
+                    </table>
+                </td>
+            </tr>
+        }
+        <tr>
+            <td colspan="2"><pre><code class="language-javascript">@entity.pipeline</code></pre></td>
+        </tr>
+    }
+</table>
+
+<h2 id="StagesGraph">⛲ Stages Graph</h2>
+<a href="#top">Back to Top</a>
+
+<p>
+    <textarea id="textArea_StagesGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(@Model.CurrentMonitor, @Model.CurrentMonitor.StageObjectRelationships)</textarea>
+    <br/>
+    <button id="buttonVisualize_textArea_StagesGraph" onclick="goToGraphVizOnline('textArea_StagesGraph')">🔭 View</button>
+</p>
+
+<script src="~/js/DetailsCommon.js" asp-append-version="true"></script>

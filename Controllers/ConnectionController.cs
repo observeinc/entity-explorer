@@ -143,56 +143,6 @@ public class ConnectionController : Controller
         }
     }
 
-    // public IActionResult SSO()
-    // {
-    //     Stopwatch stopWatch = new Stopwatch();
-    //     stopWatch.Start();
-       
-    //     try
-    //     {
-    //         ConnectionSSOViewModel viewModel = new ConnectionSSOViewModel(null);
-    //         viewModel.Environment = HttpContext.Request.Query["environment"];
-    //         viewModel.Username = HttpContext.Request.Query["username"];
-    //         viewModel.DelegateURL = HttpContext.Request.Query["deletegateurl"];
-            
-    //         switch (HttpContext.Request.Method)
-    //         {
-    //             case "GET":
-    //                 AuthenticatedUser currentUser = getAuthenticatedUserEnvironment(viewModel.Environment, viewModel.Username);
-    //                 if (authenticateUserSSOComplete(currentUser, HttpContext.Request.Query["deletegatetoken"]) == true)
-    //                 {
-    //                     getAuthenticatedUserDetails(currentUser);
-    //                     // complete authentication
-
-    //                     throw new NotImplementedException("autheticated here! good job! finish this daniel");
-    //                 }
-
-    //                 break;
-
-    //             case "POST":
-    //                 break;
-    //         }
-
-    //         return View(viewModel);
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         logger.Error(ex);
-    //         loggerConsole.Error(ex);
-
-    //         ViewData["ErrorMessage"] = ex.Message;
-
-    //         return View(new ConnectionSSOViewModel(null));
-    //     }
-    //     finally
-    //     {
-    //         stopWatch.Stop();
-
-    //         logger.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
-    //         loggerConsole.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
-    //     }
-    // }
-
     private AuthenticatedUser getAuthenticatedUserEnvironment(string environment, string userName)
     {
         AuthenticatedUser currentUser = new AuthenticatedUser();

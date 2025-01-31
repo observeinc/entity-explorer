@@ -2,8 +2,32 @@
     $(".SortableTable").DataTable( {
         paging: false,
         orderClasses: false,
-        deferRender: true
+        deferRender: true,
+        layout: {
+            topStart: {
+                buttons: [
+                        { 
+                            extend: 'copy', text: '📋 Copy to clipboard',
+                            exportOptions: {
+                                columns: ':visible'
+                            }
+                        }, 
+                        { 
+                            extend: 'csv', text: '☷ Export to CSV', 
+                            exportOptions: {
+                                columns: ':visible'
+                            }
+                        }, 
+                        {   extend: 'excel', text: '⩩ Export to Excel',
+                            exportOptions: {
+                                columns: ':visible'
+                            }
+                        }, 
+                        { extend: 'colvis', text: "👀 Column Visibility"}]
+            }
+        }
     });
+
     hljs.highlightAll();
     hljs.initLineNumbersOnLoad();
 
@@ -120,4 +144,9 @@ function showOrHideDashboardInputsOutputTables(checkBox)
         $("tr[id^='stage_table_input_']").hide();
         $("tr[id^='stage_table_output_']").hide();
     }
+}
+
+function copyTableToClipboard(tableID)
+{
+    navigator.clipboard.writeText($("#" + tableID).html());
 }

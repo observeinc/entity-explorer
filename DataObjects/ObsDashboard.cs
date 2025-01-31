@@ -103,7 +103,7 @@ namespace Observe.EntityExplorer.DataObjects
 
         public ObsDashboard () {}
 
-        public ObsDashboard(JObject entityObject, AuthenticatedUser currentUser) : base (entityObject)
+        public ObsDashboard(JObject entityObject) : base (entityObject)
         {
             this._raw = entityObject;
 

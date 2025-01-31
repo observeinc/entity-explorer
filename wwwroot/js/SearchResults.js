@@ -74,3 +74,29 @@
     var regex = new RegExp(keyword, "gmi");
     $("code.language-javascript").markRegExp(regex, optionsMarkRegExp);
 });
+
+function showOrHideOPALPreviews(checkBox)
+{
+    if (checkBox.checked == true)
+    {
+        $("pre[id^='code_']").show();
+        $("input[id^='checkboxOPALPreview_']").prop("checked", true)
+    }
+    else
+    {
+        $("pre[id^='code_']").hide();
+        $("input[id^='checkboxOPALPreview_']").prop("checked", false)
+    }
+}
+
+function showOrHideOPALPreview(checkBox, preBlockID)
+{
+    if (checkBox.checked == true)
+    {
+        $("pre[id='" +preBlockID + "']").show();
+    }
+    else
+    {
+        $("pre[id='" +preBlockID + "']").hide();
+    }
+}

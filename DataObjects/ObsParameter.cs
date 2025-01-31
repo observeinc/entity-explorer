@@ -38,8 +38,19 @@ namespace Observe.EntityExplorer.DataObjects
             this.id = JSONHelper.getStringValueFromJToken(entityObject, "id");
             this.name = JSONHelper.getStringValueFromJToken(entityObject, "name");
             this.viewType = JSONHelper.getStringValueFromJToken(entityObject, "viewType");
-            this.sourceType = JSONHelper.getStringValueFromJToken(entityObject, "source");
-            if (this.sourceType.Length == 0) sourceType = "UserInput";
+            JToken sourceTypeToken = JSONHelper.getJTokenValueFromJToken(entityObject, "source");
+            if (sourceTypeToken != null)
+            {
+                if (sourceTypeToken.Type == JTokenType.Object)
+                {
+                    this.sourceType = JSONHelper.getStringValueFromJToken(sourceTypeToken, "type");
+                }
+                else if (sourceTypeToken.Type == JTokenType.String)
+                {
+                    this.sourceType = JSONHelper.getStringValueFromJToken(entityObject, "source");
+                }
+            }
+            if (this.sourceType == null || this.sourceType.Length == 0) sourceType = "UserInput";
             this.allowEmpty = JSONHelper.getBoolValueFromJToken(entityObject, "allowEmpty");
             
             JObject valueKindObject = (JObject)JSONHelper.getJTokenValueFromJToken(entityObject, "valueKind");

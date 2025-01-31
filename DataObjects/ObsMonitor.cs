@@ -121,7 +121,7 @@ namespace Observe.EntityExplorer.DataObjects
 
         public ObsMonitor () {}
 
-        public ObsMonitor(JObject entityObject, AuthenticatedUser currentUser) : base (entityObject)
+        public ObsMonitor(JObject entityObject) : base (entityObject)
         {
             this._raw = entityObject;
 
@@ -223,7 +223,6 @@ namespace Observe.EntityExplorer.DataObjects
                 JObject statusInfoObject = (JObject)JSONHelper.getJTokenValueFromJToken(activeMonitorInfoObject, "statusInfo");
                 if (statusInfoObject != null)
                 {
-
                     string state = JSONHelper.getStringValueFromJToken(statusInfoObject, "status");
                     switch (state)
                     {
@@ -234,6 +233,7 @@ namespace Observe.EntityExplorer.DataObjects
                         case "Stopped":
                             this.IsEnabled = false;
                             break;
+                            
                         default:
                             this.IsEnabled = false;
                             break;

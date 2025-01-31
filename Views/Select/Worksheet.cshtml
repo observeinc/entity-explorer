@@ -3,7 +3,7 @@
 @model Observe.EntityExplorer.Models.BaseViewModel;
 
 @{
-    ViewData["Title"] = "Select Worksheet";
+    ViewData["Title"] = "Worksheets";
 }
 
 <p>
@@ -16,7 +16,7 @@
 
 <p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
 
-<h1>@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Select Worksheet and Action</h1>
+<h1>@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Worksheets</h1>
 
 @{
     List<ObsCompositeObject> selectedWorksheets = Model.ObserveEnvironment.ObserveObjects.Where(o => (o.ObjectType & ObsCompositeObjectType.Worksheet) == ObsCompositeObjectType.Worksheet).ToList();

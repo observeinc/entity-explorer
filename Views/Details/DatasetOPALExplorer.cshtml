@@ -1,0 +1,109 @@
+﻿@using Observe.EntityExplorer.DataObjects;
+@using System.Text;
+
+@model Observe.EntityExplorer.Models.DetailsDatasetViewModel;
+
+@{
+    if (@Model.CurrentDataset != null)
+    {
+        ViewData["Title"] = String.Format("{0} ({1}) Dataset OPAL Explorer", @Model.CurrentDataset.name, @Model.CurrentDataset.id);
+    }
+}
+
+<p>
+    <span class="spanError">@ViewData["ErrorMessage"]</span>
+</p>
+@if (ViewData["ErrorMessage"] != null)
+{
+    return;
+}
+
+<p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
+
+<h1>@Model.ObserveEnvironment.getIconType(((ObsCompositeObject)@Model.CurrentDataset)) Dataset OPAL Explorer - @Model.CurrentDataset.name (@Model.CurrentDataset.id)</h1>
+
+<table>
+    <tr>
+        <td>Fields (@Model.CurrentDataset.Fields.Count)</td>
+        <td>
+            <table>
+                <tr>
+                    <th>Icon</th>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Nullable</th>
+                    <th>Enum</th>
+                    <th>Searchable</th>
+                    <th>Hidden</th>
+                    <th>Const</th>
+                    <th>Metric</th>
+                </tr>
+                @foreach (ObsFieldDefinition entity in Model.CurrentDataset.Fields)
+                {
+                    <tr>
+                        <td>@Model.ObserveEnvironment.getIconFieldType(@entity) @if(@Model.CurrentDataset.PrimaryKeys.Count(k => k == entity) > 0) { @Html.Raw("🔑") }</td>
+                        <td>@entity.type</td>
+                        <td>@entity.name</td>
+                        <td>@entity.isNullable</td>
+                        <td>@entity.isEnum</td>
+                        <td>@entity.isSearchable</td>
+                        <td>@entity.isHidden</td>
+                        <td>@entity.isConst</td>
+                        <td>@entity.isMetric</td>
+                    </tr>
+                }
+            </table>
+        </td>
+    </tr>
+</table>
+
+@{
+    StringBuilder sb = new StringBuilder(256 & Model.CurrentDataset.Stages.Count);
+}
+
+@foreach (ObsStage entity in Model.CurrentDataset.Stages)
+{    
+    sb.AppendFormat("// --- Stage {0} ({1})", entity.name, entity.id);
+    sb.AppendLine();
+    foreach (ObjectRelationship objectRelationship in entity.ExternalObjectRelationships)
+    {
+        ObsStage entityThis = (ObsStage)objectRelationship.ThisObject;
+        if (objectRelationship.RelatedObject is ObsDataset)
+        {
+            ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
+            sb.AppendFormat("// --- Dataset {0}/{1} ({2})", @entityRelated.name, objectRelationship.name, @entityRelated.id);
+            sb.AppendLine();
+        }
+        else if (objectRelationship.RelatedObject is ObsStage)
+        {
+            ObsStage entityRelated = (ObsStage)objectRelationship.RelatedObject;
+            sb.AppendFormat("// --- Stage {0}/{1} ({2})", @entityRelated.name, objectRelationship.name, @entityRelated.id);
+            sb.AppendLine();
+        }
+    }
+    sb.AppendLine();
+    sb.Append(entity.pipeline);
+    sb.AppendLine();
+    sb.AppendFormat("// --- /Stage {0} ({1})", entity.name, entity.id);
+    sb.AppendLine();
+}
+<pre><code id="dataset_code" class="language-javascript">@sb.ToString()</code></pre>
+
+@* <pre><code id="dataset_code" xclass="language-javascript">filter true
+
+make_col newcol
+</code></pre> *@
+
+<br />
+<button id="buttonParseOPAL" onclick="parseOPAL('dataset_code')">Parse OPAL</button>
+<br />
+
+<pre><code id="code_parsed">TODO</code></pre>
+
+@* <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.45.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clusterize.js/0.18.0/clusterize.min.js"></script> *@
+
+@* <script>LANGUAGE_BASE_URL = "";</script> *@
+<script src="~/js/tree-sitter/tree-sitter.js"></script>
+@* <script src="~/js/tree-sitter/playground.js"></script> *@
+<script src="~/js/tree-sitter/OPALParser.js"></script>

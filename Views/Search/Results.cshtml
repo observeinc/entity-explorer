@@ -26,6 +26,9 @@
     List<ObsStage> monitorStages = Model.SearchResults.Where(s => s.Parent is ObsMonitor).ToList();
     List<ObsMonitor> monitorResults = monitorStages.Select(s => s.Parent).ToList().Cast<ObsMonitor>().Distinct().ToList();
 
+    List<ObsStage> monitor2Stages = Model.SearchResults.Where(s => s.Parent is ObsMonitor2).ToList();
+    List<ObsMonitor2> monitor2Results = monitor2Stages.Select(s => s.Parent).ToList().Cast<ObsMonitor2>().Distinct().ToList();
+
     List<ObsStage> worksheetStages = Model.SearchResults.Where(s => s.Parent is ObsWorksheet).ToList();
     List<ObsWorksheet> worksheetResults = worksheetStages.Select(s => s.Parent).ToList().Cast<ObsWorksheet>().Distinct().ToList();
 
@@ -34,9 +37,10 @@
 <h1>🔎 Code Search Results</h1>
 
 <p>
-    <a href="#Datasets">@Model.ObserveEnvironment.getIconType(new ObsDataset()) Datasets (@datasetsResults.Count / @datasetStages.Count)</a> 
+    <a href="#Datasets">@Model.ObserveEnvironment.getIconType(((ObsCompositeObject)new ObsDataset())) Datasets (@datasetsResults.Count / @datasetStages.Count)</a> 
     <a href="#Dashboards">@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Dashboards (@dashboardResults.Count / @dashboardStages.Count)</a> 
-    <a href="#Monitors">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Monitors (@monitorResults.Count / @monitorStages.Count)</a> 
+    <a href="#Monitors">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Monitors (legacy) (@monitorResults.Count / @monitorStages.Count)</a> 
+    <a href="#Monitors2">@Model.ObserveEnvironment.getIconType(new ObsMonitor2()) Monitors v2 (@monitorResults.Count / @monitorStages.Count)</a> 
     <a href="#Worksheets">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Worksheets (@worksheetResults.Count / @worksheetStages.Count)</a> 
 </p>
 
@@ -47,7 +51,10 @@
     </tr>
 </table>
 
-<h2 id="Datasets">@Model.ObserveEnvironment.getIconType(new ObsDataset()) Datasets</h2>
+<input id="checkboxOPALPreviews" type="checkbox" checked="true" value="Show/Hide OPAL Blocks" onclick="showOrHideOPALPreviews(this)"/>
+<label for="checkboxOPALPreviews">Show/Hide OPAL Stages</label>
+
+<h2 id="Datasets">@Model.ObserveEnvironment.getIconType(((ObsCompositeObject)new ObsDataset())) Datasets</h2>
 <a href="#top">Back to Top</a>
 
 @foreach(ObsStage stage in datasetStages)
@@ -55,6 +62,7 @@
     ObsDataset entity = (ObsDataset)(stage.Parent);
     <table class="AlternatingRowTable">
         <tr>
+            <td><input id="checkboxOPALPreview_@entity.id" type="checkbox" checked="true" value="Show/Hide OPAL" onclick="showOrHideOPALPreview(this, 'code_' + @entity.id)"/> <label for="checkboxOPALPreview_@entity.id">Show/Hide OPAL</label></td>
             <td>@Html.ActionLink("🎫 View", "Dataset", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
             <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entity), entity.id)">📄 Data</a></td>
             <td>@Model.ObserveEnvironment.getIconType(entity) @entity.kind</td>
@@ -65,8 +73,7 @@
             <td>@Model.ObserveEnvironment.getIconWidgetType(stage) @stage.type</td>
         </tr>
     </table>
-    <br/>
-    <pre><code class="language-javascript">@stage.pipeline</code></pre>
+    <pre id="code_@entity.id"><code class="language-javascript">@stage.pipeline</code></pre>
 }
 
 <h2 id="Dashboards">@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Dashboard</h2>
@@ -77,6 +84,7 @@
     ObsDashboard entity = (ObsDashboard)(stage.Parent);
     <table class="AlternatingRowTable">
         <tr>
+            <td><input id="checkboxOPALPreview_@entity.id" type="checkbox" checked="true" value="Show/Hide OPAL" onclick="showOrHideOPALPreview(this, 'code_' + @entity.id)"/> <label for="checkboxOPALPreview_@entity.id">Show/Hide OPAL</label></td>
             <td>@Html.ActionLink("📈 View", "Dashboard", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
             <td><a href="@String.Format("{0}workspace/{1}/dashboard/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">📄 Data</a></td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
@@ -86,12 +94,10 @@
             <td>@Model.ObserveEnvironment.getIconWidgetType(stage) @stage.type</td>
         </tr>
     </table>
-    <br/>
-    <pre><code class="language-javascript">@stage.pipeline</code></pre>
-    <br/>
+    <pre id="code_@entity.id"><code class="language-javascript">@stage.pipeline</code></pre>
 }
 
-<h2 id="Monitors">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Monitors</h2>
+<h2 id="Monitors">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Monitors (legacy)</h2>
 <a href="#top">Back to Top</a>
 
 @foreach(ObsStage stage in monitorStages)
@@ -99,6 +105,7 @@
     ObsMonitor entity = (ObsMonitor)(stage.Parent);
     <table class="AlternatingRowTable">
         <tr>
+            <td><input id="checkboxOPALPreview_@entity.id" type="checkbox" checked="true" value="Show/Hide OPAL" onclick="showOrHideOPALPreview(this, 'code_' + @entity.id)"/> <label for="checkboxOPALPreview_@entity.id">Show/Hide OPAL</label></td>
             <td>@Html.ActionLink("📟 View", "Monitor", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
             <td><a href="@String.Format("{0}workspace/{1}/monitor/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">🛠️ Edit</a></td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
@@ -108,9 +115,29 @@
             <td>@Model.ObserveEnvironment.getIconWidgetType(stage) @stage.type</td>
         </tr>
     </table>
-    <br/>
-    <pre><code class="language-javascript">@stage.pipeline</code></pre>
-    <br/>
+    <pre id="code_@entity.id"><code class="language-javascript">@stage.pipeline</code></pre>
+}
+
+<h2 id="Monitors2">@Model.ObserveEnvironment.getIconType(new ObsMonitor2()) Monitors v2</h2>
+<a href="#top">Back to Top</a>
+
+@foreach(ObsStage stage in monitor2Stages)
+{
+    ObsMonitor2 entity = (ObsMonitor2)(stage.Parent);
+  
+    <table class="AlternatingRowTable">
+        <tr>
+            <td><input id="checkboxOPALPreview_@entity.id" type="checkbox" checked="true" value="Show/Hide OPAL" onclick="showOrHideOPALPreview(this, 'code_' + @entity.id)"/> <label for="checkboxOPALPreview_@entity.id">Show/Hide OPAL</label></td>
+            <td>@Html.ActionLink("📱 View", "Monitor2", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td><a href="@String.Format("{0}workspace/{1}/{2}-monitor/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getMonitorv2URLPartType(entity), entity.id)">🛠️ Edit</a></td>
+            <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
+            <td>@entity.id</td>
+            <td>@entity.name</td>
+            <td>@stage.name (@stage.id)</td>
+            <td>@Model.ObserveEnvironment.getIconWidgetType(stage) @stage.type</td>
+        </tr>
+    </table>
+    <pre id="code_@entity.id"><code class="language-javascript">@stage.pipeline</code></pre>
 }
 
 <h2 id="Worksheets">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Worksheets</h2>
@@ -121,6 +148,7 @@
     ObsWorksheet entity = (ObsWorksheet)(stage.Parent);
     <table class="AlternatingRowTable">
         <tr>
+            <td><input id="checkboxOPALPreview_@entity.id" type="checkbox" checked="true" value="Show/Hide OPAL" onclick="showOrHideOPALPreview(this, 'code_' + @entity.id)"/> <label for="checkboxOPALPreview_@entity.id">Show/Hide OPAL</label></td>
             <td>@Html.ActionLink("📝 View", "Worksheet", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
             <td><a href="@String.Format("{0}workspace/{1}/worksheet/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">📄 Data</a></td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
@@ -129,9 +157,8 @@
             <td>@stage.name (@stage.id)</td>
             <td>@Model.ObserveEnvironment.getIconWidgetType(stage) @stage.type</td>
         </tr>
-    </table>    <br/>
-    <pre><code class="language-javascript">@stage.pipeline</code></pre>
-    <br/>
+    </table>
+    <pre id="code_@entity.id"><code class="language-javascript">@stage.pipeline</code></pre>
 }
 
 <script src="~/js/SearchResults.js" asp-append-version="true"></script>

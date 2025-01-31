@@ -7,27 +7,27 @@
     <RootNamespace>Observe.EntityExplorer</RootNamespace>
     <ApplicationIcon>AppIcon.ico</ApplicationIcon>
 
-    <Version>2024.8.18.0</Version>
-    <FileVersion>2024.8.18.0</FileVersion>
-    <AssemblyVersion>2024.8.18.0</AssemblyVersion>
+    <Version>2025.1.30.0</Version>
+    <FileVersion>2025.1.30.0</FileVersion>
+    <AssemblyVersion>2025.1.30.0</AssemblyVersion>
     <Authors>Daniel Odievich (daniel.odievich@observeinc.com)</Authors>
     <Company>Observe Inc.</Company>
     <Product>Observe Entity Explorer</Product>
     <NeutralLanguage>en</NeutralLanguage>
     <Description>Observe Entity Explorer provides relationship and configuration information about Observe entities such as Datasets, Dashboards and Monitors</Description>
-    <Copyright>Copyright © 2023-2024</Copyright>
+    <Copyright>Copyright © 2023-2025</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="31.0.4" />
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="NLog" Version="5.2.8" />
-    <PackageReference Include="NLog.Web.AspNetCore" Version="5.3.8" />
-    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.8.1" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.8.1" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.8.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.8.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.8.1" />
+    <PackageReference Include="NLog" Version="5.3.4" />
+    <PackageReference Include="NLog.Web.AspNetCore" Version="5.3.15" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.11.1" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.1" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.11.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.11.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.11.0" />
   </ItemGroup>
 
 </Project>

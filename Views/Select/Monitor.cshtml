@@ -4,7 +4,7 @@
 @model Observe.EntityExplorer.Models.BaseViewModel;
 
 @{
-    ViewData["Title"] = "Select Monitor";
+    ViewData["Title"] = "Monitors (legacy)";
 }
 
 <p>
@@ -17,7 +17,7 @@
 
 <p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
 
-<h1>@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Select Monitor and Action</h1>
+<h1>@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Monitors (legacy)</h1>
 @{
     ObsCompositeObjectType[] categoriesOfMonitors = new ObsCompositeObjectType[] {
         ObsCompositeObjectType.MetricThresholdMonitor, 
@@ -29,17 +29,17 @@
 <p>
     @foreach (ObsCompositeObjectType objectType in categoriesOfMonitors)
     {    
-        <a href="#@objectType">@objectType</a>
+        <a href="#@objectType">@Model.ObserveEnvironment.getIconMonitorType(@objectType) @objectType</a>
     }
 </p>
 
 @foreach (ObsCompositeObjectType objectType in categoriesOfMonitors)
 {
-    List<ObsCompositeObject> selectedMonitors = Model.ObserveEnvironment.ObserveObjects.Where(o => (o.ObjectType & @objectType) == @objectType).ToList();
+    List<ObsCompositeObject> selectedMonitors = Model.ObserveEnvironment.ObserveObjects.Where(o => ((o.ObjectType & ObsCompositeObjectType.Monitor) == ObsCompositeObjectType.Monitor) && ((o.ObjectType & @objectType) == @objectType)).ToList();
 
     if (selectedMonitors.Count > 0)
     {
-        <h2 id="@objectType">@objectType (@selectedMonitors.Count)</h2>
+        <h2 id="@objectType">@Model.ObserveEnvironment.getIconMonitorType(@objectType) @objectType (@selectedMonitors.Count)</h2>
         <a href="#top">Back to Top</a>
     }
 

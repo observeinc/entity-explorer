@@ -53,7 +53,7 @@ namespace Observe.EntityExplorer.DataObjects
 
         public ObsWorksheet () {}
 
-        public ObsWorksheet(JObject entityObject, AuthenticatedUser currentUser) : base (entityObject)
+        public ObsWorksheet(JObject entityObject) : base (entityObject)
         {
             this._raw = entityObject;
 

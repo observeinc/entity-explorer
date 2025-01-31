@@ -80,6 +80,11 @@ public class SearchController : Controller
                         viewModel.SearchResults.AddRange(entity.Stages.Where(s => StringMatches(s.pipeline, query) == true).ToList());
                     }
 
+                    foreach (ObsMonitor2 entity in observeEnvironment.AllMonitors2Dict.Values)
+                    {
+                        viewModel.SearchResults.AddRange(entity.Stages.Where(s => StringMatches(s.pipeline, query) == true).ToList());
+                    }
+
                     foreach (ObsWorksheet entity in observeEnvironment.AllWorksheetsDict.Values)
                     {
                         viewModel.SearchResults.AddRange(entity.Stages.Where(s => StringMatches(s.pipeline, query) == true).ToList());

@@ -106,7 +106,7 @@
             <tbody>
             @foreach (ObjectRelationship objectRelationship in ancestorRelationships)
             {
-                if (objectRelationship.ThisObject is ObsDataset)
+                if (objectRelationship.ThisObject is ObsDataset && objectRelationship.RelatedObject is ObsDataset)
                 {
                     ObsDataset entityThis = (ObsDataset)objectRelationship.ThisObject;
                     ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
@@ -130,7 +130,55 @@
                         <td>&nbsp;</td>
                     </tr>
                 }
-                else if (objectRelationship.ThisObject is ObsDashboard)
+                else if (objectRelationship.ThisObject is ObsDataset && objectRelationship.RelatedObject is ObsDatastream)
+                {
+                    ObsDataset entityThis = (ObsDataset)objectRelationship.ThisObject;
+                    ObsDatastream entityRelated = (ObsDatastream)objectRelationship.RelatedObject;
+
+                    <tr>
+                        <td>@Html.ActionLink("🌊 View", "Datastream", "Select", String.Empty, String.Empty, "Datastreams", new { userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityRelated.DatastreamDataset), entityRelated.DatastreamDataset.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/datastreams/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityRelated) Datastream</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@entityRelated.id</td>
+                        <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                        <td>@objectRelationship.RelationshipType</td>
+                        <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityThis.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityThis), entityThis.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityThis) @entityThis.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityThis) <span title="@entityThis.source">@entityThis.OriginType</span></td>
+                        <td>@entityThis.id</td>
+                        <td><span title="@entityThis.description">@entityThis.name</span></td>
+                        <td>&nbsp;</td>
+                    </tr>
+                }
+                else if (objectRelationship.ThisObject is ObsDatastream && objectRelationship.RelatedObject is ObsToken)
+                {
+                    ObsDatastream entityThis = (ObsDatastream)objectRelationship.ThisObject;
+                    ObsToken entityRelated = (ObsToken)objectRelationship.RelatedObject;
+
+                    <tr>
+                        <td>@Html.ActionLink("🎟️ View", "Datastream", "Select", String.Empty, String.Empty, "Tokens", new { userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}?filter-DATASTREAM_TOKEN_ID={4}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(((ObsDatastream)(entityRelated.Parent)).DatastreamDataset), ((ObsDatastream)(entityRelated.Parent)).DatastreamDataset.id, entityRelated.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/datastreams/{2}/{3}/{4}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.Parent.id, entityRelated.kind, entityRelated.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityRelated) @entityRelated.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@entityRelated.id</td>
+                        <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                        <td>@objectRelationship.RelationshipType</td>
+                        <td>@Html.ActionLink("🌊 View", "Datastream", "Select", String.Empty, String.Empty, "Datastreams", new { userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityThis.DatastreamDataset), entityThis.DatastreamDataset.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/datastreams/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityThis.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityThis) Datastream</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityThis) <span title="@entityThis.source">@entityThis.OriginType</span></td>
+                        <td>@entityThis.id</td>
+                        <td><span title="@entityThis.description">@entityThis.name</span></td>
+                        <td>&nbsp;</td>
+                    </tr>
+                }                
+                else if (objectRelationship.ThisObject is ObsDashboard && objectRelationship.RelatedObject is ObsDataset)
                 {
                     ObsDashboard entityThis = (ObsDashboard)objectRelationship.ThisObject;
                     ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;

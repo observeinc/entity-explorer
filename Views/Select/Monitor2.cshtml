@@ -1,0 +1,107 @@
+﻿@using Observe.EntityExplorer.DataObjects;
+@using System.Text;
+
+@model Observe.EntityExplorer.Models.BaseViewModel;
+
+@{
+    ViewData["Title"] = "Monitors v2";
+}
+
+<p>
+    <span class="spanError">@ViewData["ErrorMessage"]</span>
+</p>
+@if (ViewData["ErrorMessage"] != null)
+{
+    return;
+}
+
+<p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid=@Model.CurrentUser.UniqueID }, null)</p>
+
+<h1>@Model.ObserveEnvironment.getIconType(new ObsMonitor2()) Monitors v2</h1>
+@{
+    ObsCompositeObjectType[] categoriesOfMonitors = new ObsCompositeObjectType[] {
+        ObsCompositeObjectType.MetricThresholdMonitor, 
+        ObsCompositeObjectType.ResourceCountThresholdMonitor, 
+        ObsCompositeObjectType.PromotionMonitor};
+}
+<p>
+    @foreach (ObsCompositeObjectType objectType in categoriesOfMonitors)
+    {    
+        <a href="#@objectType">@Model.ObserveEnvironment.getIconMonitorType(@objectType) @objectType</a>
+    }
+</p>
+
+@foreach (ObsCompositeObjectType objectType in categoriesOfMonitors)
+{
+    List<ObsCompositeObject> selectedMonitors = Model.ObserveEnvironment.ObserveObjects.Where(o => ((o.ObjectType & ObsCompositeObjectType.Monitor2) == ObsCompositeObjectType.Monitor2) && ((o.ObjectType & @objectType) == @objectType)).ToList();
+
+    if (selectedMonitors.Count > 0)
+    {
+        <h2 id="@objectType">@Model.ObserveEnvironment.getIconMonitorType(@objectType) @objectType (@selectedMonitors.Count)</h2>
+        <a href="#top">Back to Top</a>
+    }
+
+    <table class="AlternatingRowTable SortableTable">
+        <thead>
+            <th>View</th>
+            <th>Edit</th>
+            <th>Type</th>
+            <th>Origin</th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Comm.</th>
+            <th>Enabled</th>
+            <th>Actions</th>
+            <th>Stages</th>
+            <th>Uses</th>
+            <th>Created</th>
+            <th>Updated</th>
+            <th>Transform 1h</th>
+            <th>Transform 1d</th>
+            <th>Transform 1w</th>
+        </thead>
+        <tbody>
+        @foreach (ObsMonitor2 entity in selectedMonitors)
+        {
+            <tr id="tableRowMonitor_@entity.id">
+                <td>@Html.ActionLink("📱 View", "Monitor2", "Details", new { id = entity.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                <td><a href="@String.Format("{0}workspace/{1}/{2}-monitor/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getMonitorv2URLPartType(entity), entity.id)">🛠️ Edit</a></td>
+                <td>@Model.ObserveEnvironment.getIconMonitorType(objectType) @entity.kind</td>
+                <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
+                <td>@entity.id</td>
+                <td>@entity.name</td>
+                <td>
+                    @if (entity.description.Length > 0)
+                    {
+                        <span title="@entity.description">🧾</span> 
+                    }
+                </td>
+                <td>@Model.ObserveEnvironment.getIconEnabled(entity)@entity.IsEnabled</td>
+                <td>@entity.NumActions</td>
+                <td>@entity.NumStages</td>
+                <td>@{
+                        List<ObjectRelationship> dataRelationshipsSource = Model.ObserveEnvironment.GetRelationshipsOfThis(@entity, ObsObjectRelationshipType.ProvidesData);
+                        if (dataRelationshipsSource.Count > 0)
+                        {
+                            @Html.Raw(String.Format("📝Data>This: {0} <br/>", dataRelationshipsSource.Count));
+                        }
+
+                        List<ObjectRelationship> linkRelationshipsSource = Model.ObserveEnvironment.GetRelationshipsOfThis(@entity, ObsObjectRelationshipType.Linked);
+                        if (linkRelationshipsSource.Count > 0)
+                        {
+                            @Html.Raw(String.Format("🔗Link>This: {0} <br/>", linkRelationshipsSource.Count))
+                        }
+                    }
+                </td>            
+                <td>@entity.createdDate.ToString("u")/@entity.createdBy.label</td>
+                <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label</td>
+                <td>@entity.Transform1H.Credits.ToString("##0.#")</td>
+                <td>@entity.Transform1D.Credits.ToString("##0.#")</td>
+                <td>@entity.Transform1W.Credits.ToString("##0.#")</td>
+            </tr>
+        }
+        </tbody>
+    </table>    
+}
+
+<script src="~/js/DetailsCommon.js" asp-append-version="true"></script>

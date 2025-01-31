@@ -45,56 +45,51 @@
     <tr>
         <th>Category</th>
         <th>Statistics</th>
-        <th>Costs</th>
-        <th>Actions</th>
+        <th>Costs/Stats</th>
     </tr>
     <tr>
-        <td>Datasets</td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Dataset" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(((ObsCompositeObject)new ObsDataset())) Explore Datasets</a> - Review the structure and dependencies of datasets</td>
         <td>
             <table>
-                <thead>
-                    <th>Category</th>
-                    <th>Number</th>
-                </thead>
                 <tr>
-                    <td>Total</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Dataset).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Dataset).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(((ObsCompositeObject)new ObsDataset())) Total</td>
                 </tr>
                 <tr>
-                    <td>Event</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.EventDataset).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.EventDataset).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsDataset{kind = "Event"}) Event</td>
                 </tr>
                 <tr>
-                    <td>Interval</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.IntervalDataset).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.IntervalDataset).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsDataset{kind = "Interval"}) Interval</td>
                 </tr>
                 <tr>
-                    <td>Resource</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.ResourceDataset).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.ResourceDataset).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsDataset{kind = "Resource"}) Resource</td>
                 </tr>
                 <tr>
-                    <td>Table</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.TableDataset).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.TableDataset).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsDataset{kind = "Table"}) Table</td>
                 </tr>
                 <tr>
-                    <td>DatastreamDataset</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.DatastreamDataset).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.DatastreamDataset).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsDatastream()) DatastreamDataset</td>
                 </tr>
                 <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.MetricSMADataset).Count</td>
                     <td>MetricSMADataset</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.MetricSMADataset).Count</td>
                 </tr>
                 <tr>
-                    <td>MonitorSupportDataset</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.MonitorSupportDataset).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.MonitorSupportDataset).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsMonitor()) MonitorSupportDataset</td>
                 </tr>
                 <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.InterfaceMetricDataset).Count</td>
                     <td>InterfaceMetricDataset</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.InterfaceMetricDataset).Count</td>
                 </tr>
                 <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.InterfaceLogDataset).Count</td>
                     <td>InterfaceLogDataset</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.InterfaceLogDataset).Count</td>
                 </tr>
             </table>
         </td>
@@ -122,51 +117,58 @@
                 </tr>
             </table>
         </td>
-        <td><a asp-area="" asp-controller="Select" asp-action="Dataset" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(((ObsCompositeObject)new ObsDataset())) Explore Datasets</a> - Review the structure and dependencies of datasets</td>
     </tr>
     <tr>
-        <td>Dashboards</td>
-        <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Dashboard).Count</td>
-        <td></td>
         <td><a asp-area="" asp-controller="Select" asp-action="Dashboard" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Explore Dashboards</a> - Review the structure and dependencies of custom and app dashboards</td>
-    </tr>
-    <tr>
-        <td>Worksheets</td>
-        <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Worksheet).Count</td>
-        <td></td>
-        <td><a asp-area="" asp-controller="Select" asp-action="Worksheet" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Explore Worksheets</a> - Review the structure of ad-hoc worksheets</td>
-    </tr>
-    <tr>
-        <td>Monitors</td>
         <td>
             <table>
-                <thead>
-                    <th>Category</th>
-                    <th>Number</th>
-                </thead>
                 <tr>
-                    <td>Total</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Dashboard).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Total</td>
+                </tr>
+            </table>
+        </td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a asp-area="" asp-controller="Select" asp-action="Worksheet" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Explore Worksheets</a> - Review the structure of ad-hoc worksheets</td>
+        <td>
+            <table>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Worksheet).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Total</td>
+                </tr>
+            </table>
+        </td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a asp-area="" asp-controller="Select" asp-action="Monitor" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Explore Monitors (legacy)</a> - Review the monitor configuration and dataset dependencies</td>
+        <td>
+            <table>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Total</td>
                 </tr>
                 <tr>
-                    <td>Metric Threshold</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.MetricThresholdMonitor).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor | ObsCompositeObjectType.MetricThresholdMonitor).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconMonitorType(ObsCompositeObjectType.MetricThresholdMonitor) Metric Threshold</td>
                 </tr>
                 <tr>
-                    <td>Log Threshold</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.LogThresholdMonitor).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor | ObsCompositeObjectType.LogThresholdMonitor).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconMonitorType(ObsCompositeObjectType.LogThresholdMonitor) Log Threshold</td>
                 </tr>
                 <tr>
-                    <td>Resource Count</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.ResourceCountThresholdMonitor).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor | ObsCompositeObjectType.ResourceCountThresholdMonitor).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconMonitorType(ObsCompositeObjectType.ResourceCountThresholdMonitor) Resource Count</td>
                 </tr>
                 <tr>
-                    <td>Promotion</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.PromotionMonitor).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor | ObsCompositeObjectType.PromotionMonitor).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconMonitorType(ObsCompositeObjectType.PromotionMonitor) Promotion</td>
                 </tr>
                 <tr>
-                    <td>Text</td>
-                    <td>@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.ResourceTextValueMonitor).Count</td>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor | ObsCompositeObjectType.ResourceTextValueMonitor).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconMonitorType(ObsCompositeObjectType.ResourceTextValueMonitor) Text</td>
                 </tr>
             </table>
         </td>
@@ -190,32 +192,153 @@
                 </tr>
             </table>
         </td>
-        <td><a asp-area="" asp-controller="Select" asp-action="Monitor" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Explore Monitors</a> - Review the monitor configuration and dataset dependencies</td>
     </tr>
     <tr>
-        <td>Relationships</td>
+        <td><a asp-area="" asp-controller="Select" asp-action="Monitor2" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsMonitor2()) Explore Monitors v2</a> - Review the monitor configuration and dataset dependencies</td>
+        <td>
+            <table>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor2).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsMonitor2()) Total</td>
+                </tr>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor2 | ObsCompositeObjectType.MetricThresholdMonitor).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconMonitorType(ObsCompositeObjectType.MetricThresholdMonitor) Metric Threshold</td>
+                </tr>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor2 | ObsCompositeObjectType.ResourceCountThresholdMonitor).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconMonitorType(ObsCompositeObjectType.ResourceCountThresholdMonitor) Resource Count</td>
+                </tr>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Monitor2 | ObsCompositeObjectType.PromotionMonitor).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconMonitorType(ObsCompositeObjectType.PromotionMonitor) Promotion</td>
+                </tr>
+            </table>
+        </td>
         <td>
             <table>
                 <thead>
-                    <th>Category</th>
-                    <th>Number</th>
+                    <th>Length</th>
+                    <th>Transform</th>
                 </thead>
                 <tr>
+                    <td>1 hour</td>
+                    <td>@Model.ObserveEnvironment.AllMonitors2Dict.Values.ToList().Sum(d => d.Transform1H.Credits).ToString("##0.#")</td>
+                </tr>
+                <tr>
+                    <td>1 day</td>
+                    <td>@Model.ObserveEnvironment.AllMonitors2Dict.Values.ToList().Sum(d => d.Transform1D.Credits).ToString("##0.#")</td>
+                </tr>
+                <tr>
+                    <td>1 week</td>
+                    <td>@Model.ObserveEnvironment.AllMonitors2Dict.Values.ToList().Sum(d => d.Transform1W.Credits).ToString("##0.#")</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td><a asp-area="" asp-controller="Select" asp-action="Datastream" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsDatastream()) Explore Datastreams</a> - Review datastreams and tokens</td>
+        <td>
+            <table>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Datastream).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsDatastream()) Datastream</td>
+                </tr>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.Token).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsToken()) All Tokens</td>
+                </tr>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.IngestToken).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconTokenType(new ObsToken{kind = "ingest"}) Ingest Tokens</td>
+                </tr>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.FiledropToken).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconTokenType(new ObsToken{kind = "filedrop"}) Filedrop Token</td>
+                </tr>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.GetObjectsOfType(ObsCompositeObjectType.PollerToken).Count</td>
+                    <td>@Model.ObserveEnvironment.getIconTokenType(new ObsToken{kind = "poller"}) Poller Token</td>
+                </tr>
+            </table>
+        </td>
+        <td>
+            <table>
+                <thead>
+                    <th>Metric/Hour</th>
+                    <th>Value</th>
+                </thead>
+                @* <tr>
+                    <td>Stats</td>
+                    <td>@Model.ObserveEnvironment.AllTokensDict.Values.ToList().Sum(d => d.NumStats).ToString("##0")</td>
+                </tr> *@
+                <tr>
+                    <td>Observations</td>
+                    <td>@Model.ObserveEnvironment.AllTokensDict.Values.ToList().Sum(d => d.NumObservations).ToString("##0")</td>
+                </tr>
+@{
+    long totalBytes = @Model.ObserveEnvironment.AllTokensDict.Values.ToList().Sum(d => d.NumBytes);
+    double totalGB = totalBytes / Math.Pow(10, 9);
+    double totalTB = totalBytes / Math.Pow(10, 12);
+}                
+                <tr>
+                    <td>Bytes</td>
+                    <td>@totalBytes.ToString("##0")</td>
+                </tr>
+                <tr>
+                    <td>GB</td>
+                    <td>@totalGB.ToString("##0.0")</td>
+                </tr>
+                <tr>
+                    <td>TB</td>
+                    <td>@totalTB.ToString("##0.000")</td>
+                </tr>
+            </table>
+        </td>
+    </tr>    
+    <tr>
+        <td><a asp-area="" asp-controller="Select" asp-action="Relationship" asp-route-userid="@Model.CurrentUser.UniqueID">🧑‍🤝‍🧑 Explore Relationships</a> - See the list of relationships</td>
+        <td>
+            <table>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.ObjectRelationships.Count()</td>
                     <td>Total</td>
-                    <td>@Model.ObserveEnvironment.ObjectRelationships.Count()</td>
                 </tr>
                 <tr>
+                    <td align="right">@Model.ObserveEnvironment.ObjectRelationships.Where(r => r.RelationshipType == ObsObjectRelationshipType.ProvidesData).Count()</td>
                     <td>ProvidesData</td>
-                    <td>@Model.ObserveEnvironment.ObjectRelationships.Where(r => r.RelationshipType == ObsObjectRelationshipType.ProvidesData).Count()</td>
                 </tr>
                 <tr>
+                    <td align="right">@Model.ObserveEnvironment.ObjectRelationships.Where(r => r.RelationshipType == ObsObjectRelationshipType.Linked).Count()</td>
                     <td>Linked</td>
-                    <td>@Model.ObserveEnvironment.ObjectRelationships.Where(r => r.RelationshipType == ObsObjectRelationshipType.Linked).Count()</td>
                 </tr>
             </table>
         </td>            
         <td></td>
-        <td><a asp-area="" asp-controller="Select" asp-action="Relationship" asp-route-userid="@Model.CurrentUser.UniqueID">🧑‍🤝‍🧑 Explore Relationships</a> - See the list of relationships</td>
+    </tr>
+    <tr>
+        <td><a asp-area="" asp-controller="Select" asp-action="RBAC" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsRBACObject()) Explore RBAC</a> - See the users, groups and security statements</td>
+        <td>
+            <table>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.AllUsersDict.Count()</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsUser()) Users</td>
+                </tr>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.AllGroupsDict.Count()</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsRBACGroup()) Groups</td>
+                </tr>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.AllGroupMembers.Count()</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsRBACGroupMember()) Group Members</td>
+                </tr>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.AllStatements.Count()</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsRBACStatement()) Statements</td>
+                </tr>
+            </table>
+        </td>            
+        <td></td>
     </tr>
 @{
     ObsObject syntheticNonExistentObject = new ObsObject();
@@ -223,41 +346,11 @@
     syntheticNonExistentObject.name = "All Objects";
 }
     <tr>
-        <td>All Relationships</td>
+        <td>Relationships <button id="buttonVisualize_RelatedObjectsGraph" onclick="goToGraphVizOnline('textArea_RelatedObjectsGraph')">🔭 View</button></td>
         <td>
             <textarea id="textArea_RelatedObjectsGraph" style="width:400px;height:200px;">@Model.ObserveEnvironment.RenderGraphOfRelationships(syntheticNonExistentObject, @Model.ObserveEnvironment.ObjectRelationships)</textarea>
         </td>
         <td></td>
-        <td><button id="buttonVisualize_RelatedObjectsGraph" onclick="goToGraphVizOnline('textArea_RelatedObjectsGraph')">🔭 View</button></td>
-    </tr>
-    <tr>
-        <td>RBAC</td>
-        <td>
-            <table>
-                <thead>
-                    <th>Category</th>
-                    <th>Number</th>
-                </thead>
-                <tr>
-                    <td>Users</td>
-                    <td>@Model.ObserveEnvironment.AllUsersDict.Count()</td>
-                </tr>
-                <tr>
-                    <td>Groups</td>
-                    <td>@Model.ObserveEnvironment.AllGroupsDict.Count()</td>
-                </tr>
-                <tr>
-                    <td>Group Members</td>
-                    <td>@Model.ObserveEnvironment.AllGroupMembers.Count()</td>
-                </tr>
-                <tr>
-                    <td>Statements</td>
-                    <td>@Model.ObserveEnvironment.AllStatements.Count()</td>
-                </tr>
-            </table>
-        </td>            
-        <td></td>
-        <td><a asp-area="" asp-controller="Select" asp-action="RBAC" asp-route-userid="@Model.CurrentUser.UniqueID">🛂 Explore RBAC</a> - See the users, groups and security statements</td>
     </tr>
 </table>
 
@@ -266,7 +359,7 @@
 <p>
     <form action="Search/Results" method="GET">
         @Html.Hidden("userid", @Model.CurrentUser.UniqueID)
-        @Html.TextBox("query", String.Empty, String.Empty, new {size = 60, placeholder = "put the OPAL you want to search for here "})
+        @Html.TextBox("query", String.Empty, String.Empty, new {size = 60, placeholder = "Put the OPAL you want to search for here "})
         <button type="submit" id="buttonCodeSearch">🔎 Search OPAL Code</button>
     </form>
 </p>

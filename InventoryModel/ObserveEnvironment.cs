@@ -32,6 +32,9 @@ namespace Observe.EntityExplorer
         public Dictionary<string, ObsDashboard> AllDashboardsDict { get; set; }
         public Dictionary<string, ObsWorksheet> AllWorksheetsDict { get; set; }
         public Dictionary<string, ObsMonitor> AllMonitorsDict { get; set; }
+        public Dictionary<string, ObsMonitor2> AllMonitors2Dict { get; set; }
+        public Dictionary<string, ObsDatastream> AllDatastreamsDict { get; set; }
+        public Dictionary<string, ObsToken> AllTokensDict { get; set; }
 
         // RBAC
         public Dictionary<string, ObsUser> AllUsersDict { get; set; }
@@ -118,6 +121,24 @@ namespace Observe.EntityExplorer
 
             #endregion
 
+            #region Monitors v2
+
+            // Get all monitors
+            List<ObsMonitor2> allMonitors2 = getAllMonitors2(currentUser);
+            this.AllMonitors2Dict = allMonitors2.ToDictionary(d => d.id, d => d);
+
+            // Enrich their parameters and relationships
+            foreach (ObsMonitor2 monitor in allMonitors2)
+            {
+                monitor.AddStages(this.AllDatasetsDict);
+                monitor.PopulateExternalDatasetRelationships();
+                this.ObjectRelationships.AddRange(monitor.ExternalObjectRelationships);
+            }
+
+            this.ObserveObjects.AddRange(allMonitors2);
+
+            #endregion
+
             #region Worksheets
 
             // Get all worksheets
@@ -162,6 +183,29 @@ namespace Observe.EntityExplorer
             }
 
             this.ObserveObjects.AddRange(allWorksheets);
+
+            #endregion
+
+            #region Datastreams and tokens
+
+            List<ObsDatastream> allDatastreams = getAllDatastreamsAndTokens(currentUser);
+            this.AllDatastreamsDict = allDatastreams.ToDictionary(d => d.id, d => d);
+
+            List<ObsToken> allDatastreamTokens = new List<ObsToken>(allDatastreams.Count * 10);
+
+            // Enrich their contents and relationships
+            foreach (ObsDatastream datastream in allDatastreams)
+            {
+                datastream.AddDatastreamTokens();
+                datastream.PopulateExternalDatasetRelationships(this.AllDatasetsDict);                
+                this.ObjectRelationships.AddRange(datastream.ExternalObjectRelationships);
+                allDatastreamTokens.AddRange(datastream.Tokens);
+            }
+
+            this.ObserveObjects.AddRange(allDatastreams);
+            this.ObserveObjects.AddRange(allDatastreamTokens);
+            
+            this.AllTokensDict = allDatastreamTokens.ToDictionary(d => d.id, d => d);
 
             #endregion
 
@@ -271,6 +315,11 @@ namespace Observe.EntityExplorer
                 {
                     thisMonitor.Transform1H = usageRow;
                 }
+                ObsMonitor2 thisMonitor2 = null;
+                if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
+                {
+                    thisMonitor2.Transform1H = usageRow;
+                }
             }
 
             // Get 1 day data
@@ -282,6 +331,11 @@ namespace Observe.EntityExplorer
                 {
                     thisMonitor.Transform1D = usageRow;
                 }
+                ObsMonitor2 thisMonitor2 = null;
+                if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
+                {
+                    thisMonitor2.Transform1D = usageRow;
+                }
             }
 
             // Get 1 week data
@@ -292,6 +346,11 @@ namespace Observe.EntityExplorer
                 if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
                 {
                     thisMonitor.Transform1W = usageRow;
+                }
+                ObsMonitor2 thisMonitor2 = null;
+                if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
+                {
+                    thisMonitor2.Transform1W = usageRow;
                 }
             }
 
@@ -385,6 +444,8 @@ namespace Observe.EntityExplorer
                 {
                     dataset._raw = datasetFull._raw;
 
+                    dataset.source = datasetFull.source;
+                    dataset.OriginType = datasetFull.OriginType;
                     dataset.AddStages(this.AllDatasetsDict);
                     dataset.AddAccelerationInfo(this.AllDatasetsDict, this.AllMonitorsDict);
                 }
@@ -429,6 +490,23 @@ namespace Observe.EntityExplorer
         }
 
         public List<ObjectRelationship> GetAllMonitorSupportDatasetRelationships(ObsMonitor interestingObject)
+        {
+            List<ObjectRelationship> selectedRelationships = new List<ObjectRelationship>();
+            foreach (ObjectRelationship objectRelationship in interestingObject.ExternalObjectRelationships)
+            {
+                if (objectRelationship.RelatedObject is ObsDataset)
+                {
+                    ObsDataset relatedDataset = (ObsDataset)objectRelationship.RelatedObject;
+                    if ((relatedDataset.ObjectType & ObsCompositeObjectType.MonitorSupportDataset) == ObsCompositeObjectType.MonitorSupportDataset)
+                    {
+                        selectedRelationships.Add(objectRelationship);
+                    }
+                }
+            }
+            return selectedRelationships;
+        }
+
+        public List<ObjectRelationship> GetAllMonitorSupportDatasetRelationships(ObsMonitor2 interestingObject)
         {
             List<ObjectRelationship> selectedRelationships = new List<ObjectRelationship>();
             foreach (ObjectRelationship objectRelationship in interestingObject.ExternalObjectRelationships)
@@ -694,6 +772,21 @@ namespace Observe.EntityExplorer
                                 }
                                 sb.AppendLine("  }");
                             }
+                            else if (parentObjectOfThisGroup is ObsMonitor2)
+                            {
+                                ObsMonitor2 parentMonitor = (ObsMonitor2)parentObjectOfThisGroup;
+                                
+                                sb.AppendFormat("  subgraph cluster_monitor2_{0} {{", getGraphVizNodeName(parentMonitor, false)).AppendLine();
+                                sb.AppendFormat("    label=\"🎈📱 Monitor2 {0}\" style=\"filled\" fillcolor=\"lavender\"", WebUtility.HtmlEncode(parentMonitor.name)).AppendLine();
+                                sb.AppendFormat("    {0}", getGraphVizNodeDefinition(parentMonitor)).AppendLine();
+                                
+                                sb.AppendFormat("    // Stages").AppendLine();
+                                foreach(ObsStage stage in parentMonitor.Stages)
+                                {
+                                    sb.AppendFormat("    {0}", getGraphVizNodeDefinition(stage)).AppendLine();
+                                }
+                                sb.AppendLine("  }");
+                            }
                             else if (parentObjectOfThisGroup is ObsWorksheet)
                             {
                                 ObsWorksheet parentWorksheet = (ObsWorksheet)parentObjectOfThisGroup;
@@ -834,8 +927,63 @@ namespace Observe.EntityExplorer
 
                                 case ObsObjectOriginType.User:
                                     sb.AppendLine("  subgraph cluster_mon_user {");
-                                    sb.AppendFormat("    label=\"{0} User Monitors ({1})\" style=\"filled\" fillcolor=\"lightcyan\"", iconForGroup, allMonitorsInGroup.Count).AppendLine();
+                                    sb.AppendFormat("    label=\"{0}📟 User Monitors ({1})\" style=\"filled\" fillcolor=\"lightcyan\"", iconForGroup, allMonitorsInGroup.Count).AppendLine();
                                     foreach(ObsMonitor monitor in allMonitorsInGroup)
+                                    {
+                                        if (monitor == interestingObject) continue;
+                                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(monitor)).AppendLine();
+                                    }
+                                    sb.AppendLine("  }");
+
+                                    break;
+                            }
+                        }
+                        
+                        break;
+
+                    case "ObsMonitor2":
+                        List<ObsMonitor2> allMonitors2 = allObjectsGroupedByTypeGroup.Cast<ObsMonitor2>().ToList();
+                        var monitors2GroupedByOriginType = allMonitors2.GroupBy(d => d.OriginType);
+                        foreach (var monitorsGroupedByOriginTypeGroup in monitors2GroupedByOriginType)
+                        {
+                            List<ObsMonitor2> allMonitorsInGroup = monitorsGroupedByOriginTypeGroup.ToList();
+                            string iconForGroup = getIconOriginType(monitorsGroupedByOriginTypeGroup.Key);
+                            switch (monitorsGroupedByOriginTypeGroup.Key)
+                            {
+                                case ObsObjectOriginType.App:
+                                    var allAppMonitorsGroupedByPackage = allMonitorsInGroup.GroupBy(d => d.package);
+                                    foreach (var allAppMonitorsGroupedByPackageGroup in allAppMonitorsGroupedByPackage)
+                                    {
+                                        List<ObsMonitor2> allMonitorsInAppGroup = allAppMonitorsGroupedByPackageGroup.ToList();
+
+                                        sb.AppendFormat("  subgraph cluster_mon2_app_{0} {{", escapeGraphVizObjectNameForSubGraph(allAppMonitorsGroupedByPackageGroup.Key)).AppendLine();
+                                        sb.AppendFormat("    label=\"{0} App Monitors [{1}] ({2})\" style=\"filled\" fillcolor=\"wheat\"", iconForGroup, allAppMonitorsGroupedByPackageGroup.Key, allMonitorsInAppGroup.Count).AppendLine();
+                                        foreach(ObsMonitor2 monitor in allMonitorsInAppGroup)
+                                        {
+                                            if (monitor == interestingObject) continue;
+                                            sb.AppendFormat("    {0}", getGraphVizNodeDefinition(monitor)).AppendLine();
+                                        }
+                                        sb.AppendLine("  }");
+                                    }
+
+                                    break;
+
+                                case ObsObjectOriginType.System:
+                                    sb.AppendLine("  subgraph cluster_mon2_system {");
+                                    sb.AppendFormat("    label=\"{0} System Monitors ({1})\" style=\"filled\" fillcolor=\"oldlace\"", iconForGroup, allMonitorsInGroup.Count).AppendLine();
+                                    foreach(ObsMonitor2 monitor in allMonitorsInGroup)
+                                    {
+                                        if (monitor == interestingObject) continue;
+                                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(monitor)).AppendLine();
+                                    }
+                                    sb.AppendLine("  }");
+
+                                    break;
+
+                                case ObsObjectOriginType.User:
+                                    sb.AppendLine("  subgraph cluster_mon2_user {");
+                                    sb.AppendFormat("    label=\"{0}📱 User Monitors ({1})\" style=\"filled\" fillcolor=\"lightyellow\"", iconForGroup, allMonitorsInGroup.Count).AppendLine();
+                                    foreach(ObsMonitor2 monitor in allMonitorsInGroup)
                                     {
                                         if (monitor == interestingObject) continue;
                                         sb.AppendFormat("    {0}", getGraphVizNodeDefinition(monitor)).AppendLine();
@@ -906,6 +1054,24 @@ namespace Observe.EntityExplorer
 
                         break;
 
+                    case "ObsDatastream":
+                        List<ObsDatastream> allDatastreams = allObjectsGroupedByTypeGroup.Cast<ObsDatastream>().ToList();
+                        foreach (ObsDatastream datastream in allDatastreams)
+                        {
+                            sb.AppendFormat("  {0}", getGraphVizNodeDefinition(datastream)).AppendLine();
+                        }
+
+                        break;
+
+                    case "ObsToken":
+                        List<ObsToken> allTokens = allObjectsGroupedByTypeGroup.Cast<ObsToken>().ToList();
+                        foreach (ObsToken token in allTokens)
+                        {
+                            sb.AppendFormat("  {0}", getGraphVizNodeDefinition(token)).AppendLine();
+                        }
+
+                        break;
+
                     default:
                         throw new NotImplementedException(String.Format("{0} graph output not supported yet", allObjectsGroupedByTypeGroup.Key.Name));
                         //break;
@@ -932,6 +1098,11 @@ namespace Observe.EntityExplorer
                     sb.AppendLine(getGraphVizNodeDefinition(monitor, true)).AppendLine();
                     break;
 
+                case "ObsMonitor2":
+                    ObsMonitor2 monitor2 = (ObsMonitor2)interestingObject;
+                    sb.AppendLine(getGraphVizNodeDefinition(monitor2, true)).AppendLine();
+                    break;
+
                 case "ObsWorksheet":
                     ObsWorksheet worksheet = (ObsWorksheet)interestingObject;
                     sb.AppendLine(getGraphVizNodeDefinition(worksheet, true)).AppendLine();
@@ -955,7 +1126,7 @@ namespace Observe.EntityExplorer
             foreach (ObjectRelationship relationship in allRelationships)
             {
                 // Check if we're outputting incoming links to the focus object that has stages
-                if (relationship.ThisObject == interestingObject)
+                if (relationship.ThisObject == interestingObject && !(relationship.RelatedObject is ObsDatastream))
                 {
                     // Out->here, so skip the double-linking. The links to Stages will explain what's going on
                     sb.AppendLine();
@@ -1306,6 +1477,48 @@ namespace Observe.EntityExplorer
             }
         }
 
+        private string getGraphVizNodeDefinition(ObsMonitor2 monitor)
+        {
+            return getGraphVizNodeDefinition(monitor, false);
+        }
+
+        private string getGraphVizNodeDefinition(ObsMonitor2 monitor, bool highlight)
+        {
+            string nodeColor = "black";
+            ObsCompositeObjectType objectType = ObsCompositeObjectType.Unknown;
+
+            if ((monitor.ObjectType & ObsCompositeObjectType.MetricThresholdMonitor) == ObsCompositeObjectType.MetricThresholdMonitor)
+            {
+                objectType = ObsCompositeObjectType.MetricThresholdMonitor;
+            }
+            else if ((monitor.ObjectType & ObsCompositeObjectType.ResourceCountThresholdMonitor) == ObsCompositeObjectType.ResourceCountThresholdMonitor)
+            {
+                objectType = ObsCompositeObjectType.ResourceCountThresholdMonitor;
+            }
+            else if ((monitor.ObjectType & ObsCompositeObjectType.PromotionMonitor) == ObsCompositeObjectType.PromotionMonitor)
+            {
+                objectType = ObsCompositeObjectType.PromotionMonitor;
+            }
+
+            string nodeIcon = getIconMonitorType(objectType);
+
+            string nodeShape = "tab";
+
+            if (monitor.IsEnabled == false)
+            {
+                nodeColor = "gray";
+            }
+
+            if (highlight == true)
+            {
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" style=\"filled\" fillcolor=\"pink\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(monitor), nodeIcon, WebUtility.HtmlEncode(monitor.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(monitor));
+            }
+            else
+            {
+                return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(monitor), nodeIcon, WebUtility.HtmlEncode(monitor.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(monitor));
+            }
+        }
+
         private string getGraphVizNodeDefinition(ObsWorksheet worksheet)
         {
             return getGraphVizNodeDefinition(worksheet, false);
@@ -1325,6 +1538,38 @@ namespace Observe.EntityExplorer
             {
                 return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(worksheet), nodeIcon, WebUtility.HtmlEncode(worksheet.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(worksheet));
             }
+        }
+
+        private string getGraphVizNodeDefinition(ObsDatastream datastream)
+        {
+            string nodeColor = "green";
+
+            string nodeIcon = getIconType(datastream);
+
+            string nodeShape = "hexagon";
+
+            if (datastream.IsEnabled == false)
+            {
+                nodeColor = "gray";
+            }
+
+            return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(datastream), nodeIcon, WebUtility.HtmlEncode(datastream.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(datastream));
+        }
+
+        private string getGraphVizNodeDefinition(ObsToken token)
+        {
+            string nodeColor = "purple";
+
+            string nodeIcon = getIconTokenType(token);
+
+            string nodeShape = "rarrow";
+
+            if (token.IsEnabled == false)
+            {
+                nodeColor = "gray";
+            }
+
+            return String.Format("{0} [label=\"{1}{2}\" shape=\"{3}\" color=\"{4}\" URL=\"{5}\" target=\"_blank\"]", getGraphVizNodeName(token), nodeIcon, WebUtility.HtmlEncode(token.name.Replace("/", "/\n")), nodeShape, nodeColor, getLinkToEntity(token));
         }
 
         private string getGraphVizNodeDefinition(ObsUser user)
@@ -1402,6 +1647,14 @@ namespace Observe.EntityExplorer
             {
                 return String.Format("{0}DS_{1}{0}", quoteCharacter, interestingObject.id);
             }
+            else if (interestingObject is ObsDatastream)
+            {
+                return String.Format("{0}STM_{1}{0}", quoteCharacter, interestingObject.id);
+            }
+            else if (interestingObject is ObsToken)
+            {
+                return String.Format("{0}TKN_{1}{0}", quoteCharacter, interestingObject.id);
+            }
             else if (interestingObject is ObsDashboard)
             {
                 return String.Format("{0}DA_{1}{0}", quoteCharacter, interestingObject.id);
@@ -1409,6 +1662,10 @@ namespace Observe.EntityExplorer
             else if (interestingObject is ObsMonitor)
             {
                 return String.Format("{0}MON_{1}{0}", quoteCharacter, interestingObject.id);
+            }
+            else if (interestingObject is ObsMonitor2)
+            {
+                return String.Format("{0}MON2_{1}{0}", quoteCharacter, interestingObject.id);
             }
             else if (interestingObject is ObsWorksheet)
             {
@@ -1447,8 +1704,17 @@ namespace Observe.EntityExplorer
                 case ObsMonitor t1:
                     return getLinkToEntity((ObsMonitor)entity);
 
+                case ObsMonitor2 t1:
+                    return getLinkToEntity((ObsMonitor2)entity);
+
                 case ObsWorksheet t1:
                     return getLinkToEntity((ObsWorksheet)entity);
+
+                case ObsDatastream t1:
+                    return getLinkToEntity((ObsDatastream)entity);
+
+                case ObsToken t1:
+                    return getLinkToEntity((ObsToken)entity);
 
                 default:
                     return String.Empty;
@@ -1479,6 +1745,14 @@ namespace Observe.EntityExplorer
             return linkUri.Uri.ToString();
         }
 
+        private string getLinkToEntity(ObsMonitor2 entity)
+        {
+            var linkUri = new UriBuilder(this.AppHostedAt);
+            linkUri.Path = String.Format("Details/Monitor2/{0}", entity.id);
+            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            return linkUri.Uri.ToString();
+        }
+
         private string getLinkToEntity(ObsWorksheet entity)
         {
             var linkUri = new UriBuilder(this.AppHostedAt);
@@ -1494,6 +1768,24 @@ namespace Observe.EntityExplorer
             var linkUri = new UriBuilder(parentLink);
             linkUri.Fragment = entity.id;
             return linkUri.Uri.ToString();
+        }
+
+        private string getLinkToEntity(ObsDatastream entity)
+        {
+            var linkUri = new UriBuilder(this.AppHostedAt);
+            linkUri.Path = String.Format("Select/Datastream");
+            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            linkUri.Fragment = "Datastreams";
+            return linkUri.Uri.ToString();            
+        }
+
+        private string getLinkToEntity(ObsToken entity)
+        {
+            var linkUri = new UriBuilder(this.AppHostedAt);
+            linkUri.Path = String.Format("Select/Datastream");
+            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            linkUri.Fragment = "Tokens";
+            return linkUri.Uri.ToString();            
         }
 
         private string escapeGraphVizObjectNameForSubGraph(string potentialName)
@@ -1560,20 +1852,56 @@ namespace Observe.EntityExplorer
             {
                 return "🎫";
             }
-            if (obsCompositeObject is ObsDashboard)
+            else if (obsCompositeObject is ObsDashboard)
             {
                 return "📈";
             }
-            if (obsCompositeObject is ObsMonitor)
+            else if (obsCompositeObject is ObsMonitor)
             {
                 return "📟";
             }
-            if (obsCompositeObject is ObsWorksheet)
+            else if (obsCompositeObject is ObsMonitor2)
+            {
+                return "📱";
+            }
+            else if (obsCompositeObject is ObsWorksheet)
             {
                 return "📝";
             }
+            else if (obsCompositeObject is ObsDatastream)
+            {
+                return "🌊";
+            }
+            else if (obsCompositeObject is ObsToken)
+            {
+                return "🎟️";
+            }
             return "❓";
+        }
 
+        internal string getIconType(ObsRBACObject obsRBACObject)
+        {
+            if (obsRBACObject is ObsUser)
+            {
+                return "🧑";
+            }
+            else if (obsRBACObject is ObsRBACGroup)
+            {
+                return "🧑‍🤝‍🧑";
+            }
+            else if (obsRBACObject is ObsRBACGroupMember)
+            {
+                return "👛";
+            }
+            else if (obsRBACObject is ObsRBACStatement)
+            {
+                return "🎟️";
+            }
+            else if (obsRBACObject is ObsRBACObject)
+            {
+                return "🛂";
+            }
+            return "❓";
         }
 
         internal string getIconType(ObsDataset obsDataset)
@@ -1581,6 +1909,14 @@ namespace Observe.EntityExplorer
             return obsDataset.kind switch
             {
                 "Interval" => "⏲", "Event" => "📅", "Resource" => "🗃", "Table" => "🧇", _ => "❓"
+            };
+        }
+
+        internal string getIconTokenType(ObsToken obsToken)
+        {
+            return obsToken.kind switch
+            {
+                "token" => "🏷️", "filedrop" => "📂", "poller" => "🗳️", _ => "❓"
             };
         }
 
@@ -1647,10 +1983,33 @@ namespace Observe.EntityExplorer
             };
         }
 
-
         internal string getIconEnabled(ObsMonitor obsMonitor)
         {
             return obsMonitor.IsEnabled switch
+            {
+                true => "✅", false => "❌"
+            };
+        }
+
+        internal string getIconEnabled(ObsMonitor2 obsMonitor)
+        {
+            return obsMonitor.IsEnabled switch
+            {
+                true => "✅", false => "❌"
+            };
+        }
+
+        internal string getIconEnabled(ObsDatastream obsDatastream)
+        {
+            return obsDatastream.IsEnabled switch
+            {
+                true => "✅", false => "❌"
+            };
+        }
+
+        internal string getIconEnabled(ObsToken obsDatastreamToken)
+        {
+            return obsDatastreamToken.IsEnabled switch
             {
                 true => "✅", false => "❌"
             };
@@ -1686,6 +2045,26 @@ namespace Observe.EntityExplorer
             {
                 "Event" => "event", "Resource" => "resource", "Interval" => "event", "Table" => "event",_ => "fallthroughdonttknow"
             };
+        }
+
+        internal string getMonitorv2URLPartType(ObsMonitor2 obsMonitor)
+        {
+            if ((obsMonitor.ObjectType & ObsCompositeObjectType.MetricThresholdMonitor) == ObsCompositeObjectType.MetricThresholdMonitor)
+            {
+                return "threshold";
+            }
+            else if ((obsMonitor.ObjectType & ObsCompositeObjectType.ResourceCountThresholdMonitor) == ObsCompositeObjectType.ResourceCountThresholdMonitor)
+            {
+                return "threshold";
+            }
+            else if ((obsMonitor.ObjectType & ObsCompositeObjectType.PromotionMonitor) == ObsCompositeObjectType.PromotionMonitor)
+            {
+                return "threshold";
+            }
+            else
+            {
+                return ""; 
+            }
         }
 
         #endregion
@@ -1774,7 +2153,7 @@ namespace Observe.EntityExplorer
                     JObject dashboardObject = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchObject, "dashboard"); 
                     if (dashboardObject != null)
                     {
-                        ObsDashboard dashboard = new ObsDashboard(dashboardObject, currentUser);
+                        ObsDashboard dashboard = new ObsDashboard(dashboardObject);
 
                         dashboardsList.Add(dashboard);
 
@@ -1808,7 +2187,7 @@ namespace Observe.EntityExplorer
 
                 foreach (JObject entitySearchObject in entitySearchArray)
                 {
-                    ObsMonitor monitor = new ObsMonitor(entitySearchObject, currentUser);
+                    ObsMonitor monitor = new ObsMonitor(entitySearchObject);
 
                     monitorsList.Add(monitor);
 
@@ -1817,6 +2196,44 @@ namespace Observe.EntityExplorer
                 }
                 
                 monitorsList = monitorsList.OrderBy(d => d.package).ThenBy(d => d.name).ToList();
+            }
+
+            return monitorsList;
+        }        
+
+        internal List<ObsMonitor2> getAllMonitors2(AuthenticatedUser currentUser)
+        {
+            string entitySearchResults = ObserveConnection.monitorv2Search_all(currentUser, currentUser.WorkspaceID);
+            if (entitySearchResults.Length == 0)
+            {
+                throw new InvalidDataException(String.Format("Invalid response on monitorv2Search_all for {0}", currentUser));
+            }
+
+            JObject entitySearchResultsObject = JObject.Parse(entitySearchResults);
+            JObject entitySearchObjectContainer = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "searchMonitorV2");
+
+            List<ObsMonitor2> monitorsList = new List<ObsMonitor2>(0);
+            if (entitySearchObjectContainer != null)
+            {
+                JArray entitySearchArray = (JArray)JSONHelper.getJTokenValueFromJToken(entitySearchObjectContainer, "results");
+
+                if (entitySearchArray != null)
+                {
+                    monitorsList = new List<ObsMonitor2>(entitySearchArray.Count);
+                    logger.Info("Number of Monitors2={0}", entitySearchArray.Count);
+
+                    foreach (JObject entitySearchObject in entitySearchArray)
+                    {
+                        ObsMonitor2 monitor2 = new ObsMonitor2(entitySearchObject);
+
+                        monitorsList.Add(monitor2);
+
+                        logger.Trace("Monitor2={0}", monitor2);
+                        loggerConsole.Trace("Found {0}", monitor2);
+                    }
+                    
+                    monitorsList = monitorsList.OrderBy(d => d.package).ThenBy(d => d.name).ToList();
+                }
             }
 
             return monitorsList;
@@ -1844,7 +2261,7 @@ namespace Observe.EntityExplorer
                     JObject dashboardObject = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchObject, "worksheet"); 
                     if (dashboardObject != null)
                     {
-                        ObsWorksheet worksheet = new ObsWorksheet(dashboardObject, currentUser);
+                        ObsWorksheet worksheet = new ObsWorksheet(dashboardObject);
 
                         worksheetsList.Add(worksheet);
 
@@ -1859,6 +2276,39 @@ namespace Observe.EntityExplorer
             return worksheetsList;
         }
 
+        private List<ObsDatastream> getAllDatastreamsAndTokens(AuthenticatedUser currentUser)
+        {
+            string entitySearchResults = ObserveConnection.datastreams_all(currentUser, currentUser.WorkspaceID);
+            if (entitySearchResults.Length == 0)
+            {
+                throw new InvalidDataException(String.Format("Invalid response on datastreams_all for {0}", currentUser));
+            }
+
+            JObject entitySearchResultsObject = JObject.Parse(entitySearchResults);
+            JArray entitySearchArray = (JArray)JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "datastreams");
+
+            List<ObsDatastream> datastreamList = new List<ObsDatastream>(0);
+            if (entitySearchArray != null)
+            {
+                datastreamList = new List<ObsDatastream>(entitySearchArray.Count);
+                logger.Info("Number of Datastreams={0}", entitySearchArray.Count);
+
+                foreach (JObject entitySearchObject in entitySearchArray)
+                {
+                    ObsDatastream datastream = new ObsDatastream(entitySearchObject);
+
+                    datastreamList.Add(datastream);
+
+                    logger.Trace("Datastream={0}", datastream);
+                    loggerConsole.Trace("Found {0}", datastream);
+                }
+                
+                datastreamList = datastreamList.OrderBy(d => d.name).ToList();
+            }
+
+            return datastreamList;
+        }
+
         private ObsWorksheet getWorksheet(AuthenticatedUser currentUser, string worksheetId)
         {
             string entitySearchResults = ObserveConnection.worksheet_single(currentUser, worksheetId);
@@ -1871,7 +2321,7 @@ namespace Observe.EntityExplorer
             JObject worksheetObject = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "worksheet");
             if (worksheetObject != null)
             {
-                ObsWorksheet worksheet = new ObsWorksheet(worksheetObject, currentUser);
+                ObsWorksheet worksheet = new ObsWorksheet(worksheetObject);
 
                 logger.Trace("Worksheet={0}", worksheet);
                 loggerConsole.Trace("Found {0}", worksheet);

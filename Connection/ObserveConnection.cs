@@ -1207,6 +1207,15 @@ namespace Observe.EntityExplorer
       iconUrl
       workspaceId
       managedById
+      managedBy {
+        id
+        name
+        description
+        iconUrl
+        workspaceId
+        managedById
+        __typename
+      }    
       __typename
     }
     ... on AuditedObject {
@@ -1226,16 +1235,6 @@ namespace Observe.EntityExplorer
       }
       __typename
     }
-    managedById
-    managedBy {
-      id
-      name
-      description
-      iconUrl
-      workspaceId
-      managedById
-      __typename
-    }    
     comment
     isTemplate
     source
@@ -1525,6 +1524,427 @@ fragment ChannelActionUnknown on UnknownAction {
             }
         }
 
+        public static string monitorv2Search_all(AuthenticatedUser currentUser, string workspaceId)
+        {
+            string graphQLQuery = @"query MonitorV2InfoSearch($workspaceId: ObjectId, $folderId: ObjectId, $nameExact: String, $nameSubstring: String) {
+  searchMonitorV2(
+    workspaceId: $workspaceId
+    folderId: $folderId
+    nameExact: $nameExact
+    nameSubstring: $nameSubstring
+  ) {
+    results {
+      ... on WorkspaceObject {
+        id
+        name
+        description
+        iconUrl
+        workspaceId
+        managedById
+        managedBy {
+          id
+          name
+          description
+          iconUrl
+          workspaceId
+          managedById
+          __typename
+        }
+        __typename
+      }
+      ... on AuditedObject {
+        createdDate
+        createdByInfo {
+          userId
+          userLabel
+          userTimezone
+          __typename
+        }
+        updatedDate
+        updatedByInfo {
+          userId
+          userLabel
+          userTimezone
+          __typename
+        }
+        __typename
+      }
+      description
+      disabled
+      ruleKind
+      meta {
+        ... on MonitorV2Meta {
+          lastRunStats {
+            ... on MonitorV2Stats {
+              monitorID
+              outputDatasetID
+              dataFreshnessTime
+              stabilityBookmarkTime
+              windowStart
+              windowEnd
+              enqueueTime
+              startTime
+              endTime
+              numDatasetRows
+              numPackedAlarmStates
+              numEventsGenerated
+              evaluationID
+              __typename
+            }
+            __typename
+          }
+          isInactive
+          lastErrorTime
+          lastWarningTime
+          lastAlarmTime
+          nextScheduledTime
+          lastScheduleBookmark
+          outputDatasetID
+          alertSchema {
+            columns {
+              ... on MonitorV2Column {
+                columnType {
+                  tag
+                  __typename
+                }
+                linkColumn {
+                  name
+                  meta {
+                    srcFields {
+                      name
+                      path
+                      __typename
+                    }
+                    dstFields
+                    targetDataset
+                    __typename
+                  }
+                  __typename
+                }
+                columnPath {
+                  name
+                  path
+                  __typename
+                }
+                __typename
+              }
+              __typename
+            }
+            __typename
+          }
+        }
+        __typename
+      }
+      definition {
+        ... on MonitorV2Definition {
+          inputQuery {
+            outputStage
+            stages {
+              id
+              params
+              pipeline
+              layout
+              input {
+                inputName
+                inputRole
+                datasetId
+                datasetPath
+                stageId
+                __typename
+              }
+              __typename
+            }
+          }
+          lookbackTime
+          dataStabilizationDelay
+          maxAlertsPerHour
+          groupings {
+            ... on MonitorV2Column {
+              columnType {
+                tag
+                __typename
+              }
+              linkColumn {
+                name
+                meta {
+                  srcFields {
+                    name
+                    path
+                    __typename
+                  }
+                  dstFields
+                  targetDataset
+                  __typename
+                }
+                __typename
+              }
+              columnPath {
+                name
+                path
+                __typename
+              }
+              __typename
+            }
+          }
+          scheduling {
+            ... on MonitorV2Scheduling {
+              transform {
+                freshnessGoal
+                __typename
+              }
+              __typename
+            }
+          }
+          __typename
+        }
+        __typename
+      }
+      actionRules {
+        ... on MonitorV2ActionRule {
+          actionID
+          levels
+          conditions {
+            compareTerms {
+              comparison {
+                compareFn
+                compareValue {
+                  bool
+                  float64
+                  int64
+                  string
+                  timestamp
+                  duration
+                  __typename
+                }
+                __typename
+              }
+              column {
+                columnType {
+                  tag
+                  __typename
+                }
+                linkColumn {
+                  name
+                  meta {
+                    srcFields {
+                      name
+                      path
+                      __typename
+                    }
+                    dstFields
+                    targetDataset
+                    __typename
+                  }
+                  __typename
+                }
+                columnPath {
+                  name
+                  path
+                  __typename
+                }
+                __typename
+              }
+              __typename
+            }
+          }
+          sendEndNotifications
+          sendRemindersInterval
+          definition {
+            ... on MonitorV2ActionDefinition {
+              inline
+              type
+              email {
+                users
+                addresses
+                subject
+                body
+                fragments
+                __typename
+              }
+              webhook {
+                url
+                method
+                headers {
+                  header
+                  value
+                }
+                body
+                fragments
+                __typename
+              }
+            }
+          }
+        }
+      }
+      activeAlarms {
+        __typename
+      }
+      activeAlarmCount
+      mutes {
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}";
+
+            JObject queryObject = new JObject();
+            queryObject.Add("query", graphQLQuery);
+            JObject idObject = new JObject();
+            idObject.Add("workspaceId", workspaceId);
+            queryObject.Add("variables", idObject);
+            
+            string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
+
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/meta",
+                "application/json", 
+                queryBody,
+                "application/json",
+                currentUser.CustomerName, 
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
+        }
+
+        public static string monitorv2ActionsSearch_all(AuthenticatedUser currentUser, string workspaceId)
+        {
+            string graphQLQuery = @"query MonitorV2SearchAction($workspaceId: ObjectId, $folderId: ObjectId, $nameExact: String, $nameSubstring: String) {
+  searchMonitorV2Action(
+    workspaceId: $workspaceId
+    folderId: $folderId
+    nameExact: $nameExact
+    nameSubstring: $nameSubstring
+  ) {
+    results {
+      ...MonitorV2Action
+      __typename
+    }
+    __typename
+  }
+}
+
+fragment WorkspaceEntity on WorkspaceObject {
+  id
+  name
+  description
+  iconUrl
+  workspaceId
+  managedById
+  __typename
+}
+
+fragment UserInfo on UserInfo {
+  userLabel
+  userId
+  userTimezone
+  __typename
+}
+
+fragment AuditedEntity on AuditedObject {
+  createdBy
+  createdDate
+  createdByInfo {
+    ...UserInfo
+    __typename
+  }
+  updatedBy
+  updatedDate
+  updatedByInfo {
+    ...UserInfo
+    __typename
+  }
+  __typename
+}
+
+fragment FolderEntity on FolderObject {
+  folderId
+  __typename
+}
+
+fragment MonitorV2EmailAction on MonitorV2EmailAction {
+  subject
+  body
+  fragments
+  users
+  addresses
+  __typename
+}
+
+fragment MonitorV2WebhookHeader on MonitorV2WebhookHeader {
+  header
+  value
+  __typename
+}
+
+fragment MonitorV2WebhookAction on MonitorV2WebhookAction {
+  headers {
+    ...MonitorV2WebhookHeader
+    __typename
+  }
+  body
+  fragments
+  url
+  method
+  __typename
+}
+
+fragment MonitorV2Action on MonitorV2Action {
+  ...WorkspaceEntity
+  ...AuditedEntity
+  ...FolderEntity
+  id
+  inline
+  type
+  email {
+    ...MonitorV2EmailAction
+    __typename
+  }
+  webhook {
+    ...MonitorV2WebhookAction
+    __typename
+  }
+  __typename
+}";
+
+            JObject queryObject = new JObject();
+            queryObject.Add("query", graphQLQuery);
+            JObject idObject = new JObject();
+            idObject.Add("workspaceId", workspaceId);
+            queryObject.Add("variables", idObject);
+            
+            string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
+
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/meta",
+                "application/json", 
+                queryBody,
+                "application/json",
+                currentUser.CustomerName, 
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
+        }
+
         #endregion
 
         #region Worksheets Metadata
@@ -1770,6 +2190,298 @@ fragment ChannelActionUnknown on UnknownAction {
             queryObject.Add("query", graphQLQuery);
             JObject idObject = new JObject();
             idObject.Add("id", worksheetId);
+            queryObject.Add("variables", idObject);
+            
+            string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
+
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/meta",
+                "application/json", 
+                queryBody,
+                "application/json",
+                currentUser.CustomerName, 
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
+        }
+
+        #endregion
+
+        #region Datastreams and Tokens Metadata
+
+        public static string datastreams_all(AuthenticatedUser currentUser, string workspaceId)
+        {
+            string graphQLQuery = @"query datastreams($workspaceId: ObjectId!, $appId: ObjectId, $moduleId: String) {
+  datastreams(workspaceId: $workspaceId) {
+    ...DataStream
+    __typename
+  }
+}
+
+fragment WorkspaceEntity on WorkspaceObject {
+  id
+  name
+  description
+  iconUrl
+  workspaceId
+  managedById
+  __typename
+}
+
+fragment UserInfo on UserInfo {
+  userLabel
+  userId
+  userTimezone
+  __typename
+}
+
+fragment AuditedEntity on AuditedObject {
+  createdBy
+  createdDate
+  createdByInfo {
+    ...UserInfo
+    __typename
+  }
+  updatedBy
+  updatedDate
+  updatedByInfo {
+    ...UserInfo
+    __typename
+  }
+  __typename
+}
+
+fragment DatastreamSourceAppMetadata on DatastreamSourceAppMetadata {
+  appId
+  moduleId
+  instructions
+  datasourceName
+  __typename
+}
+
+fragment DataStreamSourceStats on DatastreamSourceStats {
+  firstIngest
+  lastIngest
+  lastError
+  observations {
+    time
+    value
+    __typename
+  }
+  volumeBytes {
+    time
+    value
+    __typename
+  }
+  errors {
+    time
+    message
+    code
+    __typename
+  }
+  __typename
+}
+
+fragment DataStreamToken on DatastreamToken {
+  id
+  name
+  description
+  datastreamId
+  appMetadata {
+    ...DatastreamSourceAppMetadata
+    __typename
+  }
+  createdBy
+  disabled
+  createdByInfo {
+    userId
+    userLabel
+    __typename
+  }
+  updatedBy
+  updatedByInfo {
+    userId
+    userLabel
+    __typename
+  }
+  createdDate
+  updatedDate
+  stats {
+    ...DataStreamSourceStats
+    __typename
+  }
+  secret
+  managedById
+  __typename
+}
+
+fragment AppVariable on AppVariable {
+  name
+  type
+  description
+  required
+  sensitive
+  default
+  value
+  __typename
+}
+
+fragment DataStreamPollerAppMetadata on PollerAppMetadata {
+  ...DatastreamSourceAppMetadata
+  sourceUrl
+  variables {
+    ...AppVariable
+    __typename
+  }
+  __typename
+}
+
+fragment DataStreamPoller on Poller {
+  ...WorkspaceEntity
+  ...AuditedEntity
+  kind
+  customerId
+  datastreamId
+  datastreamTokenId
+  disabled
+  stats {
+    ...DataStreamSourceStats
+    __typename
+  }
+  appMetadata {
+    ...DataStreamPollerAppMetadata
+    __typename
+  }
+  __typename
+}
+
+fragment DataStreamFiledropConfig on FiledropConfig {
+  provider {
+    type
+    ... on FiledropProviderAwsConfig {
+      region
+      roleArn
+      __typename
+    }
+    __typename
+  }
+  __typename
+}
+
+fragment DataStreamFiledropEndpoint on FiledropEndpoint {
+  type
+  ... on FiledropS3Endpoint {
+    arn
+    bucket
+    prefix
+    __typename
+  }
+  __typename
+}
+
+fragment DataStreamFiledrop on Filedrop {
+  ...WorkspaceEntity
+  ...AuditedEntity
+  status
+  datastreamID
+  datastreamTokenID
+  disabled
+  config {
+    ...DataStreamFiledropConfig
+    __typename
+  }
+  endpoint {
+    ...DataStreamFiledropEndpoint
+    __typename
+  }
+  stats {
+    ...DataStreamSourceStats
+    __typename
+  }
+  __typename
+}
+
+fragment DataStream on Datastream {
+  ...WorkspaceEntity
+  ...AuditedEntity
+  customerId
+  datasetId
+  state
+  tokens(appId: $appId, moduleId: $moduleId) {
+    ...DataStreamToken
+    __typename
+  }
+  pollers(appId: $appId, moduleId: $moduleId) {
+    ...DataStreamPoller
+    __typename
+  }
+  filedrops {
+    ...DataStreamFiledrop
+    __typename
+  }
+  stats {
+    firstIngest
+    lastIngest
+    lastError
+    numTokens
+    observations {
+      time
+      value
+      __typename
+    }
+    volumeBytes {
+      time
+      value
+      __typename
+    }
+    totalObservations
+    totalVolumeBytes
+    __typename
+  }
+  directWrite {
+    prometheus {
+      datasetId
+      metadataDatasetId
+      __typename
+    }
+    otelLogs {
+      datasetId
+      __typename
+    }
+    k8sEntity {
+      datasetId
+      __typename
+    }
+    otelTrace {
+      spanDatasetId
+      spanEventDatasetId
+      __typename
+    }
+    __typename
+  }
+  effectiveSettings {
+    dataRetention {
+      periodDays
+      __typename
+    }
+    __typename
+  }
+  __typename
+}";
+
+            JObject queryObject = new JObject();
+            queryObject.Add("query", graphQLQuery);
+            JObject idObject = new JObject();
+            idObject.Add("workspaceId", workspaceId);
             queryObject.Add("variables", idObject);
             
             string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);

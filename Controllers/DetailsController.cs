@@ -92,6 +92,69 @@ public class DetailsController : Controller
         }
     }
 
+    public IActionResult DatasetOpalExplorer(
+        string userid,
+        string id)
+    {
+        Stopwatch stopWatch = new Stopwatch();
+        stopWatch.Start();
+
+        try
+        {
+            AuthenticatedUser currentUser = this.CommonControllerMethods.GetUser(userid);
+            if (currentUser == null)
+            {
+                return RedirectToAction("Connect", "Connection");
+            }
+            ObserveEnvironment observeEnvironment = this.CommonControllerMethods.GetObserveEnvironment(currentUser);
+            if (observeEnvironment == null)
+            {
+                throw new Exception("Unable to retrieve the Observe Environment from cache or server");
+            }
+            DetailsDatasetViewModel viewModel = new DetailsDatasetViewModel(currentUser, observeEnvironment);
+
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+
+            switch (HttpContext.Request.Method)
+            {
+                case "GET":
+                    ObsDataset thisDataset = null;
+                    if (observeEnvironment.AllDatasetsDict.TryGetValue(id, out thisDataset) == false)
+                    {
+                        throw new KeyNotFoundException(String.Format("Unable to retrieve the Observe Dataset {0} from Observe Environment", id));
+                    }
+                    observeEnvironment.PopulateDatasetStages(currentUser, thisDataset);
+                    viewModel.CurrentDataset = thisDataset;
+                     
+                    break;
+
+                case "POST":
+                    break;
+            }
+
+            CommonControllerMethods.enrichTrace(viewModel.CurrentDataset);
+
+            return View(viewModel);
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, ex.Message);
+            loggerConsole.Error(ex, ex.Message);
+
+            ViewData["ErrorMessage"] = ex.Message;
+
+            return View(new DetailsDatasetViewModel(null, null));
+        }
+        finally
+        {
+            stopWatch.Stop();
+
+            logger.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+            loggerConsole.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+        }
+    }
+
     public IActionResult Monitor(
         string userid,
         string id)
@@ -143,7 +206,69 @@ public class DetailsController : Controller
 
             ViewData["ErrorMessage"] = ex.Message;
 
-            return View(new DetailsDashboardViewModel(null, null));
+            return View(new DetailsMonitorViewModel(null, null));
+        }
+        finally
+        {
+            stopWatch.Stop();
+
+            logger.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+            loggerConsole.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+        }
+    }
+
+    public IActionResult Monitor2(
+        string userid,
+        string id)
+    {
+        Stopwatch stopWatch = new Stopwatch();
+        stopWatch.Start();
+
+        try
+        {
+            AuthenticatedUser currentUser = this.CommonControllerMethods.GetUser(userid);
+            if (currentUser == null)
+            {
+                return RedirectToAction("Connect", "Connection");
+            }
+            ObserveEnvironment observeEnvironment = this.CommonControllerMethods.GetObserveEnvironment(currentUser);
+            if (observeEnvironment == null)
+            {
+                throw new Exception("Unable to retrieve the Observe Environment from cache or server");
+            }
+            DetailsMonitor2ViewModel viewModel = new DetailsMonitor2ViewModel(currentUser, observeEnvironment);
+
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+
+            switch (HttpContext.Request.Method)
+            {
+                case "GET":
+                    ObsMonitor2 thisMonitor = null;
+                    if (observeEnvironment.AllMonitors2Dict.TryGetValue(id, out thisMonitor) == false)
+                    {
+                        throw new KeyNotFoundException(String.Format("Unable to retrieve the Observe Monitor {0} from Observe Environment", id));
+                    }
+                    viewModel.CurrentMonitor = thisMonitor;
+                     
+                    break;
+
+                case "POST":
+                    break;
+            }
+
+            CommonControllerMethods.enrichTrace(viewModel.CurrentMonitor);
+
+            return View(viewModel);
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, ex.Message);
+            loggerConsole.Error(ex, ex.Message);
+
+            ViewData["ErrorMessage"] = ex.Message;
+
+            return View(new DetailsMonitor2ViewModel(null, null));
         }
         finally
         {
