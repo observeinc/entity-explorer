@@ -7,9 +7,9 @@
     <RootNamespace>Observe.EntityExplorer</RootNamespace>
     <ApplicationIcon>AppIcon.ico</ApplicationIcon>
 
-    <Version>2025.1.30.0</Version>
-    <FileVersion>2025.1.30.0</FileVersion>
-    <AssemblyVersion>2025.1.30.0</AssemblyVersion>
+    <Version>2025.1.31.0</Version>
+    <FileVersion>2025.1.31.0</FileVersion>
+    <AssemblyVersion>2025.1.31.0</AssemblyVersion>
     <Authors>Daniel Odievich (daniel.odievich@observeinc.com)</Authors>
     <Company>Observe Inc.</Company>
     <Product>Observe Entity Explorer</Product>

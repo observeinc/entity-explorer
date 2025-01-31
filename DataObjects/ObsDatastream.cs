@@ -89,7 +89,12 @@ namespace Observe.EntityExplorer.DataObjects
             {
                 foreach (JObject datastreamTokenObject in datastreamTokensArray)
                 {
-                    this.Tokens.Add(new ObsToken(datastreamTokenObject, this));
+                    // Doing defensive coding here for the times when same token might be returned twice by our api
+                    ObsToken token = new ObsToken(datastreamTokenObject, this);
+                    if (this.Tokens.Exists(t => t.id == token.id) == false)
+                    {
+                        this.Tokens.Add(token);
+                    }
                 }
             }
             JArray datastreamPollersArray = (JArray)JSONHelper.getJTokenValueFromJToken(entityObject, "pollers");

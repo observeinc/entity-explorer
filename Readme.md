@@ -120,7 +120,7 @@ You can change the port of the web site in `Kestrel.Endpoints.Http.Url` property
 
 ## Connect Options
 
-Authenticate options:
+### How to Authenticate
 
 * Account can be either
   * Full URL of the environment `https://#####.observeinc.com`
@@ -155,13 +155,13 @@ To connect with delegation, you must have > Reader role. If you have it:
 
 ![Connect Delegate](/docs/screenshots/authetication/ConnectDelegate.png?raw=true)
 
-## Connect with Multiple Accounts
+### Connect with Multiple Accounts
 
-You can open new tab with different connection ID.
+You can open new tab with different connection ID and watch multiple accounts at once.
 
 ![Multiple Connections](/docs/screenshots/authetication/ConnectSaved.png?raw=true)
 
-## Summary Page
+## Environment Summary
 
 Summary screen shows numbers and types of entities in your Observe environment and links to the detail pages to get more information.
 
@@ -364,8 +364,6 @@ List of all worksheets using this dataset.
 
 ## Dashboard Detail
 
-### Summary - Dashboard
-
 Summary information about the dashboard.
 
 ![Dashboard Details](/docs/screenshots/details/dashboard/DashboardDetails.png?raw=true)
@@ -383,7 +381,6 @@ Visual diagram showing relationship between datasets related to this dashboard.
 Information about each parameter in the dashboard.
 
 ![Dashboard Parameters](/docs/screenshots/details/dashboard/DashboardParameters.png?raw=true)
-
 
 Information about each stage in the dashboard. You can click "Show/Hide input and output tables" to remove details and just focus on OPAL code. You can click "Show/Hide dashboard widget image preview" to remove images and just focus on OPAL code.
 
