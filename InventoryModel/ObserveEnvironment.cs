@@ -205,8 +205,10 @@ namespace Observe.EntityExplorer
             this.ObserveObjects.AddRange(allDatastreams);
             this.ObserveObjects.AddRange(allDatastreamTokens);
             
-            this.AllTokensDict = allDatastreamTokens.ToDictionary(d => d.id, d => d);
+            //this.AllTokensDict = allDatastreamTokens.ToDictionary(d => d.id, d => d);
 
+            this.AllTokensDict = allDatastreamTokens.ToDictionary(d => String.Format("{0}-{1}", d.id, d.Parent.id), d => d);
+            
             #endregion
 
             #region Dataset and Monitor datasets acceleration info

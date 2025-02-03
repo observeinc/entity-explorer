@@ -102,7 +102,11 @@ namespace Observe.EntityExplorer.DataObjects
             {
                 foreach (JObject datastreamTokenObject in datastreamPollersArray)
                 {
-                    this.Tokens.Add(new ObsToken(datastreamTokenObject, this));
+                    ObsToken token = new ObsToken(datastreamTokenObject, this);
+                    if (this.Tokens.Exists(t => t.id == token.id) == false)
+                    {
+                        this.Tokens.Add(token);
+                    }
                 }
             }
             JArray datastreamFiledropsArray = (JArray)JSONHelper.getJTokenValueFromJToken(entityObject, "filedrops");
@@ -110,7 +114,11 @@ namespace Observe.EntityExplorer.DataObjects
             {
                 foreach (JObject datastreamTokenObject in datastreamFiledropsArray)
                 {
-                    this.Tokens.Add(new ObsToken(datastreamTokenObject, this));
+                    ObsToken token = new ObsToken(datastreamTokenObject, this);
+                    if (this.Tokens.Exists(t => t.id == token.id) == false)
+                    {
+                        this.Tokens.Add(token);
+                    }
                 }
             }
             foreach (ObsToken token in this.Tokens)
