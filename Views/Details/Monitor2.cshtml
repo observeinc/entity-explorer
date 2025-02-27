@@ -24,6 +24,7 @@
 
 <p>
     <a href="#RelatedDatasetsAncestors">⏫ Ancestors/Inputs</a> 
+    <a href="#RelatedDatasetsSupporting">⏬ Supporting</a> 
     <a href="#RelatedDatasetsGraph">🔀 Related Datasets Graph</a>
     <a href="#Stages">🏛️ Stages</a>
     <a href="#StagesGraph">⛲ Stages Graph</a>
@@ -275,6 +276,49 @@
         </table>
     }
 }
+
+@{
+    List<ObjectRelationship> descendantRelationships = Model.ObserveEnvironment.GetAllMonitorSupportDatasetRelationships(@Model.CurrentMonitor);
+    if (descendantRelationships.Count > 0)
+    {
+        <h2 id="RelatedDatasetsSupporting">⏬ Supporting</h2>
+        <a href="#top">Back to Top</a>
+
+        <table class="AlternatingRowTable SortableTable">
+            <thead>
+                <th>View</th>
+                <th>Data</th>
+                <th>Edit</th>
+                <th>Type</th>
+                <th>Origin</th>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Relationship</th>
+            </thead>
+            <tbody>
+            @foreach (ObjectRelationship objectRelationship in descendantRelationships)
+            {
+                if (objectRelationship.RelatedObject is ObsDataset)
+                {
+                    ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
+
+                    <tr>
+                        <td>@Html.ActionLink("🎫 View", "Dataset", "Details", new { id= entityRelated.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+                        <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entityRelated), entityRelated.id)">📄 Data</a></td>
+                        <td><a href="@String.Format("{0}workspace/{1}/definition/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entityRelated.id)">🛠️ Edit</a></td>
+                        <td>@Model.ObserveEnvironment.getIconType(entityRelated) @entityRelated.kind</td>
+                        <td>@Model.ObserveEnvironment.getIconOriginType(entityRelated) <span title="@entityRelated.source">@entityRelated.OriginType</span></td>
+                        <td>@entityRelated.id</td>
+                        <td><span title="@entityRelated.description">@entityRelated.name</span></td>
+                        <td>@objectRelationship.RelationshipType</td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    }
+}
+
 
 <h2 id="RelatedDatasetsGraph">🔀 Related Datasets Graph</h2>
 <a href="#top">Back to Top</a>

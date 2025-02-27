@@ -146,6 +146,21 @@ namespace Observe.EntityExplorer.DataObjects
             this.IsEnabled = !JSONHelper.getBoolValueFromJToken(entityObject, "disabled");
         }
 
+        public void AddSupportingDataset(Dictionary<string, ObsDataset> allDatasetsDict)
+        {
+            JObject entityObject = this._raw;
+
+            JObject metaObject = (JObject)JSONHelper.getJTokenValueFromJToken(entityObject , "meta");
+            if (metaObject != null)
+            {
+                ObsDataset supportingDataset = null;
+                if (allDatasetsDict.TryGetValue(JSONHelper.getStringValueFromJToken(metaObject, "outputDatasetID"), out supportingDataset) == true)
+                {
+                    this.ExternalObjectRelationships.Add(new ObjectRelationship(String.Format("{0} to {1} as {2}", supportingDataset.ToString(), this, ObsObjectRelationshipType.ProvidesData), this, supportingDataset, ObsObjectRelationshipType.ProvidesData));
+                }
+            }
+        }
+
         public void AddStages(Dictionary<string, ObsDataset> allDatasetsDict)
         {
             JObject entityObject = this._raw;

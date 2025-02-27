@@ -130,6 +130,7 @@ namespace Observe.EntityExplorer
             // Enrich their parameters and relationships
             foreach (ObsMonitor2 monitor in allMonitors2)
             {
+                monitor.AddSupportingDataset(this.AllDatasetsDict);
                 monitor.AddStages(this.AllDatasetsDict);
                 monitor.PopulateExternalDatasetRelationships();
                 this.ObjectRelationships.AddRange(monitor.ExternalObjectRelationships);

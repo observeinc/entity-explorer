@@ -2895,7 +2895,7 @@ fragment DataStream on Datastream {
 
                 using (HttpClient httpClient = new HttpClient(httpClientHandler))
                 {
-                    httpClient.Timeout = new TimeSpan(0, 1, 0);
+                    httpClient.Timeout = new TimeSpan(0, 5, 0);
                     httpClient.BaseAddress = baseUri;
 
                     var productValue = new ProductInfoHeaderValue("Observe-Entity-Explorer", Assembly.GetExecutingAssembly().GetName().Version.ToString());
@@ -3019,7 +3019,7 @@ fragment DataStream on Datastream {
 
                 using (HttpClient httpClient = new HttpClient(httpClientHandler))
                 {
-                    httpClient.Timeout = new TimeSpan(0, 1, 0);
+                    httpClient.Timeout = new TimeSpan(0, 5, 0);
                     httpClient.BaseAddress = baseUri;
 
                     var productValue = new ProductInfoHeaderValue("Observe-Entity-Explorer", Assembly.GetExecutingAssembly().GetName().Version.ToString());
