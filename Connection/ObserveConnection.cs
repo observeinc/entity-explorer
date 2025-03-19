@@ -2708,33 +2708,6 @@ fragment DataStream on Datastream {
       comment
       expirationTime
       timezone
-      rbacGroups {
-        name
-        id
-        __typename
-      }
-      rbacStatements {
-        id
-        description
-        subject {
-          userId
-          groupId
-          all
-          __typename
-        }
-        object {
-          objectId
-          folderId
-          workspaceId
-          type
-          name
-          owner
-          all
-          __typename
-        }
-        role
-        __typename
-      }     
       __typename
     }
     __typename
