@@ -340,6 +340,8 @@ namespace Observe.EntityExplorer.DataObjects
                     this.Acceleration = new ObsAccelerationInfo(accelerationInfoObject, this, allDatasetsDict, allMonitorsDict);
                 }
             }
+
+            if (this.Acceleration == null) this.Acceleration = new ObsAccelerationInfo();
         }
 
         public List<ObjectRelationship> GetRelationshipsOfRelated(ObsStage interestingObject)
