@@ -1,9 +1,13 @@
 ﻿@using Observe.EntityExplorer.DataObjects;
+@using System.Text;
 
-@model Observe.EntityExplorer.Models.SearchResultsViewModel;
+@model Observe.EntityExplorer.Models.DetailsMetricViewModel;
 
 @{
-    ViewData["Title"] = "Code Search Results";
+    if (@Model.CurrentMetric != null)
+    {
+        ViewData["Title"] = String.Format("{0} ({1}) Metric Details", @Model.CurrentMetric.name, @Model.CurrentMetric.datasetName);
+    }
 }
 
 <p>
@@ -18,35 +22,109 @@
 
 @{
     List<ObsStage> datasetStages = Model.SearchResults.Where(s => s.Parent is ObsDataset).ToList();
-    List<ObsDataset> datasetsResults = datasetStages.Select(s => s.Parent).ToList().Cast<ObsDataset>().Distinct().ToList();
 
     List<ObsStage> dashboardStages = Model.SearchResults.Where(s => s.Parent is ObsDashboard).ToList();
-    List<ObsDashboard> dashboardResults = dashboardStages.Select(s => s.Parent).ToList().Cast<ObsDashboard>().Distinct().ToList();
 
     List<ObsStage> monitorStages = Model.SearchResults.Where(s => s.Parent is ObsMonitor).ToList();
-    List<ObsMonitor> monitorResults = monitorStages.Select(s => s.Parent).ToList().Cast<ObsMonitor>().Distinct().ToList();
 
     List<ObsStage> monitor2Stages = Model.SearchResults.Where(s => s.Parent is ObsMonitor2).ToList();
-    List<ObsMonitor2> monitor2Results = monitor2Stages.Select(s => s.Parent).ToList().Cast<ObsMonitor2>().Distinct().ToList();
 
     List<ObsStage> worksheetStages = Model.SearchResults.Where(s => s.Parent is ObsWorksheet).ToList();
-    List<ObsWorksheet> worksheetResults = worksheetStages.Select(s => s.Parent).ToList().Cast<ObsWorksheet>().Distinct().ToList();
 }
 
-<h1>🔎 Code Search Results</h1>
+<h1>@Model.ObserveEnvironment.getIconType(@Model.CurrentMetric) Metric Details - @Model.CurrentMetric.name (@Model.CurrentMetric.datasetName)</h1>
 
 <p>
-    <a href="#Datasets">@Model.ObserveEnvironment.getIconType(((ObsCompositeObject)new ObsDataset())) Datasets (@datasetsResults.Count / @datasetStages.Count)</a> 
-    <a href="#Dashboards">@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Dashboards (@dashboardResults.Count / @dashboardStages.Count)</a> 
-    <a href="#Monitors">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Monitors (legacy) (@monitorResults.Count / @monitorStages.Count)</a> 
-    <a href="#Monitors2">@Model.ObserveEnvironment.getIconType(new ObsMonitor2()) Monitors v2 (@monitor2Results.Count / @monitor2Stages.Count)</a> 
-    <a href="#Worksheets">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Worksheets (@worksheetResults.Count / @worksheetStages.Count)</a> 
+    <a href="#Datasets">@Model.ObserveEnvironment.getIconType(((ObsCompositeObject)new ObsDataset())) Datasets (@datasetStages.Count)</a> 
+    <a href="#Dashboards">@Model.ObserveEnvironment.getIconType(new ObsDashboard()) Dashboards (@dashboardStages.Count)</a> 
+    <a href="#Monitors">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Monitors (legacy) (@monitorStages.Count)</a> 
+    <a href="#Monitors2">@Model.ObserveEnvironment.getIconType(new ObsMonitor2()) Monitors v2 (@monitor2Stages.Count)</a> 
+    <a href="#Worksheets">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Worksheets (@worksheetStages.Count)</a> 
 </p>
 
 <table>
     <tr>
-        <td>Search Query</td>
-        <td><pre><code id="searchQuery" class="language-json">@Model.SearchQuery</code></pre></td>
+        <td>Observe</td>
+        <td>
+            <a href="@String.Format("{0}workspace/{1}/metric-explorer?datasetId={2}&metricName={3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentMetric.datasetId, @Model.CurrentMetric.name)">📄 Data</a></td>            
+        </td>
+    <tr>
+        <td>Name</td>
+        <td>
+            @Model.CurrentMetric.name in @Model.CurrentMetric.datasetName (@Model.CurrentMetric.datasetId)
+            <br/>
+            <code id="searchQuery" class="language-json">"@Model.CurrentMetric.name"</code>
+        </td>
+    </tr>
+    <tr>
+        <td>Dataset</td>
+        <td>
+            @Html.ActionLink("🎫 View", "Dataset", "Details", new { id=@Model.CurrentMetric.datasetId, userid=@Model.CurrentUser.UniqueID }, null) @Model.CurrentMetric.datasetName (@Model.CurrentMetric.datasetId)
+        </td>
+    </tr>
+    <tr>
+        <td>Description</td>
+        <td>@Model.CurrentMetric.description</td>
+    </tr>
+    <tr>
+        <td>Type</td>
+        <td>@Model.CurrentMetric.type</td>
+    </tr>
+    <tr>
+        <td>Unit</td>
+        <td>@Model.CurrentMetric.unit</td>
+    </tr>
+    <tr>
+        <td>Rollup</td>
+        <td>@Model.CurrentMetric.rollup</td>
+    </tr>
+    <tr>
+        <td>Aggregation</td>
+        <td>@Model.CurrentMetric.aggregate</td>
+    </tr>
+    <tr>
+        <td>Interval</td>
+        <td>@Model.CurrentMetric.interval</td>
+    </tr>
+    <tr>
+        <td>Bucket Size</td>
+        <td>@Model.CurrentMetric.suggestedBucketSize</td>
+    </tr>
+    <tr>
+        <td>State</td>
+        <td>@Model.CurrentMetric.state</td>
+    </tr>
+    <tr>
+        <td>Had set_options?</td>
+        <td>@Model.CurrentMetric.userDefined</td>
+    </tr>
+    <tr>
+        <td>Heuristics: Cardinality</td>
+        <td>@Model.CurrentMetric.cardinality</td>
+    </tr>
+    <tr>
+        <td>Heuristics: Number of Points</td>
+        <td>@Model.CurrentMetric.numPoints</td>
+    </tr>
+    <tr>
+        <td>Heuristics: Interval</td>
+        <td>@Model.CurrentMetric.discoveredInterval</td>
+    </tr>
+    <tr>
+        <td>Heuristics: Interval StdDev</td>
+        <td>@Model.CurrentMetric.discoveredIntervalStdDev</td>
+    </tr>
+    <tr>
+        <td>Last Reported</td>
+        <td>@Model.CurrentMetric.lastReported.ToString("u")</td>
+    </tr>
+    <tr>
+        <td>Tags</td>
+        <td colspan="2"><pre><code class="language-json">@Model.CurrentMetric.Tags</code></pre></td>
+    </tr>
+    <tr>
+        <td>Link Labels</td>
+        <td colspan="2"><pre><code class="language-json">@Model.CurrentMetric.LinkLabels</code></pre></td>
     </tr>
 </table>
 
@@ -62,7 +140,7 @@
     <table class="AlternatingRowTable">
         <tr>
             <td><input id="checkboxOPALPreview_@entity.id" type="checkbox" checked="true" value="Show/Hide OPAL" onclick="showOrHideOPALPreview(this, 'code_' + @entity.id)"/> <label for="checkboxOPALPreview_@entity.id">Show/Hide OPAL</label></td>
-            <td>@Html.ActionLink("🎫 View", "Dataset", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td>@Html.ActionLink("🎫 View", "Dataset", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = String.Format("\"{0}\"", @Model.CurrentMetric.name)}, null)</td>
             <td><a href="@String.Format("{0}workspace/{1}/dataset/{2}/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getDatasetURLPartType(entity), entity.id)">📄 Data</a></td>
             <td>@Model.ObserveEnvironment.getIconType(entity) @entity.kind</td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) <span title="@entity.source">@entity.OriginType</span></td>
@@ -84,7 +162,7 @@
     <table class="AlternatingRowTable">
         <tr>
             <td><input id="checkboxOPALPreview_@entity.id" type="checkbox" checked="true" value="Show/Hide OPAL" onclick="showOrHideOPALPreview(this, 'code_' + @entity.id)"/> <label for="checkboxOPALPreview_@entity.id">Show/Hide OPAL</label></td>
-            <td>@Html.ActionLink("📈 View", "Dashboard", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td>@Html.ActionLink("📈 View", "Dashboard", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = String.Format("\"{0}\"", @Model.CurrentMetric.name)}, null)</td>
             <td><a href="@String.Format("{0}workspace/{1}/dashboard/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">📄 Data</a></td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
             <td>@entity.id</td>
@@ -105,7 +183,7 @@
     <table class="AlternatingRowTable">
         <tr>
             <td><input id="checkboxOPALPreview_@entity.id" type="checkbox" checked="true" value="Show/Hide OPAL" onclick="showOrHideOPALPreview(this, 'code_' + @entity.id)"/> <label for="checkboxOPALPreview_@entity.id">Show/Hide OPAL</label></td>
-            <td>@Html.ActionLink("📟 View", "Monitor", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td>@Html.ActionLink("📟 View", "Monitor", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = String.Format("\"{0}\"", @Model.CurrentMetric.name)}, null)</td>
             <td><a href="@String.Format("{0}workspace/{1}/monitor/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">🛠️ Edit</a></td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
             <td>@entity.id</td>
@@ -127,7 +205,7 @@
     <table class="AlternatingRowTable">
         <tr>
             <td><input id="checkboxOPALPreview_@entity.id" type="checkbox" checked="true" value="Show/Hide OPAL" onclick="showOrHideOPALPreview(this, 'code_' + @entity.id)"/> <label for="checkboxOPALPreview_@entity.id">Show/Hide OPAL</label></td>
-            <td>@Html.ActionLink("📱 View", "Monitor2", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td>@Html.ActionLink("📱 View", "Monitor2", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = String.Format("\"{0}\"", @Model.CurrentMetric.name)}, null)</td>
             <td><a href="@String.Format("{0}workspace/{1}/{2}-monitor/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getMonitorv2URLPartType(entity), entity.id)">🛠️ Edit</a></td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
             <td>@entity.id</td>
@@ -148,7 +226,7 @@
     <table class="AlternatingRowTable">
         <tr>
             <td><input id="checkboxOPALPreview_@entity.id" type="checkbox" checked="true" value="Show/Hide OPAL" onclick="showOrHideOPALPreview(this, 'code_' + @entity.id)"/> <label for="checkboxOPALPreview_@entity.id">Show/Hide OPAL</label></td>
-            <td>@Html.ActionLink("📝 View", "Worksheet", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = @Model.SearchQuery}, null)</td>
+            <td>@Html.ActionLink("📝 View", "Worksheet", "Details", null, null, stage.id, new { id = entity.id, userid=@Model.CurrentUser.UniqueID, keyword = String.Format("\"{0}\"", @Model.CurrentMetric.name)}, null)</td>
             <td><a href="@String.Format("{0}workspace/{1}/worksheet/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.id)">📄 Data</a></td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
             <td>@entity.id</td>

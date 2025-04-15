@@ -22,11 +22,11 @@
     <a href="#Users">@Model.ObserveEnvironment.getIconType(new ObsUser()) Users (@Model.ObserveEnvironment.AllUsersDict.Count)</a>
     <a href="#Groups">@Model.ObserveEnvironment.getIconType(new ObsRBACGroup()) Groups (@Model.ObserveEnvironment.AllGroupsDict.Count)</a>
     <a href="#Statements">@Model.ObserveEnvironment.getIconType(new ObsRBACStatement()) Statements (@Model.ObserveEnvironment.AllStatements.Count)</a> 
-    <a href="#Membership">@Model.ObserveEnvironment.getIconType(new ObsRBACGroupMember()) Membership (@Model.ObserveEnvironment.AllGroupMembers.Count)</a> 
+    <a href="#Membership">@Model.ObserveEnvironment.getIconType(new ObsRBACGroupMember()) Memberships (@Model.ObserveEnvironment.AllGroupMembers.Count)</a> 
     <a href="#RelationshipsGraph">🌌 Relationships Graph</a>
 </p>
 
-<h2 id="Users">@Model.ObserveEnvironment.getIconType(new ObsUser()) Users</h2>
+<h2 id="Users">@Model.ObserveEnvironment.getIconType(new ObsUser()) Users (@Model.ObserveEnvironment.AllUsersDict.Count)</h2>
 <a href="#top">Back to Top</a>
 
 <table class="AlternatingRowTable SortableTable">
@@ -64,7 +64,7 @@
     </tbody>
 </table>
 
-<h2 id="Groups">@Model.ObserveEnvironment.getIconType(new ObsRBACGroup()) Groups</h2>
+<h2 id="Groups">@Model.ObserveEnvironment.getIconType(new ObsRBACGroup()) Groups (@Model.ObserveEnvironment.AllGroupsDict.Count)</h2>
 <a href="#top">Back to Top</a>
 
 @{
@@ -96,7 +96,7 @@
     </tbody>
 </table>
 
-<h2 id="Statements">@Model.ObserveEnvironment.getIconType(new ObsRBACStatement()) Statements</h2>
+<h2 id="Statements">@Model.ObserveEnvironment.getIconType(new ObsRBACStatement()) Statements (@Model.ObserveEnvironment.AllStatements.Count)</h2>
 <a href="#top">Back to Top</a>
 
 <table class="AlternatingRowTable SortableTable">
@@ -175,7 +175,7 @@
     </tbody>
 </table>
 
-<h2 id="Membership">@Model.ObserveEnvironment.getIconType(new ObsRBACGroupMember()) Membership</h2>
+<h2 id="Membership">@Model.ObserveEnvironment.getIconType(new ObsRBACGroupMember()) Memberships (@Model.ObserveEnvironment.AllGroupMembers.Count)</h2>
 <a href="#top">Back to Top</a>
 
 @{

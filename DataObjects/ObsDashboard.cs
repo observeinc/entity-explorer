@@ -16,7 +16,7 @@ namespace Observe.EntityExplorer.DataObjects
         public List<ObjectRelationship> ExternalObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
         public List<ObjectRelationship> StageObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
 
-        public int NumStages
+        public long NumStages
         { 
             get
             {
@@ -29,7 +29,7 @@ namespace Observe.EntityExplorer.DataObjects
             }
         }
 
-        public int NumSections
+        public long NumSections
         { 
             get
             {
@@ -50,7 +50,7 @@ namespace Observe.EntityExplorer.DataObjects
             }
         }
 
-        public int NumWidgets
+        public long NumWidgets
         { 
             get
             {
@@ -79,7 +79,7 @@ namespace Observe.EntityExplorer.DataObjects
             }
         }
 
-        public int NumParameters
+        public long NumParameters
         { 
             get
             {
@@ -235,8 +235,10 @@ namespace Observe.EntityExplorer.DataObjects
                 // Stage to stage
                 // Stage to dataset
                 stage.PopulateExternalDatasetInternalStageRelationships(allDatasetsDict, this.AllStagesDict, this.Parameters);
+                
                 // Which stages use this parameter
                 stage.PopulateParametersRelationships(this.Parameters);
+                
                 this.StageObjectRelationships.AddRange(stage.ExternalObjectRelationships);
             }
 

@@ -237,6 +237,17 @@
         </td>
     </tr>
     <tr>
+        <td><a asp-area="" asp-controller="Select" asp-action="Metric" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsMetric()) Explore Metrics</a> - Review defined and detected metrics</td>
+        <td>
+            <table>
+                <tr>
+                    <td align="right">@Model.ObserveEnvironment.AllMetrics.Count</td>
+                    <td>@Model.ObserveEnvironment.getIconType(new ObsMetric()) Total</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
         <td><a asp-area="" asp-controller="Select" asp-action="Datastream" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsDatastream()) Explore Datastreams</a> - Review datastreams and tokens</td>
         <td>
             <table>

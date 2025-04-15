@@ -1,8 +1,10 @@
 ﻿using Newtonsoft.Json.Linq;
 using NLog;
 using Observe.EntityExplorer.DataObjects;
+using System.Diagnostics;
 using System.Text;
 using System.Net;
+using System.Collections.Concurrent;
 
 namespace Observe.EntityExplorer
 {
@@ -24,15 +26,19 @@ namespace Observe.EntityExplorer
 
         // All Dashboards, Monitors, Worksheets and Datasets
         public List<ObsCompositeObject> ObserveObjects { get; set; } = new List<ObsCompositeObject>(256);
+        public ConcurrentBag<ObsCompositeObject> ObserveObjectsBag { get; set; } = new ConcurrentBag<ObsCompositeObject>();
         // All relationships between Dashboards, Monitors, Worksheets and Datasets, as well as between Stages in Dashboards, Monitors, Worksheets and Datasets
         public List<ObjectRelationship> ObjectRelationships { get; set; } = new List<ObjectRelationship>(256 * 8);
-        
+        public ConcurrentBag<ObjectRelationship> ObjectRelationshipsBag { get; set; } = new ConcurrentBag<ObjectRelationship>();
+
         // Individual entities by type
         public Dictionary<string, ObsDataset> AllDatasetsDict { get; set; }
         public Dictionary<string, ObsDashboard> AllDashboardsDict { get; set; }
         public Dictionary<string, ObsWorksheet> AllWorksheetsDict { get; set; }
         public Dictionary<string, ObsMonitor> AllMonitorsDict { get; set; }
         public Dictionary<string, ObsMonitor2> AllMonitors2Dict { get; set; }
+        public Dictionary<string, ObsMetric> AllMetricsDict { get; set; }
+        public List<ObsMetric> AllMetrics { get; set; }
         public Dictionary<string, ObsDatastream> AllDatastreamsDict { get; set; }
         public Dictionary<string, ObsToken> AllTokensDict { get; set; }
 
@@ -65,346 +71,411 @@ namespace Observe.EntityExplorer
             this.AppHostedAt = new UriBuilder(httpContext.Request.Scheme, httpContext.Request.Host.Host, (httpContext.Request.Host.Port == null) ? 0 : httpContext.Request.Host.Port.Value).Uri;
 
 
-            #region Datasets 
-
-            // Get all datasets
-            List<ObsDataset> allDatasets = getAllDatasets(currentUser);
-            this.AllDatasetsDict = allDatasets.ToDictionary(d => d.id, d => d);
+            List<ObsDataset> allDatasets = new List<ObsDataset>();
+            List<ObsDashboard> allDashboards = new List<ObsDashboard>();
+            List<ObsMonitor> allMonitors = new List<ObsMonitor>();
+            List<ObsMonitor2> allMonitors2 = new List<ObsMonitor2>();
+            List<ObsMetric> allMetrics = new List<ObsMetric>();
+            List<ObsWorksheet> allWorksheets = new List<ObsWorksheet>();
+            List<ObsDatastream> allDatastreams = new List<ObsDatastream>();
+            List<ObsToken> allDatastreamTokens = new List<ObsToken>();
+            List<ObsUser> allUsers = new List<ObsUser>();
+            List<ObsRBACGroup> allGroups = new List<ObsRBACGroup>();
             
-            // Enrich their columns and relationships
+            List<ObsCreditsMonitor> monitorUsage1hList = new List<ObsCreditsMonitor>();
+            List<ObsCreditsMonitor> monitorUsage1dList = new List<ObsCreditsMonitor>();
+            List<ObsCreditsMonitor> monitorUsage1wList = new List<ObsCreditsMonitor>();
+            List<ObsCreditsQuery> queryUsage1hList =  new List<ObsCreditsQuery>();
+            List<ObsCreditsQuery> queryUsage1dList =  new List<ObsCreditsQuery>();
+            List<ObsCreditsQuery> queryUsage1wList =  new List<ObsCreditsQuery>();
+
+            List<ObsCreditsTransform> transformUsage1hList = getUsageTransform(currentUser, 1);
+            List<ObsCreditsTransform> transformUsage1dList = getUsageTransform(currentUser, 24);
+            List<ObsCreditsTransform> transformUsage1wList = getUsageTransform(currentUser, 24 * 7);
+
+            // Retrieve all in parallel
+            Parallel.Invoke(
+                () => // Datasets
+                {
+                    // Get all datasets
+                    allDatasets = getAllDatasets(currentUser);
+                    this.AllDatasetsDict = allDatasets.ToDictionary(d => d.id, d => d);
+
+                    // Enrich their columns and relationships
+                    foreach (ObsDataset dataset in allDatasets)
+                    {
+                        dataset.AddRelatedKeys(this.AllDatasetsDict);
+                        dataset.AddForeignKeys(this.AllDatasetsDict);
+                        dataset.PopulateExternalDatasetRelationships(this.AllDatasetsDict);
+                    }
+                },
+                () => // Dashboards
+                {
+                    // Get all dashboards
+                    allDashboards = getAllDashboards(currentUser);
+                    this.AllDashboardsDict = allDashboards.ToDictionary(d => d.id, d => d);
+                },
+                () => // Monitors
+                {
+                    // Get all monitors
+                    allMonitors = getAllMonitors(currentUser);
+                    this.AllMonitorsDict = allMonitors.ToDictionary(d => d.id, d => d);
+                },
+                () => // Monitors v2
+                {
+                    // Get all monitors v2
+                    allMonitors2 = getAllMonitors2(currentUser);
+                    this.AllMonitors2Dict = allMonitors2.ToDictionary(d => d.id, d => d);
+                },
+                () => // Worksheets
+                {
+                    // Get all worksheets
+                    allWorksheets = getAllWorksheets(currentUser);
+                    this.AllWorksheetsDict = allWorksheets.ToDictionary(d => d.id, d => d);
+
+                    // Looks like for some environments query.worksheetSearch does not return stages, but the query.worksheet does.
+                    // If we see no stages, maybe that's what's going on? So retrieve it again and sub out the raw data
+                    List<ObsWorksheet> allWorksheetsWithoutStages = allWorksheets.Where(w => w.NumStages == 0).ToList();
+                    var allWorksheetsWithoutStagesChunks = allWorksheetsWithoutStages.Chunk(10);
+                    Parallel.ForEach<ObsWorksheet[], int>(
+                        allWorksheetsWithoutStagesChunks,
+                        new ParallelOptions(), 
+                        () => { 
+                            // init
+                            return 0;
+                        },
+                        (chunkOfWorksheets, loopState, subtotal) => {
+                            // Body
+                            for (int i = 0; i <= chunkOfWorksheets.Length - 1; i++)
+                            {
+                                ObsWorksheet worksheet = chunkOfWorksheets[i];
+                                ObsWorksheet worksheetSingle = getWorksheet(currentUser, worksheet.id);
+                                if (worksheetSingle != null)
+                                {
+                                    worksheet._raw = worksheetSingle._raw;
+                                }
+                            }
+                            return 0;
+                        },
+                        c => {
+                            // Finally
+                        }
+                    );
+                },
+                () => // Metrics
+                {
+                    // Get all metrics
+                    allMetrics = getAllMetrics(currentUser);
+                    this.AllMetricsDict = allMetrics.ToDictionary(d => d.id, d => d);
+                },
+                () => // Datastreams and tokens
+                {
+                    // Get all Datastreams and tokens
+                    allDatastreams = getAllDatastreamsAndTokens(currentUser);
+                    this.AllDatastreamsDict = allDatastreams.ToDictionary(d => d.id, d => d);
+                },
+                () => // RBAC Users
+                {
+                    // Get all users
+                    allUsers = getAllUsers(currentUser);
+                    this.AllUsersDict = allUsers.ToDictionary(u => u.id, u => u);
+                },
+                () => // RBAC Groups
+                {
+                    // Get all Groups
+                    allGroups = getAllGroups(currentUser);
+                    this.AllGroupsDict = allGroups.ToDictionary(g => g.id, g => g);
+                },
+                () => // Usage - Transform - 1h
+                {
+                    transformUsage1hList = getUsageTransform(currentUser, 1);
+                },
+                () => // Usage - Transform - 1d
+                {
+                    transformUsage1dList = getUsageTransform(currentUser, 24);
+                },
+                () => // Usage - Transform - 1w
+                {
+                    transformUsage1wList = getUsageTransform(currentUser, 24 * 7);
+                },
+                () => // Usage - Monitor - 1h
+                {
+                    monitorUsage1hList = getUsageMonitor(currentUser, 1);
+                },
+                () => // Usage - Monitor - 1d
+                {
+                    monitorUsage1dList = getUsageMonitor(currentUser, 24);
+                },
+                () => // Usage - Monitor - 1w
+                {
+                    monitorUsage1wList = getUsageMonitor(currentUser, 24 * 7);
+                },
+                () => // Usage - Query - 1h
+                {
+                    queryUsage1hList = getUsageQuery(currentUser, 1);
+                },
+                () => // Usage - Query - 1d
+                {
+                    queryUsage1dList = getUsageQuery(currentUser, 24);
+                },
+                () => // Usage - Query - 1w
+                {
+                    queryUsage1wList = getUsageQuery(currentUser, 24 * 7);
+                }
+            ); 
+
+            // Dataset/Metrics enrichment
+            foreach (ObsMetric metric in allMetrics)
+            {
+                metric.AddSupportingDataset(this.AllDatasetsDict);
+            }
+            
+            allMetrics = allMetrics.OrderBy(d => d.datasetPackage).ThenBy(d => d.datasetName).ThenBy(d => d.name).ToList();
+            this.AllMetrics = allMetrics;
+
             foreach (ObsDataset dataset in allDatasets)
             {
-                dataset.AddRelatedKeys(this.AllDatasetsDict);
-                dataset.AddForeignKeys(this.AllDatasetsDict);
-                dataset.PopulateExternalDatasetRelationships(this.AllDatasetsDict);                
-                this.ObjectRelationships.AddRange(dataset.ExternalObjectRelationships);
-            }
+                dataset.AddStages(this.AllDatasetsDict);
+                dataset.AddAccelerationInfo(this.AllDatasetsDict, this.AllMonitorsDict);
+                dataset.AddMetrics(this.AllMetrics);
+            }            
 
-            this.ObserveObjects.AddRange(allDatasets);
-
-            #endregion
-
-            #region Dashboards
-
-            // Get all dashboards
-            List<ObsDashboard> allDashboards = getAllDashboards(currentUser);
-            this.AllDashboardsDict = allDashboards.ToDictionary(d => d.id, d => d);
-
-            // Enrich their parameters and relationships
-            foreach (ObsDashboard dashboard in allDashboards)
-            {
-                dashboard.AddStagesAndParameters(this.AllDatasetsDict);
-                dashboard.PopulateExternalDatasetRelationships();
-                this.ObjectRelationships.AddRange(dashboard.ExternalObjectRelationships);
-            }
-            
-            this.ObserveObjects.AddRange(allDashboards);
-
-            #endregion
-
-            #region Monitors
-
-            // Get all monitors
-            List<ObsMonitor> allMonitors = getAllMonitors(currentUser);
-            this.AllMonitorsDict = allMonitors.ToDictionary(d => d.id, d => d);
-
-            // Enrich their parameters and relationships
-            foreach (ObsMonitor monitor in allMonitors)
-            {
-                monitor.AddSupportingDatasets(this.AllDatasetsDict);
-                monitor.AddStages(this.AllDatasetsDict);
-                monitor.PopulateExternalDatasetRelationships();
-                this.ObjectRelationships.AddRange(monitor.ExternalObjectRelationships);
-            }
-
-            this.ObserveObjects.AddRange(allMonitors);
-
-            #endregion
-
-            #region Monitors v2
-
-            // Get all monitors
-            List<ObsMonitor2> allMonitors2 = getAllMonitors2(currentUser);
-            this.AllMonitors2Dict = allMonitors2.ToDictionary(d => d.id, d => d);
-
-            // Enrich their parameters and relationships
-            foreach (ObsMonitor2 monitor in allMonitors2)
-            {
-                monitor.AddSupportingDataset(this.AllDatasetsDict);
-                monitor.AddStages(this.AllDatasetsDict);
-                monitor.PopulateExternalDatasetRelationships();
-                this.ObjectRelationships.AddRange(monitor.ExternalObjectRelationships);
-            }
-
-            this.ObserveObjects.AddRange(allMonitors2);
-
-            #endregion
-
-            #region Worksheets
-
-            // Get all worksheets
-            List<ObsWorksheet> allWorksheets = getAllWorksheets(currentUser);
-            this.AllWorksheetsDict = allWorksheets.ToDictionary(d => d.id, d => d);
-
-            // Looks like for some environments query.worksheetSearch does not return stages, but the query.worksheet does.
-            // If we see no stages, maybe that's what's going on? So retrieve it again and sub out the raw data
-            List<ObsWorksheet> allWorksheetsWithoutStages = allWorksheets.Where(w => w.NumStages == 0).ToList();
-            var allWorksheetsWithoutStagesChunks = allWorksheetsWithoutStages.Chunk(10);
-            Parallel.ForEach<ObsWorksheet[], int>(
-                allWorksheetsWithoutStagesChunks,
-                new ParallelOptions(), 
-                () => { 
-                    // init
-                    return 0;
-                },
-                (chunkOfWorksheets, loopState, subtotal) => {
-                    // Body
-                    for (int i = 0; i <= chunkOfWorksheets.Length - 1; i++)
+            // Second pass at some more retrievals
+            Parallel.Invoke(
+                () => // Datastreams and tokens
+                {
+                    foreach (ObsDatastream datastream in allDatastreams)
                     {
-                        ObsWorksheet worksheet = chunkOfWorksheets[i];
-                        ObsWorksheet worksheetSingle = getWorksheet(currentUser, worksheet.id);
-                        if (worksheetSingle != null)
+                        datastream.AddDatastreamTokens();
+                        datastream.PopulateExternalDatasetRelationships(this.AllDatasetsDict);                
+                        allDatastreamTokens.AddRange(datastream.Tokens);
+                    }
+
+                    this.AllTokensDict = allDatastreamTokens.ToDictionary(d => String.Format("{0}-{1}", d.id, d.Parent.id), d => d);
+                },
+                () => // Dashboards
+                {
+                    foreach (ObsDashboard dashboard in allDashboards)
+                    {
+                        dashboard.AddStagesAndParameters(this.AllDatasetsDict);
+                        dashboard.PopulateExternalDatasetRelationships();
+                    }
+                },                
+                () => // Worksheets
+                {
+                    foreach (ObsWorksheet worksheet in allWorksheets)
+                    {
+                        worksheet.AddStagesAndParameters(this.AllDatasetsDict);
+                        worksheet.PopulateExternalDatasetRelationships();
+                    }
+                },
+                () => // Monitors
+                {
+                    foreach (ObsMonitor monitor in allMonitors)
+                    {
+                        monitor.AddSupportingDatasets(this.AllDatasetsDict);
+                        monitor.AddStages(this.AllDatasetsDict);
+                        monitor.PopulateExternalDatasetRelationships();
+                    }
+                },                
+                () => // Monitors v2
+                {
+                    foreach (ObsMonitor2 monitor in allMonitors2)
+                    {
+                        monitor.AddSupportingDataset(this.AllDatasetsDict);
+                        monitor.AddStages(this.AllDatasetsDict);
+                        monitor.PopulateExternalDatasetRelationships();
+                    }
+                },
+                () => // RBAC Statements
+                {
+                    List<ObsRBACStatement> allStatements = getAllStatements(currentUser);
+
+                    // Enrich subject and object
+                    foreach (ObsRBACStatement statement in allStatements)
+                    {
+                        statement.AddSubject(this.AllGroupsDict, this.AllUsersDict);
+                        statement.AddObject(this.ObserveObjects);
+                    }            
+                    allStatements = allStatements.OrderBy(s => s.OriginType).ThenBy(s => s.SubjectSort).ThenBy(s => s.ObjectSort).ToList();
+                    
+                    this.AllStatements = allStatements;
+                },
+                () => // RBAC Group Members
+                {
+                    List<ObsRBACGroupMember> allGroupMembers = getAllGroupMembers(currentUser);
+                    
+                    // Enrich subject and object
+                    foreach (ObsRBACGroupMember groupMember in allGroupMembers)
+                    {
+                        groupMember.AddParentGroup(this.AllGroupsDict);
+                        groupMember.AddChildGroupOrUser(this.AllGroupsDict, this.AllUsersDict);
+                    }            
+                    allGroupMembers = allGroupMembers.OrderBy(s => s.OriginType).ThenBy(s => s.ParentGroup.id).ThenBy(s => s.ChildObject.name).ToList();
+                    
+                    this.AllGroupMembers = allGroupMembers;
+                },
+                () => // Usage - Transform - 1h
+                {
+                    foreach (ObsCreditsTransform usageRow in transformUsage1hList)
+                    {
+                        ObsDataset thisDataset = null;
+                        if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
                         {
-                            worksheet._raw = worksheetSingle._raw;
+                            thisDataset.Transform1H = usageRow;
                         }
                     }
-                    return 0;
                 },
-                c => {
-                    // Finally
+                () => // Usage - Transform - 1d
+                {
+                    foreach (ObsCreditsTransform usageRow in transformUsage1dList)
+                    {
+                        ObsDataset thisDataset = null;
+                        if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
+                        {
+                            thisDataset.Transform1D = usageRow;
+                        }
+                    }
+                },
+                () => // Usage - Transform - 1w
+                {
+                    foreach (ObsCreditsTransform usageRow in transformUsage1wList)
+                    {
+                        ObsDataset thisDataset = null;
+                        if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
+                        {
+                            thisDataset.Transform1W = usageRow;
+                        }
+                    }                    
+                },
+                () => // Usage - Monitor - 1h
+                {
+                    foreach (ObsCreditsMonitor usageRow in monitorUsage1hList)
+                    {
+                        ObsMonitor thisMonitor = null;
+                        if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
+                        {
+                            thisMonitor.Transform1H = usageRow;
+                        }
+                        ObsMonitor2 thisMonitor2 = null;
+                        if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
+                        {
+                            thisMonitor2.Transform1H = usageRow;
+                        }
+                    }
+                },
+                () => // Usage - Monitor - 1d
+                {
+                    foreach (ObsCreditsMonitor usageRow in monitorUsage1dList)
+                    {
+                        ObsMonitor thisMonitor = null;
+                        if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
+                        {
+                            thisMonitor.Transform1D = usageRow;
+                        }
+                        ObsMonitor2 thisMonitor2 = null;
+                        if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
+                        {
+                            thisMonitor2.Transform1D = usageRow;
+                        }
+                    }
+                },
+                () => // Usage - Monitor - 1w
+                {
+                    foreach (ObsCreditsMonitor usageRow in monitorUsage1wList)
+                    {
+                        ObsMonitor thisMonitor = null;
+                        if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
+                        {
+                            thisMonitor.Transform1W = usageRow;
+                        }
+                        ObsMonitor2 thisMonitor2 = null;
+                        if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
+                        {
+                            thisMonitor2.Transform1W = usageRow;
+                        }
+                    }                     
+                },
+                () => // Usage - Query - 1h
+                {
+                    foreach (ObsCreditsQuery usageRow in queryUsage1hList)
+                    {
+                        ObsDataset thisDataset = null;
+                        if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
+                        {
+                            thisDataset.Query1H.Credits = thisDataset.Query1H.Credits + usageRow.Credits; 
+                            thisDataset.Query1HUsers.Add(usageRow);
+                        }
+                    }
+                },
+                () => // Usage - Query - 1d
+                {
+                    foreach (ObsCreditsQuery usageRow in queryUsage1dList)
+                    {
+                        ObsDataset thisDataset = null;
+                        if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
+                        {
+                            thisDataset.Query1D.Credits = thisDataset.Query1D.Credits + usageRow.Credits; 
+                            thisDataset.Query1DUsers.Add(usageRow);
+                        }
+                    }
+                },
+                () => // Usage - Query - 1w
+                {
+                    foreach (ObsCreditsQuery usageRow in queryUsage1wList)
+                    {
+                        ObsDataset thisDataset = null;
+                        if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
+                        {
+                            thisDataset.Query1W.Credits = thisDataset.Query1W.Credits + usageRow.Credits; 
+                            thisDataset.Query1WUsers.Add(usageRow);
+                        }
+                    }
                 }
             );
-
-            // Enrich their parameters and relationships
-            foreach (ObsWorksheet worksheet in allWorksheets)
-            {
-                worksheet.AddStagesAndParameters(this.AllDatasetsDict);
-                worksheet.PopulateExternalDatasetRelationships();
-                this.ObjectRelationships.AddRange(worksheet.ExternalObjectRelationships);
-            }
-
-            this.ObserveObjects.AddRange(allWorksheets);
-
-            #endregion
-
-            #region Datastreams and tokens
-
-            List<ObsDatastream> allDatastreams = getAllDatastreamsAndTokens(currentUser);
-            this.AllDatastreamsDict = allDatastreams.ToDictionary(d => d.id, d => d);
-
-            List<ObsToken> allDatastreamTokens = new List<ObsToken>(allDatastreams.Count * 10);
-
-            // Enrich their contents and relationships
-            foreach (ObsDatastream datastream in allDatastreams)
-            {
-                datastream.AddDatastreamTokens();
-                datastream.PopulateExternalDatasetRelationships(this.AllDatasetsDict);                
-                this.ObjectRelationships.AddRange(datastream.ExternalObjectRelationships);
-                allDatastreamTokens.AddRange(datastream.Tokens);
-            }
-
-            this.ObserveObjects.AddRange(allDatastreams);
-            this.ObserveObjects.AddRange(allDatastreamTokens);
             
-            //this.AllTokensDict = allDatastreamTokens.ToDictionary(d => d.id, d => d);
-
-            this.AllTokensDict = allDatastreamTokens.ToDictionary(d => String.Format("{0}-{1}", d.id, d.Parent.id), d => d);
-            
-            #endregion
-
-            #region Dataset and Monitor datasets acceleration info
-
             foreach (ObsDataset dataset in allDatasets)
             {
                 dataset.AddAccelerationInfo(this.AllDatasetsDict, this.AllMonitorsDict);
+                dataset.Query1HUsers = dataset.Query1HUsers.OrderBy(q => q.UserName).ToList();
+                dataset.Query1DUsers = dataset.Query1DUsers.OrderBy(q => q.UserName).ToList();
+                dataset.Query1WUsers = dataset.Query1WUsers.OrderBy(q => q.UserName).ToList();
+                this.ObjectRelationships.AddRange(dataset.ExternalObjectRelationships);
             }
+            this.ObserveObjects.AddRange(allDatasets);
+
+            foreach (ObsDashboard dashboard in allDashboards)
+            {
+                this.ObjectRelationships.AddRange(dashboard.ExternalObjectRelationships);
+            }
+            this.ObserveObjects.AddRange(allDashboards);
 
             foreach (ObsMonitor monitor in allMonitors)
             {
                 monitor.AddAccelerationInfo(this.AllDatasetsDict, this.AllMonitorsDict);
+                this.ObjectRelationships.AddRange(monitor.ExternalObjectRelationships);
             }
+            this.ObserveObjects.AddRange(allMonitors);
 
-            #endregion
-
-            #region RBAC
-
-            List<ObsUser> allUsers = getAllUsers(currentUser);
-            this.AllUsersDict = allUsers.ToDictionary(u => u.id, u => u);
-
-            List<ObsRBACGroup> allGroups = getAllGroups(currentUser);
-            this.AllGroupsDict = allGroups.ToDictionary(g => g.id, g => g);
-
-            List<ObsRBACStatement> allStatements = getAllStatements(currentUser);
-            // Enrich subject and object
-            foreach (ObsRBACStatement statement in allStatements)
+            foreach (ObsMonitor2 monitor in allMonitors2)
             {
-                statement.AddSubject(this.AllGroupsDict, this.AllUsersDict);
-                statement.AddObject(this.ObserveObjects);
-            }            
-            allStatements = allStatements.OrderBy(s => s.OriginType).ThenBy(s => s.SubjectSort).ThenBy(s => s.ObjectSort).ToList();
-            
-            this.AllStatements = allStatements;
-
-            List<ObsRBACGroupMember> allGroupMembers = getAllGroupMembers(currentUser);
-            // Enrich subject and object
-            foreach (ObsRBACGroupMember groupMember in allGroupMembers)
-            {
-                groupMember.AddParentGroup(this.AllGroupsDict);
-                groupMember.AddChildGroupOrUser(this.AllGroupsDict, this.AllUsersDict);
-            }            
-            allGroupMembers = allGroupMembers.OrderBy(s => s.OriginType).ThenBy(s => s.ParentGroup.id).ThenBy(s => s.ChildObject.name).ToList();
-            
-            this.AllGroupMembers = allGroupMembers;
-
-            #endregion
-
-            #region Get usage data 
-
-            #region Usage - transform
-
-            // Get 1 hour data
-            List<ObsCreditsTransform> transformUsage1hList = getUsageTransform(currentUser, 1);
-            foreach (ObsCreditsTransform usageRow in transformUsage1hList)
-            {
-                ObsDataset thisDataset = null;
-                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
-                {
-                    thisDataset.Transform1H = usageRow;
-                }
+                this.ObjectRelationships.AddRange(monitor.ExternalObjectRelationships);
             }
+            this.ObserveObjects.AddRange(allMonitors2);
 
-            // Get 1 day data
-            List<ObsCreditsTransform> transformUsage1dList = getUsageTransform(currentUser, 24);
-            foreach (ObsCreditsTransform usageRow in transformUsage1dList)
+            foreach (ObsWorksheet worksheet in allWorksheets)
             {
-                ObsDataset thisDataset = null;
-                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
-                {
-                    thisDataset.Transform1D = usageRow;
-                }
+                this.ObjectRelationships.AddRange(worksheet.ExternalObjectRelationships);
             }
+            this.ObserveObjects.AddRange(allWorksheets);
 
-            // Get 1 week data
-            List<ObsCreditsTransform> transformUsage1wList = getUsageTransform(currentUser, 24 * 7);
-            foreach (ObsCreditsTransform usageRow in transformUsage1wList)
+            foreach (ObsDatastream datastream in allDatastreams)
             {
-                ObsDataset thisDataset = null;
-                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
-                {
-                    thisDataset.Transform1W = usageRow;
-                }
+                this.ObjectRelationships.AddRange(datastream.ExternalObjectRelationships);
+                allDatastreamTokens.AddRange(datastream.Tokens);
             }
-
-            // // Get 1 month data
-            // List<ObsCreditsTransform> transformUsage1mList = getUsageTransform(currentUser, 24 * 30);
-            // foreach (ObsCreditsTransform transformUsage in transformUsage1wList)
-            // {
-            //     ObsDataset thisDataset = null;
-            //     if (this.AllDatasetsDict.TryGetValue(transformUsage.DatasetID, out thisDataset) == true)
-            //     {
-            //         thisDataset.Transform1M = transformUsage;
-            //     }
-            // }
-
-            #endregion
-
-            #region Usage - monitor
-
-            List<ObsCreditsMonitor> monitorUsage1hList = getUsageMonitor(currentUser, 1);
-            foreach (ObsCreditsMonitor usageRow in monitorUsage1hList)
-            {
-                ObsMonitor thisMonitor = null;
-                if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
-                {
-                    thisMonitor.Transform1H = usageRow;
-                }
-                ObsMonitor2 thisMonitor2 = null;
-                if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
-                {
-                    thisMonitor2.Transform1H = usageRow;
-                }
-            }
-
-            // Get 1 day data
-            List<ObsCreditsMonitor> monitorUsage1dList = getUsageMonitor(currentUser, 24);
-            foreach (ObsCreditsMonitor usageRow in monitorUsage1dList)
-            {
-                ObsMonitor thisMonitor = null;
-                if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
-                {
-                    thisMonitor.Transform1D = usageRow;
-                }
-                ObsMonitor2 thisMonitor2 = null;
-                if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
-                {
-                    thisMonitor2.Transform1D = usageRow;
-                }
-            }
-
-            // Get 1 week data
-            List<ObsCreditsMonitor> monitorUsage1wList = getUsageMonitor(currentUser, 24 * 7);
-            foreach (ObsCreditsMonitor usageRow in monitorUsage1wList)
-            {
-                ObsMonitor thisMonitor = null;
-                if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
-                {
-                    thisMonitor.Transform1W = usageRow;
-                }
-                ObsMonitor2 thisMonitor2 = null;
-                if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
-                {
-                    thisMonitor2.Transform1W = usageRow;
-                }
-            }
-
-            #endregion
-
-            #region Usage - query
-
-            List<ObsCreditsQuery> queryUsage1hList = getUsageQuery(currentUser, 1);
-            foreach (ObsCreditsQuery usageRow in queryUsage1hList)
-            {
-                ObsDataset thisDataset = null;
-                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
-                {
-                    thisDataset.Query1H.Credits = thisDataset.Query1H.Credits + usageRow.Credits; 
-                    thisDataset.Query1HUsers.Add(usageRow);
-                }
-            }
-
-            // Get 1 day data
-            List<ObsCreditsQuery> queryUsage1dList = getUsageQuery(currentUser, 24);
-            foreach (ObsCreditsQuery usageRow in queryUsage1dList)
-            {
-                ObsDataset thisDataset = null;
-                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
-                {
-                    thisDataset.Query1D.Credits = thisDataset.Query1D.Credits + usageRow.Credits; 
-                    thisDataset.Query1DUsers.Add(usageRow);
-                }
-            }
-
-            // Get 1 week data
-            List<ObsCreditsQuery> queryUsage1wList = getUsageQuery(currentUser, 24 * 7);
-            foreach (ObsCreditsQuery usageRow in queryUsage1wList)
-            {
-                ObsDataset thisDataset = null;
-                if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
-                {
-                    thisDataset.Query1W.Credits = thisDataset.Query1W.Credits + usageRow.Credits; 
-                    thisDataset.Query1WUsers.Add(usageRow);
-                }
-            }
-            foreach (ObsDataset dataset in allDatasets)
-            {
-                dataset.Query1HUsers = dataset.Query1HUsers.OrderBy(q => q.UserName).ToList();
-                dataset.Query1DUsers = dataset.Query1DUsers.OrderBy(q => q.UserName).ToList();
-                dataset.Query1WUsers = dataset.Query1WUsers.OrderBy(q => q.UserName).ToList();
-            }                        
-
-            #endregion
-
-            #endregion
+            this.ObserveObjects.AddRange(allDatastreams);
+            this.ObserveObjects.AddRange(allDatastreamTokens);
 
             this.LoadedOn = DateTime.UtcNow;
         }
@@ -412,7 +483,11 @@ namespace Observe.EntityExplorer
         public void PopulateAllDatasetStages(AuthenticatedUser currentUser)        
         {
             List<ObsDataset> allDatasetsWithoutStages = this.AllDatasetsDict.Values.Where(d => d.Stages.Count == 0).ToList();
+            // ignore datastreams
             allDatasetsWithoutStages.RemoveAll(d => (d.ObjectType & ObsCompositeObjectType.DatastreamDataset) == ObsCompositeObjectType.DatastreamDataset);
+            // ignore reference tables
+            allDatasetsWithoutStages.RemoveAll(d => (d.ObjectType & ObsCompositeObjectType.TableDataset) == ObsCompositeObjectType.TableDataset);
+            // ignore external tables (o2 mostly)
             allDatasetsWithoutStages.RemoveAll(d => d.OriginType == ObsObjectOriginType.External);
             var allDatasetsWithoutStagesChunks = allDatasetsWithoutStages.Chunk(10);
             Parallel.ForEach<ObsDataset[], int>(
@@ -1073,6 +1148,10 @@ namespace Observe.EntityExplorer
                             sb.AppendFormat("  {0}", getGraphVizNodeDefinition(token)).AppendLine();
                         }
 
+                        break;
+
+                    case "ObsMetric":
+                        // Not displaying metrics
                         break;
 
                     default:
@@ -1923,6 +2002,11 @@ namespace Observe.EntityExplorer
             };
         }
 
+        internal string getIconType(ObsMetric obsDataset)
+        {
+            return "📶";
+        }
+        
         internal string getIconMonitorType(ObsCompositeObjectType objectType)
         {
             return objectType switch
@@ -2076,39 +2160,51 @@ namespace Observe.EntityExplorer
 
         private List<ObsDataset> getAllDatasets(AuthenticatedUser currentUser)
         {
-            string entitySearchResults = ObserveConnection.datasetSearch_all(currentUser);
-            if (entitySearchResults.Length == 0)
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            try
             {
-                throw new InvalidDataException(String.Format("Invalid response on datasetSearch_all for {0}", currentUser));
-            }
-
-            JObject entitySearchResultsObject = JObject.Parse(entitySearchResults);
-            JArray entitySearchArray = (JArray)JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "datasetSearch");
-
-            List<ObsDataset> datasetsList = new List<ObsDataset>(0);
-            if (entitySearchArray != null)
-            {
-                datasetsList = new List<ObsDataset>(entitySearchArray.Count);
-                logger.Info("Number of Datasets={0}", entitySearchArray.Count);
-
-                foreach (JObject entitySearchObject in entitySearchArray)
+                string entitySearchResults = ObserveConnection.datasetSearch_all(currentUser);
+                if (entitySearchResults.Length == 0)
                 {
-                    JObject datasetObject = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchObject, "dataset"); 
-                    if (datasetObject != null)
-                    {
-                        ObsDataset dataset = new ObsDataset(datasetObject);
-
-                        datasetsList.Add(dataset);
-
-                        logger.Trace("Dataset={0}", dataset);
-                        loggerConsole.Trace("Found {0}", dataset);
-                    }
+                    throw new InvalidDataException(String.Format("Invalid response on datasetSearch_all for {0}", currentUser));
                 }
-                
-                datasetsList = datasetsList.OrderBy(d => d.package).ThenBy(d => d.name).ToList();
-            }
 
-            return datasetsList;
+                JObject entitySearchResultsObject = JObject.Parse(entitySearchResults);
+                JArray entitySearchArray = (JArray)JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "datasetSearch");
+
+                List<ObsDataset> datasetsList = new List<ObsDataset>(0);
+                if (entitySearchArray != null)
+                {
+                    datasetsList = new List<ObsDataset>(entitySearchArray.Count);
+                    logger.Info("Number of Datasets={0}", entitySearchArray.Count);
+                    loggerConsole.Info("Number of Datasets={0}", entitySearchArray.Count);
+
+                    foreach (JObject entitySearchObject in entitySearchArray)
+                    {
+                        JObject datasetObject = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchObject, "dataset"); 
+                        if (datasetObject != null)
+                        {
+                            ObsDataset dataset = new ObsDataset(datasetObject);
+
+                            datasetsList.Add(dataset);
+
+                            logger.Trace("Dataset={0}", dataset);
+                            // loggerConsole.Trace("Found {0}", dataset);
+                        }
+                    }
+                    
+                    datasetsList = datasetsList.OrderBy(d => d.package).ThenBy(d => d.name).ToList();
+                }
+
+                return datasetsList;
+            }
+            finally
+            {
+                stopWatch.Stop();
+                logger.Info("getAllDatasets {0:c} ({1} ms)", stopWatch.Elapsed.ToString("c"), stopWatch.ElapsedMilliseconds);
+            }
         }
 
         private ObsDataset getDataset(AuthenticatedUser currentUser, string datasetId)
@@ -2126,7 +2222,7 @@ namespace Observe.EntityExplorer
                 ObsDataset dataset = new ObsDataset(datasetObject);
 
                 logger.Trace("Dataset={0}", dataset);
-                loggerConsole.Trace("Found {0}", dataset);
+                // loggerConsole.Trace("Found {0}", dataset);
 
                 return dataset;
             }
@@ -2150,6 +2246,7 @@ namespace Observe.EntityExplorer
             {
                 dashboardsList = new List<ObsDashboard>(entitySearchArray.Count);
                 logger.Info("Number of Dashboards={0}", entitySearchArray.Count);
+                loggerConsole.Info("Number of Dashboards={0}", entitySearchArray.Count);
 
                 foreach (JObject entitySearchObject in entitySearchArray)
                 {
@@ -2161,7 +2258,7 @@ namespace Observe.EntityExplorer
                         dashboardsList.Add(dashboard);
 
                         logger.Trace("Dashboard={0}", dashboard);
-                        loggerConsole.Trace("Found {0}", dashboard);
+                        // loggerConsole.Trace("Found {0}", dashboard);
                     }
                 }
                 
@@ -2187,6 +2284,7 @@ namespace Observe.EntityExplorer
             {
                 monitorsList = new List<ObsMonitor>(entitySearchArray.Count);
                 logger.Info("Number of Monitors={0}", entitySearchArray.Count);
+                loggerConsole.Info("Number of Monitors={0}", entitySearchArray.Count);
 
                 foreach (JObject entitySearchObject in entitySearchArray)
                 {
@@ -2195,7 +2293,7 @@ namespace Observe.EntityExplorer
                     monitorsList.Add(monitor);
 
                     logger.Trace("Monitor={0}", monitor);
-                    loggerConsole.Trace("Found {0}", monitor);
+                    // loggerConsole.Trace("Found {0}", monitor);
                 }
                 
                 monitorsList = monitorsList.OrderBy(d => d.package).ThenBy(d => d.name).ToList();
@@ -2223,7 +2321,8 @@ namespace Observe.EntityExplorer
                 if (entitySearchArray != null)
                 {
                     monitorsList = new List<ObsMonitor2>(entitySearchArray.Count);
-                    logger.Info("Number of Monitors2={0}", entitySearchArray.Count);
+                    logger.Info("Number of Monitors v2={0}", entitySearchArray.Count);
+                    loggerConsole.Info("Number of Monitors v2={0}", entitySearchArray.Count);
 
                     foreach (JObject entitySearchObject in entitySearchArray)
                     {
@@ -2232,7 +2331,7 @@ namespace Observe.EntityExplorer
                         monitorsList.Add(monitor2);
 
                         logger.Trace("Monitor2={0}", monitor2);
-                        loggerConsole.Trace("Found {0}", monitor2);
+                        // loggerConsole.Trace("Found {0}", monitor2);
                     }
                     
                     monitorsList = monitorsList.OrderBy(d => d.package).ThenBy(d => d.name).ToList();
@@ -2258,18 +2357,19 @@ namespace Observe.EntityExplorer
             {
                 worksheetsList = new List<ObsWorksheet>(entitySearchArray.Count);
                 logger.Info("Number of Worksheets={0}", entitySearchArray.Count);
+                loggerConsole.Info("Number of Worksheets={0}", entitySearchArray.Count);
 
                 foreach (JObject entitySearchObject in entitySearchArray)
                 {
-                    JObject dashboardObject = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchObject, "worksheet"); 
-                    if (dashboardObject != null)
+                    JObject worksheetObject = (JObject)JSONHelper.getJTokenValueFromJToken(entitySearchObject, "worksheet"); 
+                    if (worksheetObject != null)
                     {
-                        ObsWorksheet worksheet = new ObsWorksheet(dashboardObject);
+                        ObsWorksheet worksheet = new ObsWorksheet(worksheetObject);
 
                         worksheetsList.Add(worksheet);
 
                         logger.Trace("Worksheet={0}", worksheet);
-                        loggerConsole.Trace("Found {0}", worksheet);
+                        // loggerConsole.Trace("Found {0}", worksheet);
                     }
                 }
                 
@@ -2295,6 +2395,7 @@ namespace Observe.EntityExplorer
             {
                 datastreamList = new List<ObsDatastream>(entitySearchArray.Count);
                 logger.Info("Number of Datastreams={0}", entitySearchArray.Count);
+                loggerConsole.Info("Number of Datastreams={0}", entitySearchArray.Count);
 
                 foreach (JObject entitySearchObject in entitySearchArray)
                 {
@@ -2303,7 +2404,7 @@ namespace Observe.EntityExplorer
                     datastreamList.Add(datastream);
 
                     logger.Trace("Datastream={0}", datastream);
-                    loggerConsole.Trace("Found {0}", datastream);
+                    // loggerConsole.Trace("Found {0}", datastream);
                 }
                 
                 datastreamList = datastreamList.OrderBy(d => d.name).ToList();
@@ -2327,12 +2428,47 @@ namespace Observe.EntityExplorer
                 ObsWorksheet worksheet = new ObsWorksheet(worksheetObject);
 
                 logger.Trace("Worksheet={0}", worksheet);
-                loggerConsole.Trace("Found {0}", worksheet);
+                // loggerConsole.Trace("Found {0}", worksheet);
 
                 return worksheet;
             }
 
             return null;
+        }
+
+        internal List<ObsMetric> getAllMetrics(AuthenticatedUser currentUser)
+        {
+            string entitySearchResults = ObserveConnection.metricsSearch_all(currentUser);
+            if (entitySearchResults.Length == 0)
+            {
+                throw new InvalidDataException(String.Format("Invalid response on metricsSearch_all for {0}", currentUser));
+            }
+
+            JObject entitySearchResultsObject = JObject.Parse(entitySearchResults);
+            JArray entitySearchArray = (JArray)JSONHelper.getJTokenValueFromJToken(JSONHelper.getJTokenValueFromJToken(entitySearchResultsObject["data"], "metricSearch"), "matches");
+
+            List<ObsMetric> metricsList = new List<ObsMetric>(0);
+            if (entitySearchArray != null)
+            {
+                metricsList = new List<ObsMetric>(entitySearchArray.Count);
+                logger.Info("Number of Metrics={0}", entitySearchArray.Count);
+                loggerConsole.Info("Number of Metrics={0}", entitySearchArray.Count);
+
+                foreach (JObject entitySearchObject in entitySearchArray)
+                {
+                    JObject metricObject = entitySearchObject; 
+                    ObsMetric metric = new ObsMetric(metricObject);
+
+                    metricsList.Add(metric);
+
+                    logger.Trace("Metric={0}", metric);
+                    // loggerConsole.Trace("Found {0}", metric);
+                }
+                
+                metricsList = metricsList.OrderBy(d => d.datasetId).ThenBy(d => d.name).ToList();
+            }
+
+            return metricsList;
         }
 
         #endregion
@@ -2357,6 +2493,7 @@ namespace Observe.EntityExplorer
 
                 usersList = new List<ObsUser>(entitySearchArray.Count);
                 logger.Info("Number of Users={0}", entitySearchArray.Count);
+                loggerConsole.Info("Number of Users={0}", entitySearchArray.Count);
 
                 foreach (JObject entitySearchObject in entitySearchArray)
                 {
@@ -2365,7 +2502,7 @@ namespace Observe.EntityExplorer
                     usersList.Add(user);
 
                     logger.Trace("User={0}", user);
-                    loggerConsole.Trace("User {0}", user);
+                    // loggerConsole.Trace("User {0}", user);
                 }
                 
                 usersList = usersList.OrderBy(u => u.name).ToList();
@@ -2391,6 +2528,7 @@ namespace Observe.EntityExplorer
                 groupsList = new List<ObsRBACGroup>(entitySearchArray.Count);
 
                 logger.Info("Number of Groups={0}", entitySearchArray.Count);
+                loggerConsole.Info("Number of Groups={0}", entitySearchArray.Count);
 
                 foreach (JObject entitySearchObject in entitySearchArray)
                 {
@@ -2399,7 +2537,7 @@ namespace Observe.EntityExplorer
                     groupsList.Add(group);
 
                     logger.Trace("Group={0}", group);
-                    loggerConsole.Trace("Group {0}", group);
+                    // loggerConsole.Trace("Group {0}", group);
                 }
                 
                 groupsList = groupsList.OrderBy(u => u.OriginType).ThenBy(u => u.name).ToList();
@@ -2425,6 +2563,7 @@ namespace Observe.EntityExplorer
                 statementsList = new List<ObsRBACStatement>(entitySearchArray.Count);
 
                 logger.Info("Number of Statements={0}", entitySearchArray.Count);
+                loggerConsole.Info("Number of Statements={0}", entitySearchArray.Count);
 
                 foreach (JObject entitySearchObject in entitySearchArray)
                 {
@@ -2433,7 +2572,7 @@ namespace Observe.EntityExplorer
                     statementsList.Add(statement);
 
                     logger.Trace("Statement={0}", statement);
-                    loggerConsole.Trace("Statement {0}", statement);
+                    // loggerConsole.Trace("Statement {0}", statement);
                 }
                 
                 statementsList = statementsList.OrderBy(u => u.OriginType).ThenBy(u => u.description).ToList();
@@ -2459,6 +2598,7 @@ namespace Observe.EntityExplorer
                 groupMemberList = new List<ObsRBACGroupMember>(entitySearchArray.Count);
 
                 logger.Info("Number of GroupMembers={0}", entitySearchArray.Count);
+                loggerConsole.Info("Number of GroupMembers={0}", entitySearchArray.Count);
 
                 foreach (JObject entitySearchObject in entitySearchArray)
                 {
@@ -2467,7 +2607,7 @@ namespace Observe.EntityExplorer
                     groupMemberList.Add(groupMember);
 
                     logger.Trace("GroupMember={0}", groupMember);
-                    loggerConsole.Trace("GroupMembers {0}", groupMember);
+                    // loggerConsole.Trace("GroupMembers {0}", groupMember);
                 }
                 
                 groupMemberList = groupMemberList.OrderBy(u => u.OriginType).ThenBy(u => u.description).ToList();

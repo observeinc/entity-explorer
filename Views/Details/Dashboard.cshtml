@@ -1,4 +1,5 @@
 ﻿@using Observe.EntityExplorer.DataObjects;
+@using System.Text;
 
 @model Observe.EntityExplorer.Models.DetailsDashboardViewModel;
 
@@ -398,8 +399,6 @@
                     </tr>
                     @foreach (ObjectRelationship objectRelationship in entity.ExternalObjectRelationships)
                     {
-                        ObsStage entityThis = (ObsStage)objectRelationship.ThisObject;
-                        
                         if (objectRelationship.RelatedObject is ObsDataset)
                         {
                             ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
@@ -448,6 +447,20 @@
                                 <td>@objectRelationship.name</td>
                             </tr>                                
                         }
+                    }
+                    @foreach (ObsMetric metric in entity.Metrics)
+                    {
+                        <tr>
+                            <td>@Html.ActionLink("📶 View", "Metric", "Details", new { id=Convert.ToBase64String(Encoding.UTF8.GetBytes(metric.id)), userid=@Model.CurrentUser.UniqueID }, null)</td>
+                            <td><a href="@String.Format("{0}workspace/{1}/metric-explorer?datasetId={2}&metricName={3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, metric.datasetId, metric.name)">📄 Data</a></td>
+                            <td>&nbsp;</td>
+                            <td>@Model.ObserveEnvironment.getIconType(new ObsMetric()) Metric</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>@metric.name</td>
+                            <td>Used</td>
+                            <td>&nbsp;</td>
+                        </tr>
                     }
                 </table>
             </td>
@@ -501,7 +514,6 @@
             </tr>
         }
         <tr id="stage_image_preview_@entity.id">
-            <td>Preview</td>
             <td><img src="@entity.thumbnail" /></td>
         </tr>        
         <tr>

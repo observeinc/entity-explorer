@@ -291,20 +291,32 @@ namespace Observe.EntityExplorer
         inputRole
         __typename
       }
-      metrics {
-        name
-        nameWithPath
-        type
-        unit
-        description
-        rollup
-        aggregate
-        interval
-        suggestedBucketSize
-        userDefined
-        state
+      transform {
+        current {
+          query {
+            outputStage
+            stages {
+              id
+              params
+              pipeline
+              layout
+              input {
+                inputName
+                inputRole
+                datasetId
+                datasetPath
+                stageId
+                __typename
+              }
+              __typename
+            }
+            layout
+            __typename
+          }
+          __typename
+        }
         __typename
-      }
+      }      
       latencyDesired
       effectiveSettings {
         dataset {
@@ -795,20 +807,6 @@ namespace Observe.EntityExplorer
         }
         __typename
       }
-      __typename
-    }
-    metrics {
-      name
-      nameWithPath
-      type
-      unit
-      description
-      rollup
-      aggregate
-      interval
-      suggestedBucketSize
-      userDefined
-      state
       __typename
     }
     latencyDesired
@@ -2845,7 +2843,91 @@ fragment DataStream on Datastream {
 
         #endregion
 
-        # region Retrieval methods
+        #region Metrics Metadata
+
+        public static string metricsSearch_all(AuthenticatedUser currentUser)
+        {
+            string graphQLQuery = @"query MetricSearch($workspaces: [ObjectId!], $inDatasets: [ObjectId!], $linkToDatasets: [ObjectId!], $correlationTagMatches: [String!], $match: String!, $heuristicsOptions: MetricHeuristicsOptions) {
+  metricSearch(
+    workspaces: $workspaces
+    inDatasets: $inDatasets
+    linkToDatasets: $linkToDatasets
+    correlationTagMatches: $correlationTagMatches
+    match: $match
+    heuristicsOptions: $heuristicsOptions
+  ) {
+    matches {
+      datasetId
+      metric {
+        name
+        nameWithPath
+        type
+        unit
+        description
+        rollup
+        aggregate
+        interval
+        suggestedBucketSize
+        userDefined
+        state
+        heuristics {
+          cardinality
+          interval
+          intervalStddev
+          numOfPoints
+          validLinkLabels
+          tags {
+            path
+            column
+            __typename
+          }
+          lastReported
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    numSearched
+    __typename
+  }
+}";
+
+            JObject queryObject = new JObject();
+            queryObject.Add("query", graphQLQuery);
+            JObject heuristicsOptionsObject = new JObject();
+            heuristicsOptionsObject.Add("globalLimit", "100000");
+            heuristicsOptionsObject.Add("perDatasetLimit", "100000");
+            JObject variablesObject = new JObject();
+            variablesObject.Add("heuristicsOptions", heuristicsOptionsObject);
+            variablesObject.Add("match", "");
+            queryObject.Add("variables", variablesObject);
+            
+            string queryBody = JSONHelper.getCompactSerializedValueOfObject(queryObject);
+
+            Tuple<string, List<string>, HttpStatusCode> results = apiPOST(
+                currentUser.CustomerEnvironmentUrl,
+                "v1/meta",
+                "application/json", 
+                queryBody,
+                "application/json",
+                currentUser.CustomerName, 
+                currentUser.AuthToken);
+            
+            if (results.Item3 == HttpStatusCode.OK)
+            {
+                return results.Item1;
+            }
+            else
+            {
+                string queryBeginning = graphQLQuery.Split('\n')[0];
+                throw new WebException(String.Format("Call to {0}v1/meta for user {1} with '{2}' returned {3} {4}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, queryBeginning, results.Item3, results.Item1));
+            }
+        }
+
+        #endregion
+
+        #region Retrieval methods
 
         /// Returns Tuple<string, List<string>, HttpStatusCode>
         ///               ^^^^^^                                    results of the page
@@ -2920,7 +3002,6 @@ fragment DataStream on Datastream {
                     }
                     else
                     {
-                        
                         logLevel = NLog.LogLevel.Error;
                     }
 
@@ -2980,6 +3061,13 @@ fragment DataStream on Datastream {
         {
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
+
+            string requestBodyFragment = requestBody;
+            if (requestBody.Length > 64)
+            {
+              requestBodyFragment = String.Format("|{0}", requestBody.Substring(0, 64).Replace("\n", ""));
+            }
+
             try
             {
                 HttpClientHandler httpClientHandler = new HttpClientHandler();
@@ -3050,8 +3138,7 @@ fragment DataStream on Datastream {
                         logLevel = NLog.LogLevel.Warn;
                     }
                     else
-                    {
-                        
+                    {                        
                         logLevel = NLog.LogLevel.Error;
                     }
 
@@ -3090,17 +3177,17 @@ fragment DataStream on Datastream {
             }
             catch (Exception ex)
             {
-                logger.Error("POST {0}{1} threw {2} ({3})", baseUri, restAPIUrl, ex.Message, ex.Source);
+                logger.Error("POST {0}{1}{4} threw {2} ({3})", baseUri, restAPIUrl, ex.Message, ex.Source, requestBodyFragment);
                 logger.Error(ex);
 
-                loggerConsole.Error("POST {0}{1} threw {2} ({3})", baseUri, restAPIUrl, ex.Message, ex.Source);
+                loggerConsole.Error("POST {0}{1}{4} threw {2} ({3})", baseUri, restAPIUrl, ex.Message, ex.Source, requestBodyFragment);
 
                 return new Tuple<string, List<string>, HttpStatusCode>(String.Empty, new List<string>(0), HttpStatusCode.InternalServerError);
             }
             finally
             {
                 stopWatch.Stop();
-                logger.Info("POST {0}{1} took {2:c} ({3} ms)", baseUri, restAPIUrl, stopWatch.Elapsed.ToString("c"), stopWatch.ElapsedMilliseconds);
+                logger.Info("POST {0}{1}{4} took {2:c} ({3} ms)", baseUri, restAPIUrl, stopWatch.Elapsed.ToString("c"), stopWatch.ElapsedMilliseconds, requestBodyFragment);
             }
         }
 

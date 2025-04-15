@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
 
 namespace Observe.EntityExplorer.DataObjects
 {
@@ -12,6 +13,8 @@ namespace Observe.EntityExplorer.DataObjects
         public List<ObjectRelationship> ExternalObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
 
         public ObsCompositeObject Parent { get; set; }
+
+        public List<ObsMetric> Metrics { get; set; } = new List<ObsMetric>(0);
 
         public override string ToString()
         {
@@ -175,6 +178,29 @@ namespace Observe.EntityExplorer.DataObjects
                         if (allDatasetsDict.TryGetValue(datasetId, out relatedDataset) == true)
                         {
                             this.ExternalObjectRelationships.Add(new ObjectRelationship(inputName, this, relatedDataset, relationshipType));
+
+                            // If parent dataset has metrics, likely this stage uses them, lets check
+                            if (relatedDataset.Metrics.Count > 0)
+                            {
+                                foreach(ObsMetric metric in relatedDataset.Metrics)
+                                {
+                                    // Match the metric name in double quotes
+                                    // i.e. metric called ingest_delay shows up like this:
+                                    //      align A_ingest_delay_percentile_95:any_not_null(m("ingest_delay"))
+                                    // or metric called telemetry.spcs.event_table_metric_heartbeat shows up like this:
+                                    //      filter metric = "telemetry.spcs.event_table_metric_heartbeat"
+                                    foreach (Match match in Regex.Matches(this.pipeline, String.Format("\"{0}\"", metric.name)))
+                                    {
+                                        if (match.Success && match.Groups.Count > 0)
+                                        {
+                                            if (this.Metrics.Contains(metric) == false)
+                                            {
+                                                this.Metrics.Add(metric);
+                                            }                                            
+                                        }
+                                    }
+                                }
+                            }
                         }
                         continue;
                     }
@@ -195,12 +221,15 @@ namespace Observe.EntityExplorer.DataObjects
                     string parameterName = inputName;
                     if (parameterName != null && parameterName.Length > 0)
                     {
-                        // Must find parameter by name, not by ID
-                        ObsParameter relatedParameter = allParameters.Where(p => p.name == parameterName).FirstOrDefault();
-                        if (relatedParameter != null)
+                        if (allParameters != null)
                         {
-                            //this.ExternalObjectRelationships.Add(new ObjectRelationship(inputName, this, relatedParameter.SourceObject, relationshipType));
-                            this.ExternalObjectRelationships.Add(new ObjectRelationship(relatedParameter.name, this, relatedParameter, ObsObjectRelationshipType.ProvidesParameter));
+                            // Must find parameter by name, not by ID
+                            ObsParameter relatedParameter = allParameters.Where(p => p.name == parameterName).FirstOrDefault();
+                            if (relatedParameter != null)
+                            {
+                                //this.ExternalObjectRelationships.Add(new ObjectRelationship(inputName, this, relatedParameter.SourceObject, relationshipType));
+                                this.ExternalObjectRelationships.Add(new ObjectRelationship(relatedParameter.name, this, relatedParameter, ObsObjectRelationshipType.ProvidesParameter));
+                            }
                         }
                         continue;
                     }

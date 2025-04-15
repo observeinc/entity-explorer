@@ -16,7 +16,7 @@ namespace Observe.EntityExplorer.DataObjects
         public List<ObjectRelationship> ExternalObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
         public List<ObjectRelationship> StageObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
 
-        public int NumStages
+        public long NumStages
         { 
             get
             {
@@ -29,7 +29,7 @@ namespace Observe.EntityExplorer.DataObjects
             }
         }
 
-        public int NumParameters
+        public long NumParameters
         { 
             get
             {

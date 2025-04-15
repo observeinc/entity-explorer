@@ -22,6 +22,10 @@
     List<ObsCompositeObject> selectedDashboards = Model.ObserveEnvironment.ObserveObjects.Where(o => (o.ObjectType & ObsCompositeObjectType.Dashboard) == ObsCompositeObjectType.Dashboard).ToList();
 }
 
+<p>
+    @selectedDashboards.Count objects
+</p>
+
 <table class="AlternatingRowTable SortableTable">
     <thead>
         <th>View</th>

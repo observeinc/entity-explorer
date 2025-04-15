@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using NLog;
@@ -331,6 +333,100 @@ public class DetailsController : Controller
             ViewData["ErrorMessage"] = ex.Message;
 
             return View(new DetailsDashboardViewModel(null, null));
+        }
+        finally
+        {
+            stopWatch.Stop();
+
+            logger.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+            loggerConsole.Trace("{0}:{1}/{2}: total duration {3:c} ({4} ms)", HttpContext.Request.Method, this.ControllerContext.RouteData.Values["controller"], this.ControllerContext.RouteData.Values["action"], stopWatch.Elapsed, stopWatch.ElapsedMilliseconds);
+        }
+    }
+
+    public IActionResult Metric(
+        string userid,
+        string id)
+    {
+        Stopwatch stopWatch = new Stopwatch();
+        stopWatch.Start();
+
+        try
+        {
+            AuthenticatedUser currentUser = this.CommonControllerMethods.GetUser(userid);
+            if (currentUser == null)
+            {
+                return RedirectToAction("Connect", "Connection");
+            }
+            ObserveEnvironment observeEnvironment = this.CommonControllerMethods.GetObserveEnvironment(currentUser);
+            if (observeEnvironment == null)
+            {
+                throw new Exception("Unable to retrieve the Observe Environment from cache or server");
+            }
+            DetailsMetricViewModel viewModel = new DetailsMetricViewModel(currentUser, observeEnvironment);
+
+            CommonControllerMethods.enrichTrace(currentUser);
+            CommonControllerMethods.enrichTrace(observeEnvironment);
+
+            id = Encoding.UTF8.GetString(Convert.FromBase64String(id)); 
+
+            switch (HttpContext.Request.Method)
+            {
+                case "GET":
+                    ObsMetric thisMetric = null;
+                    if (observeEnvironment.AllMetricsDict.TryGetValue(id, out thisMetric) == false)
+                    {
+                        throw new KeyNotFoundException(String.Format("Unable to retrieve the Observe Metric {0} from Observe Environment", id));
+                    }
+                    viewModel.CurrentMetric = thisMetric;
+
+                    // Populate all dataset stages that haven't been populated yet - we lazy load them in advance
+                    observeEnvironment.PopulateAllDatasetStages(currentUser);
+
+                    viewModel.SearchResults = new List<ObsStage>(256);
+
+                    foreach (ObsDataset entity in observeEnvironment.AllDatasetsDict.Values)
+                    {
+                        viewModel.SearchResults.AddRange(entity.Stages.Where(s => s.Metrics.Contains(thisMetric) == true).ToList());
+                    }
+
+                    foreach (ObsDashboard entity in observeEnvironment.AllDashboardsDict.Values)
+                    {
+                        viewModel.SearchResults.AddRange(entity.Stages.Where(s => s.Metrics.Contains(thisMetric) == true).ToList());
+                    }
+
+                    foreach (ObsMonitor entity in observeEnvironment.AllMonitorsDict.Values)
+                    {
+                        viewModel.SearchResults.AddRange(entity.Stages.Where(s => s.Metrics.Contains(thisMetric) == true).ToList());
+                    }
+
+                    foreach (ObsMonitor2 entity in observeEnvironment.AllMonitors2Dict.Values)
+                    {
+                        viewModel.SearchResults.AddRange(entity.Stages.Where(s => s.Metrics.Contains(thisMetric) == true).ToList());
+                    }
+
+                    foreach (ObsWorksheet entity in observeEnvironment.AllWorksheetsDict.Values)
+                    {
+                        viewModel.SearchResults.AddRange(entity.Stages.Where(s => s.Metrics.Contains(thisMetric) == true).ToList());
+                    }
+
+                    break;
+
+                case "POST":
+                    break;
+            }
+
+            CommonControllerMethods.enrichTrace(viewModel.CurrentMetric);
+
+            return View(viewModel);
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, ex.Message);
+            loggerConsole.Error(ex, ex.Message);
+
+            ViewData["ErrorMessage"] = ex.Message;
+
+            return View(new DetailsMetricViewModel(null, null));
         }
         finally
         {

@@ -30,7 +30,7 @@ namespace Observe.EntityExplorer.DataObjects
         public ObsCreditsMonitor Transform1W { get; set; } = new ObsCreditsMonitor() {Credits = 0};
         public ObsCreditsMonitor Transform1M { get; set; } = new ObsCreditsMonitor() {Credits = 0};
 
-        public int NumStages
+        public long NumStages
         { 
             get
             {
@@ -47,7 +47,7 @@ namespace Observe.EntityExplorer.DataObjects
             }
         }
 
-        public int NumActions
+        public long NumActions
         { 
             get
             {

@@ -24,6 +24,7 @@ namespace Observe.EntityExplorer.DataObjects
         public ObsStage OutputStage { get; set; }
         public List<ObsStage> Stages { get; set; } = new List<ObsStage>(0);
         public Dictionary<string, ObsStage> AllStagesDict { get; set; }
+        public List<ObsMetric> Metrics { get; set; } = new List<ObsMetric>(0);
 
         public ObsAccelerationInfo Acceleration { get; set; }
 
@@ -477,6 +478,15 @@ namespace Observe.EntityExplorer.DataObjects
         public List<ObjectRelationship> GetRelationshipsOfRelated(ObsStage interestingObject, ObsObjectRelationshipType relationshipType)
         {
             return this.StageObjectRelationships.Where(r => r.RelatedObject == interestingObject && r.RelationshipType == relationshipType).ToList();
+        }
+
+        public void AddMetrics(List<ObsMetric> metricsList)
+        {
+            this.Metrics = metricsList.Where(m => m.datasetId == this.id).ToList();
+            foreach (ObsMetric metric in this.Metrics)
+            {
+                this.ExternalObjectRelationships.Add(new ObjectRelationship(String.Format("{0} to {1} as {2}", this, metric.name, ObsObjectRelationshipType.ProvidesData), this, metric, ObsObjectRelationshipType.ProvidesData));
+            }
         }
     }
 }

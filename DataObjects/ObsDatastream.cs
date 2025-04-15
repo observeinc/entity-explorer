@@ -9,7 +9,7 @@ namespace Observe.EntityExplorer.DataObjects
 
         public bool IsEnabled { get; set; }
 
-        public int RetentionDays { get; set; } = 0;
+        public long RetentionDays { get; set; } = 0;
 
         public List<ObsToken> Tokens { get; set; } = new List<ObsToken>(0);
         public Dictionary<string, ObsToken> AllTokensDict { get; set; }

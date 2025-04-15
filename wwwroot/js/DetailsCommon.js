@@ -23,9 +23,9 @@
                                 columns: ':visible'
                             }
                         }, 
-                        { extend: 'colvis', text: "👀 Column Visibility"}]
+                        {   extend: 'colvis', text: "👀 Column Visibility" }]
+                }
             }
-        }
     });
 
     hljs.highlightAll();

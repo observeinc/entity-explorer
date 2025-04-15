@@ -147,7 +147,11 @@
                             List<ObjectRelationship> entityWorksheetRelationshipsLink = entityLinkRelationshipsTarget.Where(r => (((ObsCompositeObject)r.ThisObject).ObjectType & ObsCompositeObjectType.Worksheet) == ObsCompositeObjectType.Worksheet).ToList();
                             if (entityWorksheetRelationshipsData.Count > 0 || entityWorksheetRelationshipsLink.Count > 0)
                             {
-                                @Html.Raw(String.Format("📝This>Worksheet: {0}", entityWorksheetRelationshipsData.Count + entityWorksheetRelationshipsLink.Count))
+                                @Html.Raw(String.Format("📝This>Worksheet: {0} <br/>", entityWorksheetRelationshipsData.Count + entityWorksheetRelationshipsLink.Count))
+                            }
+                            if (entity.Metrics.Count > 0)
+                            {
+                                @Html.Raw(String.Format("📶This>Metrics: {0}", entity.Metrics.Count))
                             }
                         }
                     </td>

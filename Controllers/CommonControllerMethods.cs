@@ -158,6 +158,11 @@ public class CommonControllerMethods
         Activity.Current.AddTag("currentObject", thisObject.ToString());
     }
 
+    public void enrichTrace(ObsMetric thisObject)
+    {
+        Activity.Current.AddTag("currentObject", thisObject.ToString());
+    }
+
     public void enrichTrace(Observe.EntityExplorer.Models.SearchResultsViewModel viewModel)
     {
         Activity.Current.AddTag("searchQuery", viewModel.SearchQuery);

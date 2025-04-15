@@ -22,6 +22,10 @@
     List<ObsCompositeObject> selectedWorksheets = Model.ObserveEnvironment.ObserveObjects.Where(o => (o.ObjectType & ObsCompositeObjectType.Worksheet) == ObsCompositeObjectType.Worksheet).ToList();
 }
 
+<p>
+    @selectedWorksheets.Count objects
+</p>
+
 <table class="AlternatingRowTable SortableTable">
     <thead>
         <th>View</th>

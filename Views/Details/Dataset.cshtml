@@ -33,6 +33,10 @@
     <a href="#RelatedMonitors">@Model.ObserveEnvironment.getIconType(new ObsMonitor()) Related Monitors (legacy)</a>
     <a href="#RelatedMonitors2">@Model.ObserveEnvironment.getIconType(new ObsMonitor2()) Related Monitors</a>
     <a href="#RelatedWorksheets">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Related Worksheets</a>
+    @if(Model.CurrentDataset.Metrics.Count > 0)
+    {
+        <a href="#Metrics">@Model.ObserveEnvironment.getIconType(new ObsMetric()) Metrics</a>
+    }
 </p>
 
 <table>
@@ -733,8 +737,6 @@
                     </tr>
                     @foreach (ObjectRelationship objectRelationship in entity.ExternalObjectRelationships)
                     {
-                        ObsStage entityThis = (ObsStage)objectRelationship.ThisObject;
-                        
                         if (objectRelationship.RelatedObject is ObsDataset)
                         {
                             ObsDataset entityRelated = (ObsDataset)objectRelationship.RelatedObject;
@@ -767,6 +769,20 @@
                                 <td>@objectRelationship.name</td>
                             </tr>
                         }
+                    }
+                    @foreach (ObsMetric metric in entity.Metrics)
+                    {
+                        <tr>
+                            <td>@Html.ActionLink("📶 View", "Metric", "Details", new { id=Convert.ToBase64String(Encoding.UTF8.GetBytes(metric.id)), userid=@Model.CurrentUser.UniqueID }, null)</td>
+                            <td><a href="@String.Format("{0}workspace/{1}/metric-explorer?datasetId={2}&metricName={3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, metric.datasetId, metric.name)">📄 Data</a></td>
+                            <td>&nbsp;</td>
+                            <td>@Model.ObserveEnvironment.getIconType(new ObsMetric()) Metric</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>@metric.name</td>
+                            <td>Used</td>
+                            <td>&nbsp;</td>
+                        </tr>
                     }
                 </table>
             </td>
@@ -1019,7 +1035,7 @@
                 break;
         }        
         <tr id="tableRowMonitor_@entity.id">
-            <td>@Html.ActionLink("📱 View", "Monitor", "Details", new { id = entity.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
+            <td>@Html.ActionLink("📱 View", "Monitor2", "Details", new { id = entity.id, userid=@Model.CurrentUser.UniqueID }, null)</td>
             <td><a href="@String.Format("{0}workspace/{1}/{2}-monitor/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, navigationPrefix, entity.id)">🛠️ Edit</a></td>
             <td>@entity.kind</td>
             <td>@Model.ObserveEnvironment.getIconOriginType(entity) @entity.OriginType</td>
@@ -1114,5 +1130,67 @@
     }
     </tbody>
 </table>
+
+@if(Model.CurrentDataset.Metrics.Count > 0)
+{
+    <h2 id="Metrics">@Model.ObserveEnvironment.getIconType(new ObsMetric()) Metrics</h2>
+    <a href="#top">Back to Top</a>
+
+    <table class="AlternatingRowTable SortableTable">
+        <thead>
+            <th>View</th>
+            <th>Data</th>
+            <th>Name</th>
+            <th>Desc.</th>
+            <th>Type</th>
+            <th>Unit</th>
+            <th>Rollup</th>
+            <th>Agg.</th>
+            <th>Bucket Size</th>
+            <th>Cardinality</th>
+            <th>Points</th>
+            <th>Link Labels</th>
+            <th>Tags</th>
+            <th>UserDefined</th>
+            <th>State</th>
+            <th>Last Data</th>
+        </thead>
+        <tbody>
+        @foreach (ObsMetric entity in Model.CurrentDataset.Metrics)
+        {        
+            ObsDataset parentDataset = (ObsDataset)entity.Parent;
+
+            <tr id="tableRowMetric_@entity.id">
+                <td>@Html.ActionLink("📶 View", "Metric", "Details", new { id= Convert.ToBase64String(Encoding.UTF8.GetBytes(entity.id)), userid=@Model.CurrentUser.UniqueID }, null)</td>
+                <td><a href="@String.Format("{0}workspace/{1}/metric-explorer?datasetId={2}&metricName={3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, entity.datasetId, entity.name)">📄 Data</a></td>
+                <td>@entity.name</td>
+                <td>
+                    @if (entity.description.Length > 0)
+                    {
+                        <span title="@entity.description">🧾</span> 
+                    }
+                    else
+                    {
+                        @Html.Raw("&nbsp;")
+                    }
+                </td>
+                <td>@entity.type</td>
+                <td>@entity.unit</td>
+                <td>@entity.rollup</td>
+                <td>@entity.aggregate</td>
+                <td>@entity.suggestedBucketSize</td>
+                <td>@entity.cardinality</td>
+                <td>@entity.numPoints</td>
+                <td>@entity.NumLinkLabels</td>
+                <td>@entity.NumTags</td>
+                <td>@entity.userDefined</td>
+                <td>@entity.state</td>
+                <td>@entity.lastReported.ToString("u")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
 
 <script src="~/js/DetailsCommon.js" asp-append-version="true"></script>
