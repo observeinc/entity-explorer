@@ -293,12 +293,40 @@ Origin | What created this object (`System`, `App`, `Terraform`, `User`)
 ID | Object ID
 Name | Object Name
 Stages | Number of stages in worksheet
-Stages | Number of parameters in worksheet
+Parameters | Number of parameters in worksheet
 Uses | What this object uses as data inputs and data links
 Created | Who and when created this object
 Updated | Who and when updates this object last
 
 ![Worksheets List](/docs/screenshots/list/worksheet/Worksheets.png?raw=true)
+
+## Metrics List
+
+Metrics page shows all metrics
+
+Column | Description
+-- | --
+View | Links to the [Dataset Detail](#dataset-detail) page
+Origin | What created dataset (`System`, `App`, `Terraform`, `User`)
+Dataset ID | Dataset ID of dataset defining this metric
+Dataset | Dataset Name of dataset defining this metric
+View | Links to the [Metric Detail](#metric-detail) page
+Data | Open object page in Observe in data mode
+Name | Name of metric
+Desc. | Description of metric, if available
+Type | Type of metric
+Unit | Unit of metric
+Rollup | Type of metric rollup
+Agg. | Type of metric aggregation
+Bucket Size | Size of the default metric aggregation bucket
+Cardinality | Detected cardinality
+Points | Detected points
+Link Labels | Number of detected link labels
+Tags | Number of detected tags
+State | State of metric
+Last Data | When last data point was received
+
+![Metrics List](/docs/screenshots/list/metric/Metrics.png?raw=true)
 
 ## RBAC Settings
 
@@ -361,6 +389,10 @@ List of all monitors (legacy) using this dataset.
 List of all worksheets using this dataset.
 
 ![Dataset Related Worksheets](/docs/screenshots/details/dataset/DatasetRelatedWorksheets.png?raw=true)
+
+List of all Metrics defined by this dataset.
+
+![Dataset Metrics](/docs/screenshots/details/dataset/DatasetMetrics.png?raw=true)
 
 ## Dashboard Detail
 
@@ -426,7 +458,13 @@ Visual diagram showing relationship between datasets related to this monitor.
 
 Summary information about the worksheet.
 
-![Monitor Details](/docs/screenshots/details/worksheet/WorksheetDetails.png?raw=true)
+![Worksheet Details](/docs/screenshots/details/worksheet/WorksheetDetails.png?raw=true)
+
+## Metric Detail
+
+Summary information about the metric, and what components (dataset, monitor, dashboard, worksheet) are using it.
+
+![Metric Details](/docs/screenshots/details/metric/MetricDetails.png?raw=true)
 
 ## Datastream and Tokens
 
