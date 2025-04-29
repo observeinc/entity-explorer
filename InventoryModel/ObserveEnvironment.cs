@@ -1207,11 +1207,16 @@ namespace Observe.EntityExplorer
             sb.AppendLine("// Edges");
             foreach (ObjectRelationship relationship in allRelationships)
             {
+                // We're not going to output relationships to metrics
+                if (relationship.RelatedObject is ObsMetric)
+                {
+                    continue;
+                }
                 // Check if we're outputting incoming links to the focus object that has stages
-                if (relationship.ThisObject == interestingObject && !(relationship.RelatedObject is ObsDatastream))
+                else if (relationship.ThisObject == interestingObject && !(relationship.RelatedObject is ObsDatastream))
                 {
                     // Out->here, so skip the double-linking. The links to Stages will explain what's going on
-                    sb.AppendLine();
+                    continue;
                 }
                 else if (relationship.RelatedObject == interestingObject)
                 {
