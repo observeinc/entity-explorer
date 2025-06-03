@@ -85,9 +85,9 @@ namespace Observe.EntityExplorer
             List<ObsCreditsMonitor> monitorUsage1hList = new List<ObsCreditsMonitor>();
             List<ObsCreditsMonitor> monitorUsage1dList = new List<ObsCreditsMonitor>();
             List<ObsCreditsMonitor> monitorUsage1wList = new List<ObsCreditsMonitor>();
-            List<ObsCreditsQuery> queryUsage1hList =  new List<ObsCreditsQuery>();
-            List<ObsCreditsQuery> queryUsage1dList =  new List<ObsCreditsQuery>();
-            List<ObsCreditsQuery> queryUsage1wList =  new List<ObsCreditsQuery>();
+            List<ObsCreditsQuery> queryUsage1hList = new List<ObsCreditsQuery>();
+            List<ObsCreditsQuery> queryUsage1dList = new List<ObsCreditsQuery>();
+            List<ObsCreditsQuery> queryUsage1wList = new List<ObsCreditsQuery>();
 
             List<ObsCreditsTransform> transformUsage1hList = getUsageTransform(currentUser, 1);
             List<ObsCreditsTransform> transformUsage1dList = getUsageTransform(currentUser, 24);
@@ -770,6 +770,18 @@ namespace Observe.EntityExplorer
                                 case ObsObjectOriginType.ReferenceUpload:
                                     sb.AppendLine("  subgraph cluster_ds_reference_tables {");
                                     sb.AppendFormat("    label=\"{0} Reference Tables ({1})\" style=\"filled\" fillcolor=\"cyan2\"", iconForGroup, allDatasetsInGroup.Count).AppendLine();
+                                    foreach(ObsDataset dataset in allDatasetsInGroup)
+                                    {
+                                        if (dataset == interestingObject) continue;
+                                        sb.AppendFormat("    {0}", getGraphVizNodeDefinition(dataset)).AppendLine();
+                                    }
+                                    sb.AppendLine("  }");
+
+                                    break;
+
+                                case ObsObjectOriginType.DirectContent:
+                                    sb.AppendLine("  subgraph cluster_ds_direct_content {");
+                                    sb.AppendFormat("    label=\"{0} Direct Content ({1})\" style=\"filled\" fillcolor=\"cyan\"", iconForGroup, allDatasetsInGroup.Count).AppendLine();
                                     foreach(ObsDataset dataset in allDatasetsInGroup)
                                     {
                                         if (dataset == interestingObject) continue;
@@ -2016,7 +2028,12 @@ namespace Observe.EntityExplorer
         {
             return objectType switch
             {
-                ObsCompositeObjectType.MetricThresholdMonitor => "📈", ObsCompositeObjectType.LogThresholdMonitor => "📜", ObsCompositeObjectType.ResourceCountThresholdMonitor => "🍫", ObsCompositeObjectType.PromotionMonitor => "🕙", ObsCompositeObjectType.ResourceTextValueMonitor => "🏆", _ => "❓"
+                ObsCompositeObjectType.MetricThresholdMonitor => "📈",
+                ObsCompositeObjectType.LogThresholdMonitor => "📜",
+                ObsCompositeObjectType.ResourceCountThresholdMonitor => "🍫",
+                ObsCompositeObjectType.PromotionMonitor => "🕙",
+                ObsCompositeObjectType.ResourceTextValueMonitor => "🏆",
+                _ => "❓"
             };
         }
 
@@ -2029,7 +2046,16 @@ namespace Observe.EntityExplorer
         {
             return obsObjectOriginType switch 
             {
-                ObsObjectOriginType.System => "⚙️", ObsObjectOriginType.App => "📊", ObsObjectOriginType.User => "👋", ObsObjectOriginType.DataStream => "🎏", ObsObjectOriginType.Terraform => "🛤️", ObsObjectOriginType.External => "❄️", ObsObjectOriginType.ReferenceUpload => "⏫", ObsObjectOriginType.SAML => "🏢", _ => "❓"
+                ObsObjectOriginType.System          => "⚙️",
+                ObsObjectOriginType.App             => "📊",
+                ObsObjectOriginType.User            => "👋",
+                ObsObjectOriginType.DataStream      => "🎏",
+                ObsObjectOriginType.Terraform       => "🛤️",
+                ObsObjectOriginType.External        => "❄️",
+                ObsObjectOriginType.ReferenceUpload => "⏫",
+                ObsObjectOriginType.SAML            => "🏢",
+                ObsObjectOriginType.DirectContent   => "🔖",
+                _                                   => "❓"
             };
         }
 
@@ -2071,7 +2097,12 @@ namespace Observe.EntityExplorer
         {
             return obsUser.status switch
             {
-                "UserStatusActive" => "✅", "UserStatusDisabled" => "❌", "UserStatusIdpDisabled" => "🚫", "UserStatusCreated" => "🔆", "Deleted" => "📛", _ => "❓"
+                "UserStatusActive"      => "✅",
+                "UserStatusDisabled"    => "❌",
+                "UserStatusIdpDisabled" => "🚫",
+                "UserStatusCreated"     => "🔆",
+                "Deleted"               => "📛",
+                _                       => "❓"
             };
         }
 
@@ -2111,7 +2142,17 @@ namespace Observe.EntityExplorer
         {
             return obsStage.type switch
             {
-                "table" => "📑", "timeseries" => "📉", "bar" => "📊", "circular" => "🥧", "stacked_area" => "🗻", "singlevalue" => "#️⃣", "list" => "📜", "valueovertime" => "⏳", "gantt" => "📐", "flame" => "🔥", _ => ""
+                "table"         => "📑",
+                "timeseries"    => "📉",
+                "bar"           => "📊",
+                "circular"      => "🥧",
+                "stacked_area"  => "🗻",
+                "singlevalue"   => "#️⃣",
+                "list"          => "📜",
+                "valueovertime" => "⏳",
+                "gantt"         => "📐",
+                "flame"         => "🔥",
+                _               => "❓"
             };
         }
 
@@ -2119,7 +2160,12 @@ namespace Observe.EntityExplorer
         {
             return obsParameter.viewType switch
             {
-                "resource-input" => "🛆", "single-select" => "⛛", "text" => "🔤", "numeric" => "#️⃣", "input" => "🌫️", _ => "❓"
+                "resource-input"    => "🛆",
+                "single-select"     => "⛛",
+                "text"              => "🔤",
+                "numeric"           => "#️⃣",
+                "input"             => "🌫️",
+                _                   => "❓"
             };
         }
 
@@ -2127,7 +2173,16 @@ namespace Observe.EntityExplorer
         {
             return obsFieldDefinition.type switch
             {
-                "timestamp" => "🕘", "duration" => "⏰", "string" => "📝", "int64" => "⑽", "float64" => "⒑", "object" => "🎛", "variant" => "💫", "array" => "🔢", "bool" => "❓", _ => " "
+                "timestamp" => "🕘",
+                "duration" => "⏰",
+                "string" => "📝",
+                "int64" => "⑽",
+                "float64" => "⒑",
+                "object" => "🎛",
+                "variant" => "💫",
+                "array" => "🔢",
+                "bool" => "❓",
+                _ => " "
             };
         }
 

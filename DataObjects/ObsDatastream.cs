@@ -55,6 +55,32 @@ namespace Observe.EntityExplorer.DataObjects
             {
                 this.OriginType = ObsObjectOriginType.User;
             }
+            switch (name)
+            {
+                case "DemoData":
+                case "GCP":
+                case "GitHub":
+                case "Kubernetes":
+                case "Observe Usage reporting":
+                case "OpenTelemetry":
+                    this.OriginType = ObsObjectOriginType.App;
+                    break;
+
+                default:
+                    break;
+            }
+            if (name.StartsWith("Kubernetes Explorer/"))
+            { 
+                this.OriginType = ObsObjectOriginType.DirectContent;
+            }
+            else if (name.StartsWith("Tracing/"))
+            { 
+                this.OriginType = ObsObjectOriginType.DirectContent;
+            }
+            else if (name.StartsWith("Host Explorer/"))
+            { 
+                this.OriginType = ObsObjectOriginType.DirectContent;
+            }
 
             string state = JSONHelper.getStringValueFromJToken(entityObject, "state");
             switch (state)

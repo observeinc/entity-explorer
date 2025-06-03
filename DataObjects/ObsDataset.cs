@@ -114,6 +114,12 @@ namespace Observe.EntityExplorer.DataObjects
                     this.OriginType = ObsObjectOriginType.ReferenceUpload;
                     break;
 
+                case "system/KubernetesContent":
+                case "system/Tracing Content":
+                case "system/HostExplorerContent":
+                    this.OriginType = ObsObjectOriginType.DirectContent;
+                    break;
+
                 default:
                     this.OriginType = ObsObjectOriginType.Unknown;
                     break;

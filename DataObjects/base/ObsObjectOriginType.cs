@@ -10,6 +10,7 @@ namespace Observe.EntityExplorer.DataObjects
         DataStream,
         External,
         ReferenceUpload,
-        SAML
+        SAML,
+        DirectContent
     }
 }
