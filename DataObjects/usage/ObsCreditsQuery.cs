@@ -4,6 +4,8 @@ namespace Observe.EntityExplorer.DataObjects
 {
     public class ObsCreditsQuery
     {
+        public string DashboardID { get; set; }
+        public string DashboardName { get; set; }
         public string DatasetID { get; set; }
         public string DatasetName { get; set; }
         public string PackageName { get; set; }

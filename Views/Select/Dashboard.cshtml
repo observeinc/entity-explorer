@@ -38,10 +38,14 @@
         <th>Sections</th>
         <th>Widgets</th>
         <th>Stages</th>
+        <th>Stages Vis.</th>
         <th>Parameters</th>
         <th>Uses</th>
         <th>Created</th>
         <th>Updated</th>
+        <th>Query 1h</th>
+        <th>Query 1d</th>
+        <th>Query 1w</th>
     </thead>
     <tbody>
     @foreach (ObsDashboard entity in selectedDashboards)
@@ -66,6 +70,7 @@
             <td>@entity.NumSections</td>
             <td>@entity.NumWidgets</td>
             <td>@entity.NumStages</td>
+            <td>@entity.NumStagesVisible</td>
             <td>@entity.NumParameters</td>
             <td>
                 @{
@@ -84,6 +89,9 @@
             </td>            
             <td>@entity.createdDate.ToString("u")/@entity.createdBy.label</td>
             <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label</td>
+            <td>@entity.Query1H.Credits.ToString("##0.#")</td>
+            <td>@entity.Query1D.Credits.ToString("##0.#")</td>
+            <td>@entity.Query1W.Credits.ToString("##0.#")</td>
         </tr>
     }
     </tbody>

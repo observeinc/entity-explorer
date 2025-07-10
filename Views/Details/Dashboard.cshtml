@@ -37,6 +37,7 @@
             @{
                 <a href="@String.Format("{0}workspace/{1}/dashboard/{2}",           @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentDashboard.id)">📄 Data</a>
                 <a href="@String.Format("{0}workspace/{1}/dashboard/{2}?edit=true", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentDashboard.id)">🛠️ Edit</a>
+                <a href="@String.Format("https://102.observe-o2.com/workspace/41000009/resource-explorer?datasetId=41041290&filter-customerId={0}&filter-dashboardId={1}", @Model.ObserveEnvironment.CustomerName, @Model.CurrentDashboard.id)">🅾️ O2 observe/Dashboard</a>
             }
         </td>
     </tr>
@@ -65,6 +66,7 @@
         <td>Sections: @Model.CurrentDashboard.NumSections 
             Widgets: @Model.CurrentDashboard.NumWidgets 
             Stages: @Model.CurrentDashboard.NumStages 
+            Visible Stages: @Model.CurrentDashboard.NumStagesVisible
             Parameters: @Model.CurrentDashboard.NumParameters 
         </td>
     </tr>
@@ -76,6 +78,53 @@
         <td>Updated</td>
         <td>@Model.CurrentDashboard.updatedDate.ToString("u")/@Model.CurrentDashboard.updatedBy.label</td>
     </tr>
+    @if (@Model.CurrentDashboard.Query1HUsers.Count > 0 || @Model.CurrentDashboard.Query1DUsers.Count > 0 || @Model.CurrentDashboard.Query1WUsers.Count > 0)
+    {
+        <tr>
+            <td>Query Credits</td>
+            <td>
+                <table class="AlternatingRowTable SortableTable">
+                    <thead>
+                        <th>User</th>
+                        <th>View</th>
+                        <th>DatasetID</th>
+                        <th>Dataset</th>
+                        <th>1 hour</th>
+                        <th>1 day</th>
+                        <th>1 week</th>
+                    </thead>
+                    @foreach(ObsCreditsQuery userQuery in Model.CurrentDashboard.Query1WUsers)
+                    {
+                        ObsCreditsQuery userQuery1H = Model.CurrentDashboard.Query1HUsers.Where(q => q.UserName == userQuery.UserName).FirstOrDefault();
+                        if (userQuery1H == null)
+                        {
+                            userQuery1H = new ObsCreditsQuery();
+                        }
+                        ObsCreditsQuery userQuery1D = Model.CurrentDashboard.Query1DUsers.Where(q => q.UserName == userQuery.UserName).FirstOrDefault();
+                        if (userQuery1D == null)
+                        {
+                            userQuery1D = new ObsCreditsQuery();
+                        }
+                        ObsCreditsQuery userQuery1W = @userQuery;
+                        <tr>
+                            <td>@userQuery.UserName</td>
+                            <td>
+                                @if (userQuery.DatasetID.Length > 0)
+                                {
+                                    @Html.ActionLink("🎫 View", "Dataset", "Details", new { id= userQuery.DatasetID, userid=@Model.CurrentUser.UniqueID }, null)
+                                }
+                            </td>
+                            <td>@userQuery.DatasetID</td>
+                            <td>@userQuery.DatasetName</td>
+                            <td align="right">@userQuery1H.Credits.ToString("##0.##")</td>
+                            <td align="right">@userQuery1D.Credits.ToString("##0.##")</td>
+                            <td align="right">@userQuery1W.Credits.ToString("##0.##")</td>
+                        </tr>
+                    }
+                </table>
+            </td>
+        </tr>
+    }
 </table>
 
 @{
@@ -228,7 +277,7 @@
 <a href="#top">Back to Top</a>
 
 <table class="AlternatingRowTable">
-    <tr>
+    <thead>
         <th>Name</th>
         <th>ID</th>
         <th>Type</th>
@@ -238,7 +287,7 @@
         <th>Source Column</th>
         <th>Default Value</th>
         <th>Allow Empty</th>
-    </tr>
+    </thead>
     @foreach (ObsParameter entity in Model.CurrentDashboard.Parameters)
     {
         <tr>
@@ -270,22 +319,33 @@
 <h2 id="Stages">🏛️ Stages</h2>
 <a href="#top">Back to Top</a> 
 
-<table class="AlternatingRowTable">
-    <tr>
+<table class="AlternatingRowTable SortableTable">
+    <thead>
         <th>Details</th>
         <th>Type</th>
+        <th>Visible</th>
         <th>Name</th>
         <th>ID</th>
         <th>Uses</th>
         <th>Used By</th>
         <th>Params</th>
-    </tr>
+    </thead>
     @foreach (ObsStage entity in Model.CurrentDashboard.Stages)
     {    
         <tr>
             <td><a href="@String.Format("#{0}", entity.id)">🏛️ Details</a></td>
             <td>
                 @Model.ObserveEnvironment.getIconWidgetType(entity) @entity.type
+            </td>
+            <td>
+                @if(@entity.visible)
+                {
+                    @Html.Raw("👁️ visible")
+                }
+                else 
+                {
+                    @Html.Raw("🙈 hidden")
+                }
             </td>
             <td>@entity.name</td>
             <td>@entity.id</td>
@@ -386,7 +446,7 @@
             <td>⏫ Inputs</td>
             <td>
                 <table class="AlternatingRowTable">
-                    <tr>
+                    <thead>
                         <th>View</th>
                         <th>Data</th>
                         <th>Edit</th>
@@ -396,7 +456,7 @@
                         <th>Name</th>
                         <th>Relationship</th>
                         <th>Ref Name</th>
-                    </tr>
+                    </thead>
                     @foreach (ObjectRelationship objectRelationship in entity.ExternalObjectRelationships)
                     {
                         if (objectRelationship.RelatedObject is ObsDataset)

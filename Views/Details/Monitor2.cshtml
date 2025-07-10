@@ -35,20 +35,8 @@
         <td>Observe</td>
         <td>
             @{
-                string navigationPrefix = "";                
-                if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.MetricThresholdMonitor) == ObsCompositeObjectType.MetricThresholdMonitor)
-                {
-                    navigationPrefix = "threshold";
-                }
-                else if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.ResourceCountThresholdMonitor) == ObsCompositeObjectType.ResourceCountThresholdMonitor)
-                {
-                    navigationPrefix = "count";
-                }
-                else if ((@Model.CurrentMonitor.ObjectType & ObsCompositeObjectType.PromotionMonitor) == ObsCompositeObjectType.PromotionMonitor)
-                {
-                    navigationPrefix = "promote";
-                }
-                <a href="@String.Format("{0}workspace/{1}/{2}-monitor/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, navigationPrefix, @Model.CurrentMonitor.id)">🛠️ Edit</a>
+                <a href="@String.Format("{0}workspace/{1}/{2}-monitor/{3}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.ObserveEnvironment.getMonitorv2URLPartType(@Model.CurrentMonitor), @Model.CurrentMonitor.id)">🛠️ Edit</a>
+                <a href="@String.Format("https://102.observe-o2.com/workspace/41000009/resource-explorer?datasetId=41051980&filter-customerId={0}&filter-monitorId={1}", @Model.ObserveEnvironment.CustomerName, @Model.CurrentMonitor.id)">🅾️ O2 observe/Monitor V2</a>
             }
         </td>
     </tr>
@@ -114,7 +102,7 @@
             <table>
                 <tr>
                     <th>Length</th>
-                    <th>Transform</th>
+                    <th>Transform+Backfill</th>
                 </tr>
                 <tr>
                     <td>1 hour</td>
@@ -338,15 +326,15 @@
 <h2 id="Stages">🏛️ Stages</h2>
 <a href="#top">Back to Top</a>
 
-<table class="AlternatingRowTable">
-    <tr>
+<table class="AlternatingRowTable SortableTable">
+    <thead>
         <th>Details</th>
         <th>Type</th>
         <th>Name</th>
         <th>ID</th>
         <th>Uses</th>
         <th>Used By</th>
-    </tr>
+    </thead>
     @foreach (ObsStage entity in Model.CurrentMonitor.Stages)
     {    
         <tr>
@@ -435,7 +423,7 @@
             <td>⏫ Inputs</td>
             <td>
                 <table class="AlternatingRowTable">
-                    <tr>
+                    <thead>
                         <th>View</th>
                         <th>Data</th>
                         <th>Edit</th>
@@ -445,7 +433,7 @@
                         <th>Name</th>
                         <th>Relationship</th>
                         <th>Ref Name</th>
-                    </tr>
+                    </thead>
                     @foreach (ObjectRelationship objectRelationship in entity.ExternalObjectRelationships)
                     {
                         if (objectRelationship.RelatedObject is ObsDataset)

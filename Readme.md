@@ -190,12 +190,12 @@ Uses | What this object uses as data inputs and data links
 Used By | What uses this object (`Data`, `Dashboard`, `Monitor`)
 Created | Who and when created this object
 Updated | Who and when updates this object last
-Transform 1h | `credits_transform` in last 1 hour
-Transform 1d | `credits_transform` in last 1 day
-Transform 1w | `credits_transform` in last 1 week
-Query 1h | `credits_adhoc_query` in last 1 hour
-Query 1d | `credits_adhoc_query` in last 1 day
-Query 1w | `credits_adhoc_query` in last 1 week
+Trns+Bfill 1h | `credits_transform` + `credits_backfill` in last 1 hour
+Trns+Bfill 1d | `credits_transform` + `credits_backfill` in last 1 day
+Trns+Bfill 1w | `credits_transform` + `credits_backfill` in last 1 week
+Query 1h | `credits_adhoc_query` + `credits_inlined_query` in last 1 hour
+Query 1d | `credits_adhoc_query` + `credits_inlined_query` in last 1 day
+Query 1w | `credits_adhoc_query` + `credits_inlined_query` in last 1 week
 Accel Conf. | Configured staleness target of the dataset
 Accel Eff. | The target staleness of this dataset when taking downstream datasets
 Accel Actl. | Staleness of the dataset (averaged over some moving window)
@@ -223,6 +223,9 @@ Parameters | Number of parameters in dashboard
 Uses | What this object uses as data inputs and data links
 Created | Who and when created this object
 Updated | Who and when updates this object last
+Query 1h | `credits_adhoc_query` + `credits_inlined_query` in last 1 hour
+Query 1d | `credits_adhoc_query` + `credits_inlined_query` in last 1 day
+Query 1w | `credits_adhoc_query` + `credits_inlined_query` in last 1 week
 
 ![Dashboard List](/docs/screenshots/list/dashboard/Dashboards.png?raw=true)
 

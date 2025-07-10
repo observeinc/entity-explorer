@@ -4,6 +4,8 @@ namespace Observe.EntityExplorer.DataObjects
 {
     public class ObsCreditsTransform
     {
+        public string MonitorID { get; set; }
+        public string MonitorName { get; set; }
         public string DatasetID { get; set; }
         public string DatasetName { get; set; }
         public string PackageName { get; set; }

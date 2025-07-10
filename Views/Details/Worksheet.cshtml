@@ -36,6 +36,7 @@
         <td>
             @{
                 <a href="@String.Format("{0}workspace/{1}/worksheet/{2}", @Model.CurrentUser.CustomerEnvironmentUrl, @Model.CurrentUser.WorkspaceID, @Model.CurrentWorksheet.id)">📄 Data</a>
+                <a href="@String.Format("https://102.observe-o2.com/workspace/41000009/resource-explorer?datasetId=41041990&filter-customerId={0}&filter-worksheetId={1}", @Model.ObserveEnvironment.CustomerName, @Model.CurrentWorksheet.id)">🅾️ O2 observe/Worksheet</a>
             }
         </td>
     </tr>
@@ -263,8 +264,8 @@
 <h2 id="Stages">🏛️ Stages</h2>
 <a href="#top">Back to Top</a> 
 
-<table class="AlternatingRowTable">
-    <tr>
+<table class="AlternatingRowTable SortableTable">
+    <thead>
         <th>Details</th>
         <th>Type</th>
         <th>Name</th>
@@ -272,7 +273,7 @@
         <th>Uses</th>
         <th>Used By</th>
         <th>Params</th>
-    </tr>
+    </thead>
     @foreach (ObsStage entity in Model.CurrentWorksheet.Stages)
     {    
         <tr>
@@ -376,7 +377,7 @@
             <td>⏫ Inputs</td>
             <td>
                 <table class="AlternatingRowTable">
-                    <tr>
+                    <thead>
                         <th>View</th>
                         <th>Data</th>
                         <th>Edit</th>
@@ -386,7 +387,7 @@
                         <th>Name</th>
                         <th>Relationship</th>
                         <th>Ref Name</th>
-                    </tr>
+                    </thead>
                     @foreach (ObjectRelationship objectRelationship in entity.ExternalObjectRelationships)
                     {
                         if (objectRelationship.RelatedObject is ObsDataset)

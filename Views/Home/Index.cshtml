@@ -32,6 +32,12 @@
             </td>
         </tr>
         <tr>
+            <td>observe/Customer in o2</td>
+            <td>
+                <a href="@String.Format("https://102.observe-o2.com/workspace/41000009/resource-explorer?datasetId=41007202&filter-customerId={0}", @Model.ObserveEnvironment.CustomerName)">🅾️ O2 observe/Customer</a>
+            </td>
+        </tr>
+        <tr>
             <td>Loaded On</td>
             <td>
                 @Model.ObserveEnvironment.LoadedOn.ToString("u") <button type="submit" id="buttonRefresh" name="buttonRefresh" value="Refresh">Refresh</button>
@@ -42,11 +48,11 @@
 }
 
 <table>
-    <tr>
+    <thead>
         <th>Category</th>
         <th>Statistics</th>
         <th>Costs/Stats</th>
-    </tr>
+    </thead>
     <tr>
         <td><a asp-area="" asp-controller="Select" asp-action="Dataset" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(((ObsCompositeObject)new ObsDataset())) Explore Datasets</a> - Review the structure and dependencies of datasets</td>
         <td>
@@ -128,7 +134,26 @@
                 </tr>
             </table>
         </td>
-        <td></td>
+        <td>
+            <table>
+                <thead>
+                    <th>Length</th>
+                    <th>Query</th>
+                </thead>
+                <tr>
+                    <td>1 hour</td>
+                    <td>@Model.ObserveEnvironment.AllDashboardsDict.Values.ToList().Sum(d => d.Query1H.Credits).ToString("#.#")</td>
+                </tr>
+                <tr>
+                    <td>1 day</td>
+                    <td>@Model.ObserveEnvironment.AllDashboardsDict.Values.ToList().Sum(d => d.Query1D.Credits).ToString("#.#")</td>
+                </tr>
+                <tr>
+                    <td>1 week</td>
+                    <td>@Model.ObserveEnvironment.AllDashboardsDict.Values.ToList().Sum(d => d.Query1W.Credits).ToString("#.#")</td>
+                </tr>
+            </table>            
+        </td>
     </tr>
     <tr>
         <td><a asp-area="" asp-controller="Select" asp-action="Worksheet" asp-route-userid="@Model.CurrentUser.UniqueID">@Model.ObserveEnvironment.getIconType(new ObsWorksheet()) Explore Worksheets</a> - Review the structure of ad-hoc worksheets</td>

@@ -16,8 +16,15 @@ namespace Observe.EntityExplorer.DataObjects
         public List<ObjectRelationship> ExternalObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
         public List<ObjectRelationship> StageObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
 
+        public ObsCreditsQuery Query1H { get; set; } = new ObsCreditsQuery() {Credits = 0};
+        public ObsCreditsQuery Query1D { get; set; } = new ObsCreditsQuery() {Credits = 0};
+        public ObsCreditsQuery Query1W { get; set; } = new ObsCreditsQuery() {Credits = 0};
+        public List<ObsCreditsQuery> Query1HUsers { get; set; } = new List<ObsCreditsQuery>();
+        public List<ObsCreditsQuery> Query1DUsers { get; set; } = new List<ObsCreditsQuery>();
+        public List<ObsCreditsQuery> Query1WUsers { get; set; } = new List<ObsCreditsQuery>();
+
         public long NumStages
-        { 
+        {
             get
             {
                 JArray stagesArray = (JArray)JSONHelper.getJTokenValueFromJToken(this._raw, "stages");
@@ -29,8 +36,20 @@ namespace Observe.EntityExplorer.DataObjects
             }
         }
 
+        public long NumStagesVisible
+        {
+            get
+            {
+                if (this.Stages != null)
+                {
+                    return this.Stages.Count(s => s.visible == true);
+                }
+                return 0;
+            }
+        }
+
         public long NumSections
-        { 
+        {
             get
             {
                 JObject layoutObject = (JObject)JSONHelper.getJTokenValueFromJToken(this._raw, "layout");
@@ -80,7 +99,7 @@ namespace Observe.EntityExplorer.DataObjects
         }
 
         public long NumParameters
-        { 
+        {
             get
             {
                 JArray parametersArray = (JArray)JSONHelper.getJTokenValueFromJToken(this._raw, "parameters");

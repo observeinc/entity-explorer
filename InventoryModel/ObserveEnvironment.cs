@@ -89,9 +89,9 @@ namespace Observe.EntityExplorer
             List<ObsCreditsQuery> queryUsage1dList = new List<ObsCreditsQuery>();
             List<ObsCreditsQuery> queryUsage1wList = new List<ObsCreditsQuery>();
 
-            List<ObsCreditsTransform> transformUsage1hList = getUsageTransform(currentUser, 1);
-            List<ObsCreditsTransform> transformUsage1dList = getUsageTransform(currentUser, 24);
-            List<ObsCreditsTransform> transformUsage1wList = getUsageTransform(currentUser, 24 * 7);
+            List<ObsCreditsTransform> transformUsage1hList = new List<ObsCreditsTransform>();
+            List<ObsCreditsTransform> transformUsage1dList = new List<ObsCreditsTransform>();
+            List<ObsCreditsTransform> transformUsage1wList = new List<ObsCreditsTransform>();
 
             // Retrieve all in parallel
             Parallel.Invoke(
@@ -363,6 +363,26 @@ namespace Observe.EntityExplorer
                             thisMonitor2.Transform1H = usageRow;
                         }
                     }
+                    // Add backfill monitors from the transform report
+                    foreach (ObsCreditsTransform usageRow in transformUsage1hList.Where(u => u.MonitorID.Length != 0))
+                    {
+                        ObsMonitor thisMonitor = null;
+                        if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
+                        {
+                            if (thisMonitor.Transform1H != null)
+                            {
+                                thisMonitor.Transform1H.Credits += usageRow.Credits;
+                            }
+                        }
+                        ObsMonitor2 thisMonitor2 = null;
+                        if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
+                        {
+                            if (thisMonitor2.Transform1H != null)
+                            {
+                                thisMonitor2.Transform1H.Credits += usageRow.Credits;
+                            }
+                        }
+                    }
                 },
                 () => // Usage - Monitor - 1d
                 {
@@ -377,6 +397,26 @@ namespace Observe.EntityExplorer
                         if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
                         {
                             thisMonitor2.Transform1D = usageRow;
+                        }
+                    }
+                    // Add backfill monitors from the transform report
+                    foreach (ObsCreditsTransform usageRow in transformUsage1dList.Where(u => u.MonitorID.Length != 0))
+                    {
+                        ObsMonitor thisMonitor = null;
+                        if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
+                        {
+                            if (thisMonitor.Transform1D != null)
+                            {
+                                thisMonitor.Transform1D.Credits += usageRow.Credits;
+                            }
+                        }
+                        ObsMonitor2 thisMonitor2 = null;
+                        if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
+                        {
+                            if (thisMonitor2.Transform1D != null)
+                            {
+                                thisMonitor2.Transform1D.Credits += usageRow.Credits;
+                            }
                         }
                     }
                 },
@@ -394,7 +434,27 @@ namespace Observe.EntityExplorer
                         {
                             thisMonitor2.Transform1W = usageRow;
                         }
-                    }                     
+                    }
+                    // Add backfill monitors from the transform report
+                    foreach (ObsCreditsTransform usageRow in transformUsage1wList.Where(u => u.MonitorID.Length != 0))
+                    {
+                        ObsMonitor thisMonitor = null;
+                        if (this.AllMonitorsDict.TryGetValue(usageRow.MonitorID, out thisMonitor) == true)
+                        {
+                            if (thisMonitor.Transform1W != null)
+                            {
+                                thisMonitor.Transform1W.Credits += usageRow.Credits;
+                            }
+                        }
+                        ObsMonitor2 thisMonitor2 = null;
+                        if (this.AllMonitors2Dict.TryGetValue(usageRow.MonitorID, out thisMonitor2) == true)
+                        {
+                            if (thisMonitor2.Transform1W != null)
+                            {
+                                thisMonitor2.Transform1W.Credits += usageRow.Credits;
+                            }
+                        }
+                    }
                 },
                 () => // Usage - Query - 1h
                 {
@@ -403,8 +463,14 @@ namespace Observe.EntityExplorer
                         ObsDataset thisDataset = null;
                         if (this.AllDatasetsDict.TryGetValue(usageRow.DatasetID, out thisDataset) == true)
                         {
-                            thisDataset.Query1H.Credits = thisDataset.Query1H.Credits + usageRow.Credits; 
+                            thisDataset.Query1H.Credits = thisDataset.Query1H.Credits + usageRow.Credits;
                             thisDataset.Query1HUsers.Add(usageRow);
+                        }
+                        ObsDashboard thisDashboard = null;
+                        if (this.AllDashboardsDict.TryGetValue(usageRow.DashboardID, out thisDashboard) == true)
+                        {
+                            thisDashboard.Query1H.Credits = thisDashboard.Query1H.Credits + usageRow.Credits; 
+                            thisDashboard.Query1HUsers.Add(usageRow);
                         }
                     }
                 },
@@ -418,6 +484,12 @@ namespace Observe.EntityExplorer
                             thisDataset.Query1D.Credits = thisDataset.Query1D.Credits + usageRow.Credits; 
                             thisDataset.Query1DUsers.Add(usageRow);
                         }
+                        ObsDashboard thisDashboard = null;
+                        if (this.AllDashboardsDict.TryGetValue(usageRow.DashboardID, out thisDashboard) == true)
+                        {
+                            thisDashboard.Query1D.Credits = thisDashboard.Query1D.Credits + usageRow.Credits; 
+                            thisDashboard.Query1DUsers.Add(usageRow);
+                        }
                     }
                 },
                 () => // Usage - Query - 1w
@@ -430,8 +502,14 @@ namespace Observe.EntityExplorer
                             thisDataset.Query1W.Credits = thisDataset.Query1W.Credits + usageRow.Credits; 
                             thisDataset.Query1WUsers.Add(usageRow);
                         }
+                        ObsDashboard thisDashboard = null;
+                        if (this.AllDashboardsDict.TryGetValue(usageRow.DashboardID, out thisDashboard) == true)
+                        {
+                            thisDashboard.Query1W.Credits = thisDashboard.Query1W.Credits + usageRow.Credits; 
+                            thisDashboard.Query1WUsers.Add(usageRow);
+                        }
                     }
-                }
+                }            
             );
             
             foreach (ObsDataset dataset in allDatasets)
@@ -446,6 +524,9 @@ namespace Observe.EntityExplorer
 
             foreach (ObsDashboard dashboard in allDashboards)
             {
+                dashboard.Query1HUsers = dashboard.Query1HUsers.OrderBy(q => q.UserName).ToList();
+                dashboard.Query1DUsers = dashboard.Query1DUsers.OrderBy(q => q.UserName).ToList();
+                dashboard.Query1WUsers = dashboard.Query1WUsers.OrderBy(q => q.UserName).ToList();
                 this.ObjectRelationships.AddRange(dashboard.ExternalObjectRelationships);
             }
             this.ObserveObjects.AddRange(allDashboards);
@@ -1824,7 +1905,7 @@ namespace Observe.EntityExplorer
         {
             var linkUri = new UriBuilder(this.AppHostedAt);
             linkUri.Path = String.Format("Details/Dataset/{0}", entity.id);
-            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            linkUri.Query = String.Format("userid={0}", WebUtility.UrlEncode(this.UserUniqueID));
             return linkUri.Uri.ToString();
         }
 
@@ -1832,7 +1913,7 @@ namespace Observe.EntityExplorer
         {
             var linkUri = new UriBuilder(this.AppHostedAt);
             linkUri.Path = String.Format("Details/Dashboard/{0}", entity.id);
-            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            linkUri.Query = String.Format("userid={0}", WebUtility.UrlEncode(this.UserUniqueID));
             return linkUri.Uri.ToString();
         }
 
@@ -1840,7 +1921,7 @@ namespace Observe.EntityExplorer
         {
             var linkUri = new UriBuilder(this.AppHostedAt);
             linkUri.Path = String.Format("Details/Monitor/{0}", entity.id);
-            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            linkUri.Query = String.Format("userid={0}", WebUtility.UrlEncode(this.UserUniqueID));
             return linkUri.Uri.ToString();
         }
 
@@ -1848,7 +1929,7 @@ namespace Observe.EntityExplorer
         {
             var linkUri = new UriBuilder(this.AppHostedAt);
             linkUri.Path = String.Format("Details/Monitor2/{0}", entity.id);
-            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            linkUri.Query = String.Format("userid={0}", WebUtility.UrlEncode(this.UserUniqueID));
             return linkUri.Uri.ToString();
         }
 
@@ -1856,7 +1937,7 @@ namespace Observe.EntityExplorer
         {
             var linkUri = new UriBuilder(this.AppHostedAt);
             linkUri.Path = String.Format("Details/Worksheet/{0}", entity.id);
-            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            linkUri.Query = String.Format("userid={0}", WebUtility.UrlEncode(this.UserUniqueID));
             return linkUri.Uri.ToString();
         }
 
@@ -1873,7 +1954,7 @@ namespace Observe.EntityExplorer
         {
             var linkUri = new UriBuilder(this.AppHostedAt);
             linkUri.Path = String.Format("Select/Datastream");
-            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            linkUri.Query = String.Format("userid={0}", WebUtility.UrlEncode(this.UserUniqueID));
             linkUri.Fragment = "Datastreams";
             return linkUri.Uri.ToString();            
         }
@@ -1882,7 +1963,7 @@ namespace Observe.EntityExplorer
         {
             var linkUri = new UriBuilder(this.AppHostedAt);
             linkUri.Path = String.Format("Select/Datastream");
-            linkUri.Query = String.Format("userid={0}", this.UserUniqueID);
+            linkUri.Query = String.Format("userid={0}", WebUtility.UrlEncode(this.UserUniqueID));
             linkUri.Fragment = "Tokens";
             return linkUri.Uri.ToString();            
         }
@@ -2202,11 +2283,11 @@ namespace Observe.EntityExplorer
             }
             else if ((obsMonitor.ObjectType & ObsCompositeObjectType.ResourceCountThresholdMonitor) == ObsCompositeObjectType.ResourceCountThresholdMonitor)
             {
-                return "threshold";
+                return "count";
             }
             else if ((obsMonitor.ObjectType & ObsCompositeObjectType.PromotionMonitor) == ObsCompositeObjectType.PromotionMonitor)
             {
-                return "threshold";
+                return "promote";
             }
             else
             {

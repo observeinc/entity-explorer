@@ -115,7 +115,7 @@
             <table>
                 <tr>
                     <th>Length</th>
-                    <th>Transform</th>
+                    <th>Transform+Backfill</th>
                 </tr>
                 <tr>
                     <td>1 hour</td>
@@ -403,7 +403,7 @@
 <h2 id="Stages">🏛️ Stages</h2>
 <a href="#top">Back to Top</a>
 
-<table class="AlternatingRowTable">
+<table class="AlternatingRowTable SortableTable">
     <tr>
         <th>Details</th>
         <th>Type</th>
@@ -500,7 +500,7 @@
             <td>⏫ Inputs</td>
             <td>
                 <table class="AlternatingRowTable">
-                    <tr>
+                    <thead>
                         <th>View</th>
                         <th>Data</th>
                         <th>Edit</th>
@@ -510,7 +510,7 @@
                         <th>Name</th>
                         <th>Relationship</th>
                         <th>Ref Name</th>
-                    </tr>
+                    </thead>
                     @foreach (ObjectRelationship objectRelationship in entity.ExternalObjectRelationships)
                     {
                         if (objectRelationship.RelatedObject is ObsDataset)

@@ -2756,7 +2756,7 @@ fragment DataStream on Datastream {
           }}
         ],
         ""stageID"": ""exportData"",
-        ""pipeline"": ""filter metric = \""credits_transform\""\nstatsby Credits:sum(value), group_by(PackageName:label(^Package), DatasetName:label(^Dataset), DatasetID:dataset_id)""
+        ""pipeline"": ""filter metric = \""credits_transform\"" or metric = \""credits_backfill\""\nstatsby Credits:sum(value), group_by(PackageName:label(^Package), DatasetName:label(^Dataset), DatasetID:dataset_id, MonitorName:label(^Monitor), MonitorID:monitor_id)""
       }}
     ]
   }},
@@ -2808,7 +2808,7 @@ fragment DataStream on Datastream {
           }}
         ],
         ""stageID"": ""exportData"",
-        ""pipeline"": ""filter metric = \""credits_adhoc_query\""\nstatsby Credits:sum(value), group_by(PackageName:label(^Package), DatasetName:label(^Dataset), DatasetID:dataset_id, UserName:label(^User))""
+        ""pipeline"": ""filter metric = \""credits_adhoc_query\"" or metric = \""credits_inlined_query\""\nstatsby Credits:sum(value), group_by(PackageName:label(^Package), DatasetName:label(^Dataset), DatasetID:dataset_id, DashboardName:label(^Dashboard), DashboardID:dashboard_id, UserName:label(^User))""
       }}
     ]
   }},
@@ -2833,6 +2833,11 @@ fragment DataStream on Datastream {
             
             if (results.Item3 == HttpStatusCode.OK)
             {
+                return results.Item1;
+            }
+            else if (results.Item3 == HttpStatusCode.PartialContent)
+            {
+                logger.Warn(String.Format("Call to {0}v1/meta/export/query for user {1} returned {2}", currentUser.CustomerEnvironmentUrl, currentUser.UserName, results.Item3));
                 return results.Item1;
             }
             else
