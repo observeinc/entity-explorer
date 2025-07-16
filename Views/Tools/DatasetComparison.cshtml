@@ -1,0 +1,105 @@
+@using Observe.EntityExplorer.DataObjects
+@model Observe.EntityExplorer.Models.DatasetComparisonViewModel
+@{
+    ViewData["Title"] = "Dataset Comparison";
+}
+<style>
+    .spinner {
+        display:inline-block;
+        width:12px;
+        height:12px;
+        border:2px solid #ccc;
+        border-top-color:#333;
+        border-radius:50%;
+        animation: spin 1s linear infinite;
+    }
+    @@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+<p>
+    <span class="spanError">@ViewData["ErrorMessage"]</span>
+</p>
+@if (ViewData["ErrorMessage"] != null)
+{
+    return;
+}
+<p>@Html.ActionLink("Back to Home", "Index", "Home", new { userid = Model.CurrentUser.UniqueID }, null)</p>
+<h1>Dataset Comparison</h1>
+<p><strong>Build:</strong> @Model.BuildId</p>
+<form method="get" asp-action="DatasetComparison" asp-controller="Tools">
+    <input type="hidden" name="userid" value="@Model.CurrentUser.UniqueID" />
+    <label for="baselineDatasetId">Baseline Dataset</label>
+    <select id="baselineDatasetId" name="baselineDatasetId" onchange="this.form.submit()">
+        <option value="">-- select --</option>
+@foreach (ObsDataset ds in Model.ObserveEnvironment.AllDatasetsDict.Values.OrderBy(d => d.name))
+{
+    <option value="@ds.id" selected="@(ds.id == Model.BaselineDatasetId ? "selected" : null)">@ds.name</option>
+}
+    </select>
+</form>
+@if (Model.BaselineDataset != null)
+{
+    <form id="compareForm" onsubmit="runComparison();return false;">
+        <input type="hidden" name="userid" value="@Model.CurrentUser.UniqueID" />
+        <input type="hidden" name="baselineDatasetId" value="@Model.BaselineDatasetId" />
+        <label for="optimizedDatasetId">Optimized Dataset</label>
+        <select id="optimizedDatasetId" name="optimizedDatasetId">
+@foreach (ObsDataset ds in Model.ObserveEnvironment.AllDatasetsDict.Values.OrderBy(d => d.name))
+{
+    <option value="@ds.id" selected="@(ds.id == Model.OptimizedDatasetId ? "selected" : null)">@ds.name</option>
+}
+        </select>
+        <h3>Dashboards</h3>
+        <ul>
+@foreach (var dash in Model.BaselineDashboards)
+{
+    <li><label><input type="checkbox" name="dashboardIds" value="@dash.id" /> @dash.name</label></li>
+}
+        </ul>
+        <button type="submit">Run Comparison</button>
+    </form>
+    <div id="progress" style="margin-top:1em;font-weight:bold"></div>
+    <table id="results" style="display:none;margin-top:1em" class="table table-striped">
+        <thead>
+            <tr>
+                <th>Source</th>
+                <th>Stage</th>
+                <th>Query</th>
+                <th>Baseline Rows</th>
+                <th>Optimized Rows</th>
+                <th>Match</th>
+                <th>Error</th>
+                <th>Baseline Sample</th>
+                <th>Optimized Sample</th>
+                <th>Baseline CSV</th>
+                <th>Optimized CSV</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <script>
+    function runComparison(){
+        var form=document.getElementById('compareForm');
+        var params=new URLSearchParams(new FormData(form));
+        var url='@Url.Action("RunDatasetComparison","Tools")?'+params.toString();
+        var evt=new EventSource(url);
+        document.getElementById('results').style.display='table';
+        document.querySelector('#results tbody').innerHTML='';
+        document.getElementById('progress').innerHTML='<span class="spinner"></span> Starting...';
+        evt.onmessage=function(e){
+            if(e.data==='done'){ evt.close(); document.getElementById('progress').textContent='Done'; return; }
+            var r=JSON.parse(e.data);
+            document.getElementById('progress').innerHTML='<span class="spinner"></span> Running '+r.SourceName+' - '+r.StageName;
+            var tr=document.createElement('tr');
+            var matchSpan='';
+            if(r.Match===true){ matchSpan='<span style="color:green">✔</span>'; tr.style.backgroundColor='#e6ffe6'; }
+            else if(r.Match===false){ matchSpan='<span style="color:red">✖</span>'; tr.style.backgroundColor='#ffe6e6'; }
+            else{ matchSpan='<span>?</span>'; tr.style.backgroundColor='#f0f0f0'; }
+            var baseSample=r.BaselineSample.map(row=>row.join(', ')).join('\n');
+            var optSample=r.OptimizedSample.map(row=>row.join(', ')).join('\n');
+            tr.innerHTML='<td>'+r.SourceName+'</td><td>'+r.StageName+'</td><td><pre>'+r.Query.replace(/</g,'&lt;')+'</pre></td><td>'+r.BaselineRowCount+'</td><td>'+r.OptimizedRowCount+'</td><td>'+matchSpan+'</td><td>'+r.Error+'</td><td><pre>'+baseSample+'</pre></td><td><pre>'+optSample+'</pre></td><td><pre>'+r.BaselineCsv.replace(/</g,'&lt;')+'</pre></td><td><pre>'+r.OptimizedCsv.replace(/</g,'&lt;')+'</pre></td>';
+            document.querySelector('#results tbody').appendChild(tr);
+        };
+    }
+    </script>
+}
+
