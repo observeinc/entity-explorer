@@ -28,6 +28,7 @@ namespace Observe.EntityExplorer.DataObjects
         MonitorSupportDataset       = 1 << 17,
         InterfaceMetricDataset      = 1 << 18,
         InterfaceLogDataset         = 1 << 19,
+        ViewDataset                 = 1 << 25,
 
         Datastream                = 1 << 20,
         Token                     = 1 << 21,

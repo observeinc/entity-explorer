@@ -473,6 +473,10 @@ namespace Observe.EntityExplorer.DataObjects
             if (accelerationInfoObject != null)
             {
                 this.Acceleration = new ObsAccelerationInfo(accelerationInfoObject, this, allDatasetsDict, allMonitorsDict);
+                if (Acceleration.state == "View")
+                {
+                    this.ObjectType = this.ObjectType | ObsCompositeObjectType.ViewDataset;
+                }
             }
         }
 

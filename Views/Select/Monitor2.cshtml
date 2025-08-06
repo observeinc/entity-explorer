@@ -59,6 +59,10 @@
             <th>Transform 1h</th>
             <th>Transform 1d</th>
             <th>Transform 1w</th>
+            <th>Acc Conf.</th>
+            <th>Acc Eff.</th>
+            <th>Acc Actl.</th>
+            <th>Acc Range</th>
         </thead>
         <tbody>
         @foreach (ObsMonitor2 entity in selectedMonitors)
@@ -98,6 +102,38 @@
                 <td>@entity.Transform1H.Credits.ToString("##0.#")</td>
                 <td>@entity.Transform1D.Credits.ToString("##0.#")</td>
                 <td>@entity.Transform1W.Credits.ToString("##0.#")</td>
+                <td>
+                    @if(entity.SupportingDataset != null)
+                    {
+                        <span title="Configured staleness target of the dataset">@entity.SupportingDataset.Acceleration.StalenessConfigured</span>
+                    }
+                </td>
+                <td>
+                    @if(entity.SupportingDataset != null)
+                    {
+                        string highlightClass = "";
+                        if (entity.SupportingDataset.Acceleration.StalenessEffective < entity.SupportingDataset.Acceleration.StalenessConfigured)
+                        {
+                            highlightClass = "accelSettingDifferent";
+                        }
+                        <span title="The target staleness of this dataset when taking downstream datasets" class="@highlightClass">@entity.SupportingDataset.Acceleration.StalenessEffective</span>
+                    }
+                </td>
+                <td>
+                    @if(entity.SupportingDataset != null)
+                    {
+                        <span title="Staleness of the dataset (averaged over some moving window)">@entity.SupportingDataset.Acceleration.StalenessActual</span>
+                    }
+                </td>
+                <td>
+                    @if(entity.SupportingDataset != null)
+                    {
+                        @foreach (ObsTimeRange timeRange in @entity.SupportingDataset.Acceleration.AcceleratedRanges)
+                        {
+                            <span title="@timeRange.start.ToString("u") - @timeRange.end.ToString("u")">@timeRange.duration</span>
+                        }
+                    }
+                </td>
             </tr>
         }
         </tbody>

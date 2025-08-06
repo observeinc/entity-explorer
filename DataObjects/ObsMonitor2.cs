@@ -17,8 +17,8 @@ namespace Observe.EntityExplorer.DataObjects
         public List<ObsParameter> Parameters { get; set; } = new List<ObsParameter>(0);
         public Dictionary<string, ObsParameter> AllParametersDict { get; set; }
 
-        // public ObsAccelerationInfo Acceleration { get; set; }
-
+        public ObsDataset SupportingDataset { get; set; }
+        
         public List<ObjectRelationship> ExternalObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
         public List<ObjectRelationship> StageObjectRelationships { get; set; } = new List<ObjectRelationship>(8);
 
@@ -157,6 +157,7 @@ namespace Observe.EntityExplorer.DataObjects
                 if (allDatasetsDict.TryGetValue(JSONHelper.getStringValueFromJToken(metaObject, "outputDatasetID"), out supportingDataset) == true)
                 {
                     this.ExternalObjectRelationships.Add(new ObjectRelationship(String.Format("{0} to {1} as {2}", supportingDataset.ToString(), this, ObsObjectRelationshipType.ProvidesData), this, supportingDataset, ObsObjectRelationshipType.ProvidesData));
+                    this.SupportingDataset = supportingDataset;
                 }
             }
         }

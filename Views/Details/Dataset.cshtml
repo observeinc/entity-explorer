@@ -892,6 +892,9 @@
         <th>Uses</th>
         <th>Created</th>
         <th>Updated</th>
+        <th>Query 1h</th>
+        <th>Query 1d</th>
+        <th>Query 1w</th>
     </thead>
     <tbody>
     @foreach (ObsDashboard entity in selectedDashboards)
@@ -924,6 +927,9 @@
             </td>          
             <td>@entity.createdDate.ToString("u")/@entity.createdBy.label</td>
             <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label</td>
+            <td>@entity.Query1H.Credits.ToString("##0.#")</td>
+            <td>@entity.Query1D.Credits.ToString("##0.#")</td>
+            <td>@entity.Query1W.Credits.ToString("##0.#")</td>
         </tr>
     }
     </tbody>
@@ -958,6 +964,13 @@
         <th>Uses</th>
         <th>Created</th>
         <th>Updated</th>
+        <th>Transform 1h</th>
+        <th>Transform 1d</th>
+        <th>Transform 1w</th>
+        <th>Acc Conf.</th>
+        <th>Acc Eff.</th>
+        <th>Acc Actl.</th>
+        <th>Acc Range</th>
     </thead>
     <tbody>
     @foreach (ObsMonitor entity in selectedMonitors)
@@ -996,6 +1009,27 @@
             </td>            
             <td>@entity.createdDate.ToString("u")/@entity.createdBy.label</td>
             <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label</td>
+            <td>@entity.Transform1H.Credits.ToString("##0.#")</td>
+            <td>@entity.Transform1D.Credits.ToString("##0.#")</td>
+            <td>@entity.Transform1W.Credits.ToString("##0.#")</td>
+            <td><span title="Configured staleness target of the dataset">@entity.Acceleration.StalenessConfigured</span></td>
+            <td>
+                @{
+                    string highlightClass = "";
+                    if (entity.Acceleration.StalenessEffective < entity.Acceleration.StalenessConfigured)
+                    {
+                        highlightClass = "accelSettingDifferent";
+                    }
+                }
+                <span title="The target staleness of this dataset when taking downstream datasets" class="@highlightClass">@entity.Acceleration.StalenessEffective</span>
+            </td>
+            <td><span title="Staleness of the dataset (averaged over some moving window)">@entity.Acceleration.StalenessActual</span></td>
+            <td>
+                @foreach (ObsTimeRange timeRange in @entity.Acceleration.AcceleratedRanges)
+                {
+                    <span title="@timeRange.start.ToString("u") - @timeRange.end.ToString("u")">@timeRange.duration</span>
+                }
+            </td>
         </tr>
     }
     </tbody>
@@ -1029,6 +1063,13 @@
         <th>Uses</th>
         <th>Created</th>
         <th>Updated</th>
+        <th>Transform 1h</th>
+        <th>Transform 1d</th>
+        <th>Transform 1w</th>
+        <th>Acc Conf.</th>
+        <th>Acc Eff.</th>
+        <th>Acc Actl.</th>
+        <th>Acc Range</th>
     </thead>
     <tbody>
     @foreach (ObsMonitor2 entity in selectedMonitors2)
@@ -1066,6 +1107,41 @@
             </td>            
             <td>@entity.createdDate.ToString("u")/@entity.createdBy.label</td>
             <td>@entity.updatedDate.ToString("u")/@entity.updatedBy.label</td>
+            <td>@entity.Transform1H.Credits.ToString("##0.#")</td>
+            <td>@entity.Transform1D.Credits.ToString("##0.#")</td>
+            <td>@entity.Transform1W.Credits.ToString("##0.#")</td>
+            <td>
+                @if(entity.SupportingDataset != null)
+                {
+                    <span title="Configured staleness target of the dataset">@entity.SupportingDataset.Acceleration.StalenessConfigured</span>
+                }
+            </td>
+            <td>
+                @if(entity.SupportingDataset != null)
+                {
+                    string highlightClass = "";
+                    if (entity.SupportingDataset.Acceleration.StalenessEffective < entity.SupportingDataset.Acceleration.StalenessConfigured)
+                    {
+                        highlightClass = "accelSettingDifferent";
+                    }
+                    <span title="The target staleness of this dataset when taking downstream datasets" class="@highlightClass">@entity.SupportingDataset.Acceleration.StalenessEffective</span>
+                }
+            </td>
+            <td>
+                @if(entity.SupportingDataset != null)
+                {
+                    <span title="Staleness of the dataset (averaged over some moving window)">@entity.SupportingDataset.Acceleration.StalenessActual</span>
+                }
+            </td>
+            <td>
+                @if(entity.SupportingDataset != null)
+                {
+                    @foreach (ObsTimeRange timeRange in @entity.SupportingDataset.Acceleration.AcceleratedRanges)
+                    {
+                        <span title="@timeRange.start.ToString("u") - @timeRange.end.ToString("u")">@timeRange.duration</span>
+                    }
+                }
+            </td>
         </tr>
     }
     </tbody>

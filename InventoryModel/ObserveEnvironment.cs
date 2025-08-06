@@ -1298,6 +1298,7 @@ namespace Observe.EntityExplorer
 
             // Output edges
             sb.AppendLine("// Edges");
+            allRelationships = allRelationships.OrderBy(r => r.ThisObject.GetType().Name).ThenBy(r => r.ThisObject.name).ThenBy(r => r.RelatedObject.GetType().Name).ThenBy(r => r.RelatedObject.name).ToList();
             foreach (ObjectRelationship relationship in allRelationships)
             {
                 // We're not going to output relationships to metrics
@@ -2100,7 +2101,7 @@ namespace Observe.EntityExplorer
             };
         }
 
-        internal string getIconType(ObsMetric obsDataset)
+        internal string getIconType(ObsMetric obsMetric)
         {
             return "📶";
         }
@@ -2254,16 +2255,16 @@ namespace Observe.EntityExplorer
         {
             return obsFieldDefinition.type switch
             {
-                "timestamp" => "🕘",
-                "duration" => "⏰",
-                "string" => "📝",
-                "int64" => "⑽",
-                "float64" => "⒑",
-                "object" => "🎛",
-                "variant" => "💫",
-                "array" => "🔢",
-                "bool" => "❓",
-                _ => " "
+                "timestamp"  => "🕘",
+                "duration"   => "⏰",
+                "string"     => "📝",
+                "int64"      => "⑽",
+                "float64"    => "⒑",
+                "object"     => "🎛",
+                "variant"    => "💫",
+                "array"      => "🔢",
+                "bool"       => "❓",
+                _            => " "
             };
         }
 

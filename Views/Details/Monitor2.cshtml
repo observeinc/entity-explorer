@@ -23,6 +23,7 @@
 <h1>@Model.ObserveEnvironment.getIconType(@Model.CurrentMonitor) Monitor v2 Details - @Model.CurrentMonitor.name (@Model.CurrentMonitor.id)</h1>
 
 <p>
+    <a href="#Acceleration">🚄 Acceleration</a> 
     <a href="#RelatedDatasetsAncestors">⏫ Ancestors/Inputs</a> 
     <a href="#RelatedDatasetsSupporting">⏬ Supporting</a> 
     <a href="#RelatedDatasetsGraph">🔀 Related Datasets Graph</a>
@@ -132,6 +133,75 @@
         <td><pre><code class="language-json">@Model.CurrentMonitor.ActiveMonitorInfo</code></pre></td>
     </tr> *@
 </table>
+
+@if(Model.CurrentMonitor.SupportingDataset != null)
+{
+    <h2 id="Acceleration">🚄 Acceleration</h2>
+    <a href="#top">Back to Top</a>
+
+    <table>
+        <tr>
+            <td>State</td>
+            <td>@Model.CurrentMonitor.SupportingDataset.Acceleration.state</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Always Accelerated</td>
+            <td>@Model.CurrentMonitor.SupportingDataset.Acceleration.alwaysAccelerated</td>
+            <td>Whether the dataset is "always accelerated", i.e., any query should hit accelerated data.</td>
+        </tr>
+        <tr>
+            <td>Staleness Configured</td>
+            <td style="text-align: right">@Model.CurrentMonitor.SupportingDataset.Acceleration.StalenessConfigured</td>
+            <td>Configured staleness target of the dataset.</td>
+        </tr>
+        <tr>
+            <td>Staleness Effective</td>
+            <td style="text-align: right">@Model.CurrentMonitor.SupportingDataset.Acceleration.StalenessEffective</td>
+            <td>The target staleness of this dataset when taking downstream datasets.</td>
+        </tr>
+        <tr>
+            <td>Staleness Target</td>
+            <td style="text-align: right">@Model.CurrentMonitor.SupportingDataset.Acceleration.StalenessTarget</td>
+            <td>The actual staleness target of the dataset.</td>
+        </tr>
+        <tr>
+            <td>Staleness Downstream</td>
+            <td style="text-align: right">@Model.CurrentMonitor.SupportingDataset.Acceleration.StalenessDownstream</td>
+            <td>The minimum configured target staleness across all datasets downstream of this dataset.</td>
+        </tr>
+        <tr>
+            <td>Staleness Actual</td>
+            <td style="text-align: right">@Model.CurrentMonitor.SupportingDataset.Acceleration.StalenessActual</td>
+            <td>Staleness of the dataset (averaged over some moving window).</td>
+        </tr>
+        <tr>
+            <td>EffectiveOnDemandMaterializationLength</td>
+            <td style="text-align: right">@Model.CurrentMonitor.SupportingDataset.Acceleration.EffectiveOnDemandMaterializationLength</td>
+            <td>How far back users can request backfill.</td>
+        </tr>
+        @foreach (ObsTimeRange timeRange in Model.CurrentMonitor.SupportingDataset.Acceleration.AcceleratedRanges)
+        {
+            <tr>
+                <td>Actual AcceleratedRange</td>
+                <td style="text-align: right">@timeRange.duration</td>
+                <td>@timeRange.start.ToString("u") - @timeRange.end.ToString("u")</td>
+            </tr>
+        }
+        @foreach (ObsTimeRange timeRange in Model.CurrentMonitor.SupportingDataset.Acceleration.AcceleratedRangesTarget)
+        {
+            <tr>
+                <td>Target AcceleratedRange</td>
+                <td style="text-align: right">@timeRange.duration</td>
+                <td>@timeRange.start.ToString("u") - @timeRange.end.ToString("u")</td>
+            </tr>
+        }
+        <tr>
+            <td>Raw</td>
+            <td colspan="2"><pre><code class="language-json">@Model.CurrentMonitor.SupportingDataset.AccelerationInfo</code></pre></td>
+        </tr>
+    </table>
+}
 
 @{
     List<ObjectRelationship> ancestorRelationships = Model.ObserveEnvironment.GetAllAncestorRelationshipsOfThis(@Model.CurrentMonitor);
