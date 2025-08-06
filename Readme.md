@@ -526,3 +526,10 @@ logs\Observe.EntityExplorer.Console.2023-10-18.log
 logs\Observe.EntityExplorer.Main.2023-10-18.log
 logs\Observe.EntityExplorer.ObserveConnection.2023-10-18.log
 ```
+
+## Tools
+
+Select **Tools** from the home screen to access utilities like *Dataset Comparison*.
+
+The Dataset Comparison page lets you pick a baseline dataset and an optimized dataset. After submission, every dashboard and monitor referencing the baseline dataset runs for a fixed five‑minute window against both datasets. The tool shows the query run, column names, and the number of rows returned for each dataset so you can verify the optimized dataset behaves the same without exposing raw data.
+Results stream to the browser with a spinner so you know processing is ongoing. Each row is colored green for success or red for failure, and the first five rows of output for each dataset are shown to help troubleshoot differences. Errors mentioning "based on unknown input dataset" appear as neutral results.
