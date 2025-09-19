@@ -78,7 +78,7 @@ Observe Entity Explorer can run on Windows, Mac or Linux. Binaries are in [Relea
 
 You can also run it from source.
 
-First, install .NET 8.0 SDK from [Microsoft Downloads web site](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
+First, install .NET 9.0 SDK from [Microsoft Downloads web site](https://dotnet.microsoft.com/en-us/download/dotnet/9.0).
 
 Then clone, build and run:
 

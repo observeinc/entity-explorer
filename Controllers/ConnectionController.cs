@@ -219,8 +219,14 @@ public class ConnectionController : Controller
         string potentialDeployment = currentUser.CustomerEnvironmentUrl.Host.Substring(currentUser.CustomerName.Length + 1).ToLower();
         switch (potentialDeployment)
         {
+            case "eu-1.observeinc.com":
+                currentUser.Deployment = "PROD EU";
+                break;
+            case "ap-1.observeinc.com":
+                currentUser.Deployment = "PROD AP";
+                break;
             case "observeinc.com":
-                currentUser.Deployment = "PROD";
+                currentUser.Deployment = "PROD US";
                 break;
             case "observe-eng.com":
                 currentUser.Deployment = "ENG";

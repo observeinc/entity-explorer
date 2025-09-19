@@ -60,6 +60,7 @@ public class CommonControllerMethods
             loggerConsole.Error(ex);
         }
 
+        allUsers = allUsers.OrderBy(u => u.CustomerLabel).ToList();
         return allUsers;
     }
 

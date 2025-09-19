@@ -46,7 +46,7 @@ namespace Observe.EntityExplorer
                 builder.Logging.AddOpenTelemetry(options =>
                 {
                     options.SetResourceBuilder(ResourceBuilder.CreateDefault()
-                        .AddService(serviceName, null, serviceVersion )
+                        .AddService(serviceName, null, serviceVersion)
                         .AddAttributes(getOTELResourceAttributes())
                         .AddEnvironmentVariableDetector())
                         //.AddConsoleExporter()
@@ -56,7 +56,7 @@ namespace Observe.EntityExplorer
                             {
                                 setOtlpExporterOptions(opt, serviceName, serviceVersion, observeEndpoint, observeToken);
                             }
-                        });
+                        });                    
                 });
                 builder.Services.AddOpenTelemetry()
                     .ConfigureResource(resource => 
@@ -74,7 +74,7 @@ namespace Observe.EntityExplorer
                                 setOtlpExporterOptions(opt, serviceName, serviceVersion, observeEndpoint, observeToken);
                             }
                         }));
-
+            
                 var app = builder.Build();
 
                 // Configure the HTTP request pipeline.
@@ -138,9 +138,10 @@ namespace Observe.EntityExplorer
                 HttpClient client = new HttpClient();
 
                 var productValue = new ProductInfoHeaderValue(serviceName, serviceVersion);
-                var commentValue = new ProductInfoHeaderValue("(https://www.observeinc.com/)");
+                var commentValue = new ProductInfoHeaderValue("(https://www.observeinc.com/)");                
                 client.DefaultRequestHeaders.UserAgent.Add(productValue);
                 client.DefaultRequestHeaders.UserAgent.Add(commentValue);
+                client.DefaultRequestHeaders.Add("x-observe-target-package", "Tracing");
 
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", observeToken);
                 return client;

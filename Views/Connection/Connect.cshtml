@@ -90,27 +90,33 @@
 <p>
     @using (Html.BeginForm("Connect", "Connection", FormMethod.Post))
     {
-    <table>
-        <tr>
-            <th>Environment</th>
+    <table class="AlternatingRowTable SortableTable">
+        <thead>
+            <th>Observe</th>
+            <th>ID</th>
+            <th>Deployment</th>
+            <th>Entity Explorer</th>
             <th>User</th>
             <th>Authenticated On</th>
-            <th>Login</th>
             <th>Remove</th>
-        </tr>
+        </thead>
         @foreach (AuthenticatedUser currentUser in Model.AllUsers)
         {
             <tr id="tableRowSavedUser_@currentUser.UniqueID">
-                <td><a href="@currentUser.CustomerEnvironmentUrl">@currentUser.CustomerName (@currentUser.CustomerLabel) in @currentUser.Deployment</a></td>
-                <td>@currentUser.UserName</td>
-                <td>@currentUser.AuthenticatedOn.ToString("o")</td>
+                <td><a href="@currentUser.CustomerEnvironmentUrl">@currentUser.CustomerLabel</a></td>
+                <td>@currentUser.CustomerName</td>
+                <td>@currentUser.Deployment</td>
                 <td>
                     <a asp-area="" asp-controller="Home" asp-action="Index" asp-route-userid="@currentUser.UniqueID">Explore</a>
                      @* <button type="submit" id="buttonConnect_@currentUser.UniqueID" name="buttonConnect" value="@currentUser.UniqueID">Connect</button> *@
                      </td>
+                <td>@currentUser.UserName</td>
+                <td>@currentUser.AuthenticatedOn.ToString("o")</td>
                 <td><button type="submit" id="buttonRemove_@currentUser.UniqueID" name="buttonRemove" value="@currentUser.UniqueID">Remove</button></td>
             </tr>
         }
     </table>
     }
 </p>
+
+<script src="~/js/DetailsCommon.js" asp-append-version="true"></script>
